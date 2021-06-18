@@ -3,4 +3,27 @@ project(plasma)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(plasma main.cpp)
+include_directories(include)
+set(SOURCE_FILES
+        src/lexer.cpp
+        src/reader.cpp
+        src/error.cpp
+        )
+
+set(TEST_SOURCE_FILES
+        test/src/test_lexer.cpp
+        test/src/print.cpp
+        )
+
+add_executable(plasma
+        main.cpp
+        ${SOURCE_FILES}
+        )
+
+add_executable(test
+        test/main.cpp
+        ${SOURCE_FILES}
+        ${TEST_SOURCE_FILES}
+        )
+
+target_include_directories(test PRIVATE test/include)
