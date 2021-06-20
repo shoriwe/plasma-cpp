@@ -216,11 +216,11 @@ namespace plasma::lexer {
         reader::reader *codeReader;
         bool complete = false;
 
-        lexer(reader::reader *codeReader);
+        explicit lexer(reader::reader *codeReader);
 
         bool hasNext() const;
 
-        void guessKind(std::string pattern, uint8_t *kind, uint8_t *directValue);
+        static void guessKind(const std::string& pattern, uint8_t *kind, uint8_t *directValue);
 
         bool tokenizeStringLikeExpressions(char stringOpener, std::string *content, uint8_t *kind, uint8_t *directValue,
                                            error::error *result_error);

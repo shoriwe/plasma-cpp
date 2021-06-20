@@ -1,6 +1,5 @@
-#include "lexer.h"
+#include "compiler/lexer.h"
 
-#include <utility>
 
 plasma::lexer::lexer::lexer(plasma::reader::reader *codeReader) {
     this->codeReader = codeReader;
@@ -10,7 +9,7 @@ bool plasma::lexer::lexer::hasNext() const {
     return !this->complete;
 }
 
-void plasma::lexer::lexer::guessKind(std::string pattern, uint8_t *kind, uint8_t *directValue) {
+void plasma::lexer::lexer::guessKind(const std::string &pattern, uint8_t *kind, uint8_t *directValue) {
 
     (*kind) = Keyboard;
     if (pattern == PassString) {
@@ -378,6 +377,7 @@ bool plasma::lexer::lexer::tokenizeInteger(std::string base, std::string *conten
     for (; this->codeReader->hasNext(); this->codeReader->next()) {
         nextDigit = this->codeReader->currentChar();
         if (nextDigit == 'e' || nextDigit == 'E') {
+            this->codeReader->next();
             base.push_back(nextDigit);
             return this->tokenizeScientificFloat(base, content, kind, directValue, result_error);
         } else if (nextDigit == '.') {
@@ -642,11 +642,9 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             success = this->tokenizeComment(&content, &kind, &directValue, result_error);
             content = "+" + content;
             break;
+        case '`':
         case '\'':
         case '"': // String1
-            success = this->tokenizeStringLikeExpressions(currentChar, &content, &kind, &directValue, result_error);
-            break;
-        case '`':
             success = this->tokenizeStringLikeExpressions(currentChar, &content, &kind, &directValue, result_error);
             break;
         case '1':
