@@ -89,6 +89,9 @@ namespace plasma::ast {
         std::any ElseResult;
     };
 
+    struct ParenthesesExpression {
+        std::any X;
+    };
     /*
      * Statements Available in CPlasma
      */

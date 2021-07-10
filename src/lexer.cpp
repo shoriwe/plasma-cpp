@@ -501,18 +501,18 @@ bool plasma::lexer::lexer::tokenizeRepeatableOperator(char op, uint8_t directVal
     if (this->codeReader->hasNext()) {
         char nextChar = this->codeReader->currentChar();
         if (nextChar == op) {
+            result.push_back(op);
+            this->codeReader->next();
             (*kind) = kindWhenDouble;
             (*directValue) = directValueWhenDouble;
-            result.push_back(op);
 
             if (this->codeReader->hasNext()) {
                 char nextNextChar = this->codeReader->currentChar();
                 if (nextNextChar == '=') {
-                    (*kind) = kindWhenDoubleAssign;
-                    (*directValue) = directValueWhenDoubleAssign;
                     result.push_back('=');
-
+                    (*kind) = kindWhenDoubleAssign;
                     this->codeReader->next();
+                    (*directValue) = directValueWhenDoubleAssign;
                 }
             }
         } else if (nextChar == '=') {
@@ -550,11 +550,11 @@ bool plasma::lexer::lexer::tokenizeNotRepeatableOperator(char op, uint8_t direct
 bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
     if (!this->codeReader->hasNext()) {
         this->complete = true;
-        (*result) = token{"EOF", EndOfFile, EndOfFile, this->line, this->codeReader->index()};
+        (*result) = token{"EOF", EndOfFile, EndOfFile, this->line};
 
         return true;
     }
-    uint8_t kind;
+    uint8_t kind = Unknown;
     uint8_t directValue = Unknown;
     std::string content;
 
@@ -671,14 +671,14 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             break;
         case LessThanChar:
             success = this->tokenizeRepeatableOperator(currentChar, LessThan, Comparator, BitwiseLeft,
-                                                       Operator, LessOrEqualThan, BitwiseLeftAssign,
-                                                       Comparator, Assignment, &content, &kind, &directValue,
+                                                       Operator, LessOrEqualThan, Comparator,
+                                                       BitwiseLeftAssign, Assignment, &content, &kind, &directValue,
                                                        result_error);
             break;
         case GreatThanChar:
             success = this->tokenizeRepeatableOperator(currentChar, GreaterThan, Comparator, BitwiseRight,
-                                                       Operator, GreaterOrEqualThan,
-                                                       BitwiseRightAssign, Comparator, Assignment, &content, &kind,
+                                                       Operator, GreaterOrEqualThan, Comparator,
+                                                       BitwiseRightAssign, Assignment, &content, &kind,
                                                        &directValue, result_error);
             break;
         case AddChar:
@@ -759,7 +759,7 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
     if (!success) {
         return false;
     }
-    (*result) = token{content, directValue, kind, currentLine, index};
+    (*result) = token{content, directValue, kind, currentLine};
     return true;
 }
 

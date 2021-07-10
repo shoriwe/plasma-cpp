@@ -14,6 +14,7 @@ set(SOURCE_FILES
 
 set(TEST_SOURCE_FILES
         test/src/test_lexer.cpp
+        test/src/test_parser.cpp
         test/src/print.cpp
         )
 

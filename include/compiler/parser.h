@@ -9,46 +9,45 @@
 #include "compiler/lexer.h"
 
 namespace plasma::parser {
-    const std::string ForStatement = "For Statement";
-    const std::string UntilStatement = "Until Statement";
-    const std::string ModuleStatement = "Module Statement";
-    const std::string FunctionDefinitionStatement = "Function Definition Statement";
-    const std::string ClassStatement = "Class Statement";
-    const std::string RaiseStatement = "Raise Statement";
-    const std::string TryStatement = "Try Statement";
-    const std::string ExceptBlock = "Except Block";
-    const std::string ElseBlock = "Else Block";
-    const std::string FinallyBlock = "Finally Block";
-    const std::string BeginStatement = "Begin Statement";
-    const std::string EndStatement = "End Statement"
-    const std::string InterfaceStatement = "Interface Statement";
-    const std::string BinaryExpression = "Binary Expression";
-    const std::string PointerExpression = "Pointer Expression";
-    const std::string LambdaExpression = "Lambda Expression";
-    const std::string ParenthesesExpression = "Parentheses Expression";
-    const std::string TupleExpression = "Tuple Expression";
-    const std::string ArrayExpression = "Array Expression";
-    const std::string HashExpression = "Hash Expression";
-    const std::string WhileStatement = "While Statement";
-    const std::string DoWhileStatement = "Do-While Statement";
-    const std::string IfStatement = "If Statement";
-    const std::string ElifBlock = "Elif Block";
-    const std::string UnlessStatement = "Unless Statement";
-    const std::string SwitchStatement = "Switch Statement";
-    const std::string CaseBlock = "Case Block";
-    const std::string DefaultBlock = "Default Block";
-    const std::string DeferStatement = "Defer Statement";
-    const std::string ReturnStatement = "Return Statement";
-    const std::string YieldStatement = "Yield Statement";
-    const std::string SuperStatement = "Super Statement";
-    const std::string SelectorExpression = "Selector Expression";
-    const std::string MethodInvocationExpression = "Method Invocation Expression";
-    const std::string IndexExpression = "Index Expression";
-    const std::string IfOneLinerExpression = "If One Liner Expression";
-    const std::string UnlessOneLinerExpression = "Unless One Liner Expression";
-    const std::string OneLineElseBlock = "One Line Else Block";
-    const std::string GeneratorExpression = "Generator Expression";
-    const std::string AssignStatement = "Assign Statement";
+    const char ForStatement[] = "For Statement";
+    const char UntilStatement[] = "Until Statement";
+    const char ModuleStatement[] = "Module Statement";
+    const char FunctionDefinitionStatement[] = "Function Definition Statement";
+    const char ClassStatement[] = "Class Statement";
+    const char RaiseStatement[] = "Raise Statement";
+    const char TryStatement[] = "Try Statement";
+    const char ExceptBlock[] = "Except Block";
+    const char ElseBlock[] = "Else Block";
+    const char FinallyBlock[] = "Finally Block";
+    const char BeginStatement[] = "Begin Statement";
+    const char EndStatement[] = "End Statement";
+    const char InterfaceStatement[] = "Interface Statement";
+    const char BinaryExpression[] = "Binary Expression";
+    const char PointerExpression[] = "Pointer Expression";
+    const char LambdaExpression[] = "Lambda Expression";
+    const char ParenthesesExpression[] = "Parentheses Expression";
+    const char TupleExpression[] = "Tuple Expression";
+    const char ArrayExpression[] = "Array Expression";
+    const char HashExpression[] = "Hash Expression";
+    const char WhileStatement[] = "While Statement";
+    const char DoWhileStatement[] = "Do-While Statement";
+    const char IfStatement[] = "If Statement";
+    const char ElifBlock[] = "Elif Block";
+    const char UnlessStatement[] = "Unless Statement";
+    const char SwitchStatement[] = "Switch Statement";
+    const char CaseBlock[] = "Case Block";
+    const char DefaultBlock[] = "Default Block";
+    const char ReturnStatement[] = "Return Statement";
+    const char YieldStatement[] = "Yield Statement";
+    const char SuperStatement[] = "Super Statement";
+    const char SelectorExpression[] = "Selector Expression";
+    const char MethodInvocationExpression[] = "Method Invocation Expression";
+    const char IndexExpression[] = "Index Expression";
+    const char IfOneLinerExpression[] = "If One Liner Expression";
+    const char UnlessOneLinerExpression[] = "Unless One Liner Expression";
+    const char OneLineElseBlock[] = "One Line Else Block";
+    const char GeneratorExpression[] = "Generator Expression";
+    const char AssignStatement[] = "Assign Statement";
 
     /*
      * Quick error creation
@@ -72,27 +71,26 @@ namespace plasma::parser {
      */
     struct parser {
         lexer::lexer *Lexer;
-        bool Complete;
-        lexer::token *currentToken;
+        lexer::token currentToken;
 
         explicit parser(lexer::lexer *lexer_);
 
-        int currentLine();
+        int currentLine() const;
 
         bool hasNext() const;
 
-        bool next(error::error *result_error) const;
+        bool next(error::error *result_error);
 
         bool directValueMatch(uint8_t directValue) const;
 
         bool kindMatch(uint8_t kind) const;
 
-        bool removeNewLines(error::error *result_error) const;
+        bool removeNewLines(error::error *result_error);
 
         /*
          * Statements
          */
-        bool parseAssignStatement(std::any *leftHandSide, std::any *result, error::error *result_error);
+        bool parseAssignStatement(std::any leftHandSide, std::any *result, error::error *result_error);
 
         bool parseForStatement(std::any *result, error::error *result_error);
 
@@ -130,13 +128,13 @@ namespace plasma::parser {
 
         bool parseSuperStatement(std::any *result, error::error *result_error);
 
-        bool parseContinueStatement(std::any *result, error::error *result_error) const;
+        bool parseContinueStatement(std::any *result, error::error *result_error);
 
-        bool parseBreakStatement(std::any *result, error::error *result_error) const;
+        bool parseBreakStatement(std::any *result, error::error *result_error);
 
-        bool parseRedoStatement(std::any *result, error::error *result_error) const;
+        bool parseRedoStatement(std::any *result, error::error *result_error);
 
-        bool parsePassStatement(std::any *result, error::error *result_error) const;
+        bool parsePassStatement(std::any *result, error::error *result_error);
 
         /*
          * Expressions
@@ -159,17 +157,17 @@ namespace plasma::parser {
 
         bool parseHashExpression(std::any *result, error::error *result_error);
 
-        bool parseSelectorExpression(std::any *result, error::error *result_error);
+        bool parseSelectorExpression(std::any expression, std::any *result, error::error *result_error);
 
-        bool parseMethodInvocationExpression(std::any *result, error::error *result_error);
+        bool parseMethodInvocationExpression(std::any expression, std::any *result, error::error *result_error);
 
-        bool parseIndexExpression(std::any *result, error::error *result_error);
+        bool parseIndexExpression(std::any expression, std::any *result, error::error *result_error);
 
-        bool parseIfOneLinerExpression(std::any *result, error::error *result_error);
+        bool parseIfOneLinerExpression(std::any expression, std::any *result, error::error *result_error);
 
-        bool parseUnlessOneLinerExpression(std::any *result, error::error *result_error);
+        bool parseUnlessOneLinerExpression(std::any expression, std::any *result, error::error *result_error);
 
-        bool parseGeneratorExpression(std::any *result, error::error *result_error);
+        bool parseGeneratorExpression(std::any expression, std::any *result, error::error *result_error);
 
         /*
          * Parse to a Program Object

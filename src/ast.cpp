@@ -30,6 +30,8 @@ bool plasma::ast::isExpression(std::any *node) {
         return true;
     } else if (node->type() == typeid(UnlessOneLinerExpression)) {
         return true;
+    } else if (node->type() == typeid(ParenthesesExpression)) {
+        return true;
     }
     return false;
 
