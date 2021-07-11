@@ -1,6 +1,5 @@
-#include "lexer.h"
+#include "compiler/lexer.h"
 
-#include <utility>
 
 plasma::lexer::lexer::lexer(plasma::reader::reader *codeReader) {
     this->codeReader = codeReader;
@@ -10,7 +9,7 @@ bool plasma::lexer::lexer::hasNext() const {
     return !this->complete;
 }
 
-void plasma::lexer::lexer::guessKind(std::string pattern, uint8_t *kind, uint8_t *directValue) {
+void plasma::lexer::lexer::guessKind(const std::string &pattern, uint8_t *kind, uint8_t *directValue) {
 
     (*kind) = Keyboard;
     if (pattern == PassString) {
@@ -378,6 +377,7 @@ bool plasma::lexer::lexer::tokenizeInteger(std::string base, std::string *conten
     for (; this->codeReader->hasNext(); this->codeReader->next()) {
         nextDigit = this->codeReader->currentChar();
         if (nextDigit == 'e' || nextDigit == 'E') {
+            this->codeReader->next();
             base.push_back(nextDigit);
             return this->tokenizeScientificFloat(base, content, kind, directValue, result_error);
         } else if (nextDigit == '.') {
@@ -501,18 +501,18 @@ bool plasma::lexer::lexer::tokenizeRepeatableOperator(char op, uint8_t directVal
     if (this->codeReader->hasNext()) {
         char nextChar = this->codeReader->currentChar();
         if (nextChar == op) {
+            result.push_back(op);
+            this->codeReader->next();
             (*kind) = kindWhenDouble;
             (*directValue) = directValueWhenDouble;
-            result.push_back(op);
 
             if (this->codeReader->hasNext()) {
                 char nextNextChar = this->codeReader->currentChar();
                 if (nextNextChar == '=') {
-                    (*kind) = kindWhenDoubleAssign;
-                    (*directValue) = directValueWhenDoubleAssign;
                     result.push_back('=');
-
+                    (*kind) = kindWhenDoubleAssign;
                     this->codeReader->next();
+                    (*directValue) = directValueWhenDoubleAssign;
                 }
             }
         } else if (nextChar == '=') {
@@ -550,11 +550,11 @@ bool plasma::lexer::lexer::tokenizeNotRepeatableOperator(char op, uint8_t direct
 bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
     if (!this->codeReader->hasNext()) {
         this->complete = true;
-        (*result) = token{"EOF", EndOfFile, EndOfFile, this->line, this->codeReader->index()};
+        (*result) = token{"EOF", EndOfFile, EndOfFile, this->line};
 
         return true;
     }
-    uint8_t kind;
+    uint8_t kind = Unknown;
     uint8_t directValue = Unknown;
     std::string content;
 
@@ -642,11 +642,9 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             success = this->tokenizeComment(&content, &kind, &directValue, result_error);
             content = "+" + content;
             break;
+        case '`':
         case '\'':
         case '"': // String1
-            success = this->tokenizeStringLikeExpressions(currentChar, &content, &kind, &directValue, result_error);
-            break;
-        case '`':
             success = this->tokenizeStringLikeExpressions(currentChar, &content, &kind, &directValue, result_error);
             break;
         case '1':
@@ -673,14 +671,14 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             break;
         case LessThanChar:
             success = this->tokenizeRepeatableOperator(currentChar, LessThan, Comparator, BitwiseLeft,
-                                                       Operator, LessOrEqualThan, BitwiseLeftAssign,
-                                                       Comparator, Assignment, &content, &kind, &directValue,
+                                                       Operator, LessOrEqualThan, Comparator,
+                                                       BitwiseLeftAssign, Assignment, &content, &kind, &directValue,
                                                        result_error);
             break;
         case GreatThanChar:
             success = this->tokenizeRepeatableOperator(currentChar, GreaterThan, Comparator, BitwiseRight,
-                                                       Operator, GreaterOrEqualThan,
-                                                       BitwiseRightAssign, Comparator, Assignment, &content, &kind,
+                                                       Operator, GreaterOrEqualThan, Comparator,
+                                                       BitwiseRightAssign, Assignment, &content, &kind,
                                                        &directValue, result_error);
             break;
         case AddChar:
@@ -761,13 +759,12 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
     if (!success) {
         return false;
     }
-    (*result) = token{content, directValue, kind, currentLine, index};
+    (*result) = token{content, directValue, kind, currentLine};
     return true;
 }
 
 bool plasma::lexer::lexer::next(token *result, error::error *result_error) {
-    bool success = this->_next(result, result_error);
-    if (!success) {
+    if (!this->_next(result, result_error)) {
         return false;
     }
     if (result->kind == JunkKind) {
@@ -779,17 +776,6 @@ bool plasma::lexer::lexer::next(token *result, error::error *result_error) {
     if (result->kind == Whitespace) {
         return this->next(result, result_error);
     }
-    if (result->kind == Separator) {
-        if (!this->lastTokenIsSet()) {
-            return this->next(result, result_error);
-        }
-        if (this->lastToken.kind == Separator || this->lastToken.kind == Operator ||
-            this->lastToken.kind == Comparator || this->lastToken.directValue == Comma ||
-            this->lastToken.directValue == OpenParenthesesChar || this->lastToken.directValue == OpenBraceChar ||
-            this->lastToken.directValue == OpenSquareBracketChar) {
-            return this->next(result, result_error);
-        }
-    }
     this->lastToken = *result;
     return true;
 }
@@ -798,4 +784,3 @@ bool plasma::lexer::lexer::lastTokenIsSet() const {
     return this->lastToken.directValue == NotSet && this->lastToken.kind == NotSet && this->lastToken.line == -1 &&
            this->lastToken.string.length() == 0;
 }
-

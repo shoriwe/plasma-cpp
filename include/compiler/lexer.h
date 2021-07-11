@@ -39,49 +39,48 @@ namespace plasma::lexer {
     const char TabChar = '\t';
     const char CommentChar = '#';
     const char BackSlashChar = '\\';
-    const std::string PassString = "pass";
-    const std::string SuperString = "super";
-    const std::string EndString = "end";
-    const std::string IfString = "if";
-    const std::string UnlessString = "unless";
-    const std::string ElseString = "else";
-    const std::string ElifString = "elif";
-    const std::string WhileString = "while";
-    const std::string DoString = "do";
-    const std::string ForString = "for";
-    const std::string UntilString = "until";
-    const std::string SwitchString = "switch";
-    const std::string CaseString = "case";
-    const std::string DefaultString = "default";
-    const std::string YieldString = "yield";
-    const std::string ReturnString = "return";
-    const std::string ContinueString = "continue";
-    const std::string BreakString = "break";
-    const std::string RedoString = "redo";
-    const std::string DeferString = "defer";
-    const std::string ModuleString = "module";
-    const std::string DefString = "def";
-    const std::string LambdaString = "lambda";
-    const std::string InterfaceString = "interface";
-    const std::string ClassString = "class";
-    const std::string TryString = "try";
-    const std::string ExceptString = "except";
-    const std::string FinallyString = "finally";
-    const std::string AndString = "and";
-    const std::string OrString = "or";
-    const std::string XorString = "xor";
-    const std::string InString = "in";
-    const std::string IsInstanceOfString = "isinstanceof";
-    const std::string AwaitString = "await";
-    const std::string BEGINString = "BEGIN";
-    const std::string ENDString = "END";
-    const std::string NotString = "not";
-    const std::string TrueString = "True";
-    const std::string FalseString = "False";
-    const std::string NoneString = "None";
-    const std::string ContextString = "context";
-    const std::string RaiseString = "raise";
-    const std::string AsString = "as";
+    const char PassString[] = "pass";
+    const char SuperString[] = "super";
+    const char EndString[] = "end";
+    const char IfString[] = "if";
+    const char UnlessString[] = "unless";
+    const char ElseString[] = "else";
+    const char ElifString[] = "elif";
+    const char WhileString[] = "while";
+    const char DoString[] = "do";
+    const char ForString[] = "for";
+    const char UntilString[] = "until";
+    const char SwitchString[] = "switch";
+    const char CaseString[] = "case";
+    const char DefaultString[] = "default";
+    const char YieldString[] = "yield";
+    const char ReturnString[] = "return";
+    const char ContinueString[] = "continue";
+    const char BreakString[] = "break";
+    const char RedoString[] = "redo";
+    const char DeferString[] = "defer";
+    const char ModuleString[] = "module";
+    const char DefString[] = "def";
+    const char LambdaString[] = "lambda";
+    const char InterfaceString[] = "interface";
+    const char ClassString[] = "class";
+    const char TryString[] = "try";
+    const char ExceptString[] = "except";
+    const char FinallyString[] = "finally";
+    const char AndString[] = "and";
+    const char OrString[] = "or";
+    const char XorString[] = "xor";
+    const char InString[] = "in";
+    const char AwaitString[] = "await";
+    const char BEGINString[] = "BEGIN";
+    const char ENDString[] = "END";
+    const char NotString[] = "not";
+    const char TrueString[] = "True";
+    const char FalseString[] = "False";
+    const char NoneString[] = "None";
+    const char ContextString[] = "context";
+    const char RaiseString[] = "raise";
+    const char AsString[] = "as";
     enum {
         NotSet,
         Unknown,
@@ -207,20 +206,19 @@ namespace plasma::lexer {
         uint8_t directValue;
         uint8_t kind;
         int line;
-        int index;
     };
 
     struct lexer {
-        token lastToken{"", NotSet, NotSet, -1, -1};
+        token lastToken{"", NotSet, NotSet, -1};
         int line = 0;
         reader::reader *codeReader;
         bool complete = false;
 
-        lexer(reader::reader *codeReader);
+        explicit lexer(reader::reader *codeReader);
 
         bool hasNext() const;
 
-        void guessKind(std::string pattern, uint8_t *kind, uint8_t *directValue);
+        static void guessKind(const std::string &pattern, uint8_t *kind, uint8_t *directValue);
 
         bool tokenizeStringLikeExpressions(char stringOpener, std::string *content, uint8_t *kind, uint8_t *directValue,
                                            error::error *result_error);

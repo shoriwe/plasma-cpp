@@ -2,7 +2,7 @@
 
 #include "reader.h"
 #include "error.h"
-#include "lexer.h"
+#include "compiler/lexer.h"
 
 #include "test_lexer.h"
 #include "print.h"
@@ -386,17 +386,166 @@ static void tokenize_scientific_floats(int *number_of_tests, int *success) {
 }
 
 static void tokenize_literals(int *number_of_tests, int *success) {
+    int tests = 0;
+    int n_success = 0;
     LOG("Tokenize Literals");
-    tokenize_strings(number_of_tests, success);
-    tokenize_integers(number_of_tests, success);
-    tokenize_hex_integers(number_of_tests, success);
-    tokenize_bin_integers(number_of_tests, success);
-    tokenize_oct_integers(number_of_tests, success);
-    tokenize_floats(number_of_tests, success);
-    tokenize_scientific_floats(number_of_tests, success);
-    TEST_FINISH("Tokenize Literals", *number_of_tests, *success);
+    tokenize_strings(&tests, &n_success);
+    tokenize_integers(&tests, &n_success);
+    tokenize_hex_integers(&tests, &n_success);
+    tokenize_bin_integers(&tests, &n_success);
+    tokenize_oct_integers(&tests, &n_success);
+    tokenize_floats(&tests, &n_success);
+    tokenize_scientific_floats(&tests, &n_success);
+    (*number_of_tests) += tests;
+    (*success) += n_success;
+    TEST_FINISH("Tokenize Literals", tests, n_success);
+}
+
+static void tokenize_assign_operators(int *number_of_tests, int *success) {
+
+}
+
+static void tokenize_binary_expressions(int *number_of_tests, int *success) {
+    int tests = 0;
+    int n_success = 0;
+    LOG("Tokenize Binary Expressions");
+    {
+        std::string title = "Short Binary Expression";
+
+        std::string testString = "1 + 1";
+        plasma::reader::string_reader reader;
+        plasma::reader::string_reader_new(&reader, testString);
+        plasma::lexer::lexer lexer(&reader);
+
+        plasma::error::error error;
+        plasma::lexer::token token;
+
+        int local_success = 0;
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "1" && token.kind == plasma::lexer::Literal &&
+                token.directValue == plasma::lexer::Integer) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "+" && token.kind == plasma::lexer::Operator &&
+                token.directValue == plasma::lexer::Add) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "1" && token.kind == plasma::lexer::Literal &&
+                token.directValue == plasma::lexer::Integer) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        tests++;
+        if (local_success == 3) {
+            n_success++;
+            SUCCESS(title);
+        } else {
+            FAIL(title);
+        }
+    }
+    {
+        std::string title = "Mid Binary Expression";
+
+        std::string testString = "1 + 1 / 1 ** 1";
+        plasma::reader::string_reader reader;
+        plasma::reader::string_reader_new(&reader, testString);
+        plasma::lexer::lexer lexer(&reader);
+
+        plasma::error::error error;
+        plasma::lexer::token token;
+
+        int local_success = 0;
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "1" && token.kind == plasma::lexer::Literal &&
+                token.directValue == plasma::lexer::Integer) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "+" && token.kind == plasma::lexer::Operator &&
+                token.directValue == plasma::lexer::Add) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "1" && token.kind == plasma::lexer::Literal &&
+                token.directValue == plasma::lexer::Integer) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "/" && token.kind == plasma::lexer::Operator &&
+                token.directValue == plasma::lexer::Div) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "1" && token.kind == plasma::lexer::Literal &&
+                token.directValue == plasma::lexer::Integer) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "**" && token.kind == plasma::lexer::Operator &&
+                token.directValue == plasma::lexer::PowerOf) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        {
+            bool tokenizationSuccess = lexer.next(&token, &error);
+            if (tokenizationSuccess && token.string == "1" && token.kind == plasma::lexer::Literal &&
+                token.directValue == plasma::lexer::Integer) {
+                local_success++;
+            } else {
+                FAIL(token.string);
+            }
+        }
+        tests++;
+        if (local_success == 7) {
+            n_success++;
+            SUCCESS(title);
+        } else {
+            FAIL(title);
+        }
+    }
+    (*number_of_tests) += tests;
+    (*success) += n_success;
+    TEST_FINISH("Tokenize Binary Expressions", tests, n_success);
 }
 
 void test_lexer(int *number_of_tests, int *success) {
     tokenize_literals(number_of_tests, success);
+    tokenize_binary_expressions(number_of_tests, success);
+    TEST_FINISH("LEXER", *number_of_tests, *success);
 }

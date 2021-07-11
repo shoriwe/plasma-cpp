@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(include)
 set(SOURCE_FILES
+        src/ast.cpp
+        src/parser.cpp
         src/lexer.cpp
         src/reader.cpp
         src/error.cpp
@@ -12,6 +14,7 @@ set(SOURCE_FILES
 
 set(TEST_SOURCE_FILES
         test/src/test_lexer.cpp
+        test/src/test_parser.cpp
         test/src/print.cpp
         )
 

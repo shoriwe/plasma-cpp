@@ -7,6 +7,8 @@
 namespace plasma::error {
     const int UnknownLine = 0;
     const std::string LexingError = "LexingError";
+    const std::string SyntaxError = "SyntaxError";
+    const std::string ParsingError = "ParsingError";
     const std::string UnknownVmOperationError = "UnknownVMOperationError";
     const std::string NameNotFoundError = "NameNotFoundError";
     const std::string IndexError = "IndexError";
