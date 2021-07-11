@@ -145,7 +145,7 @@ bool plasma::parser::parser::parseForStatement(std::any *result, error::error *r
     if (!this->removeNewLines(result_error)) {
         return false;
     }
-    if (this->directValueMatch(lexer::In)) {
+    if (!this->directValueMatch(lexer::In)) {
         newSyntaxError(this->currentLine(), ForStatement, result_error);
         return false;
     }
@@ -304,33 +304,18 @@ bool plasma::parser::parser::parseDoWhileStatement(std::any *result, error::erro
     if (!this->next(result_error)) {
         return false;
     }
-    if (!this->removeNewLines(result_error)) {
-        return false;
-    }
-    std::any condition;
-    if (!this->parseBinaryExpression(0, &condition, result_error)) {
-        return false;
-    }
-    if (!ast::isExpression(&condition)) {
-        newSyntaxError(this->currentLine(), DoWhileStatement, result_error);
-        return false;
-    }
+    std::vector<std::any> body;
+    std::any bodyNode;
     if (!this->directValueMatch(lexer::NewLine)) {
         newSyntaxError(this->currentLine(), DoWhileStatement, result_error);
         return false;
     }
-    if (!this->next(result_error)) {
-        return false;
-    }
-    std::vector<std::any> body;
-    std::any bodyNode;
-
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             if (!this->next(result_error)) {
                 return false;
             }
-            if (this->directValueMatch(lexer::End)) {
+            if (this->directValueMatch(lexer::While)) {
                 break;
             }
             continue;
@@ -340,14 +325,28 @@ bool plasma::parser::parser::parseDoWhileStatement(std::any *result, error::erro
         }
         body.push_back(bodyNode);
     }
-    if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), DoWhileStatement, result_error);
+    if (!this->directValueMatch(lexer::While)) {
+        newSyntaxError(this->currentLine(), DoWhileStatement, result_error);
         return false;
     }
     if (!this->next(result_error)) {
         return false;
     }
-    (*result) = ast::DoWhileStatement{condition, body};
+    if (!this->removeNewLines(result_error)) {
+        return false;
+    }
+    std::any condition;
+    if (!this->parseBinaryExpression(0, &condition, result_error)) {
+        return false;
+    }
+    if (!ast::isExpression(&condition)) {
+        newNonExpressionReceivedError(this->currentLine(), DoWhileStatement, result_error);
+        return false;
+    }
+    (*result) = ast::DoWhileStatement{
+            .Condition = condition,
+            .Body = body,
+    };
     return true;
 }
 
@@ -396,7 +395,10 @@ bool plasma::parser::parser::parseModuleStatement(std::any *result, error::error
     if (!this->next(result_error)) {
         return false;
     }
-    (*result) = ast::ModuleStatement{name, body};
+    (*result) = ast::ModuleStatement{
+            .Name = name,
+            .Body = body
+    };
     return true;
 }
 
@@ -692,7 +694,7 @@ bool plasma::parser::parser::parseBeginStatement(std::any *result, error::error 
             if (!this->next(result_error)) {
                 return false;
             }
-            if (!this->directValueMatch(lexer::End)) {
+            if (this->directValueMatch(lexer::End)) {
                 break;
             }
             continue;
@@ -728,7 +730,7 @@ bool plasma::parser::parser::parseEndStatement(std::any *result, error::error *r
             if (!this->next(result_error)) {
                 return false;
             }
-            if (!this->directValueMatch(lexer::End)) {
+            if (this->directValueMatch(lexer::End)) {
                 break;
             }
             continue;
@@ -798,20 +800,30 @@ bool plasma::parser::parser::parseClassStatement(std::any *result, error::error 
                 return false;
             }
         }
+        if (!this->directValueMatch(lexer::CloseParentheses)) {
+            newSyntaxError(this->currentLine(), ClassStatement, result_error);
+            return false;
+        }
+        if (!this->next(result_error)) {
+            return false;
+        }
     }
     if (!this->directValueMatch(lexer::NewLine)) {
         newSyntaxError(this->currentLine(), ClassStatement, result_error);
         return false;
     }
+    if (!this->next(result_error)) {
+        return false;
+    }
     std::vector<std::any> body;
     std::any bodyNode;
     while (this->hasNext()) {
-        if (!this->kindMatch(lexer::Separator)) {
+        if (this->directValueMatch(lexer::End)) {
+            break;
+        }
+        if (this->kindMatch(lexer::Separator)) {
             if (!this->next(result_error)) {
                 return false;
-            }
-            if (this->directValueMatch(lexer::End)) {
-                break;
             }
             continue;
         }
@@ -827,7 +839,11 @@ bool plasma::parser::parser::parseClassStatement(std::any *result, error::error 
     if (!this->next(result_error)) {
         return false;
     }
-    (*result) = ast::ClassStatement{name, bases, body};
+    (*result) = ast::ClassStatement{
+            .Name = name,
+            .Bases = bases,
+            .Body = body
+    };
     return true;
 }
 
@@ -880,23 +896,30 @@ bool plasma::parser::parser::parseInterfaceStatement(std::any *result, error::er
                 return false;
             }
         }
-    }
-    if (!this->removeNewLines(result_error)) {
-        return false;
+        if (!this->directValueMatch(lexer::CloseParentheses)) {
+            newSyntaxError(this->currentLine(), InterfaceStatement, result_error);
+            return false;
+        }
+        if (!this->next(result_error)) {
+            return false;
+        }
     }
     if (!this->directValueMatch(lexer::NewLine)) {
         newSyntaxError(this->currentLine(), InterfaceStatement, result_error);
         return false;
     }
+    if (!this->removeNewLines(result_error)) {
+        return false;
+    }
     std::vector<ast::FunctionDefinitionStatement> methods;
     std::any node;
     while (this->hasNext()) {
+        if (this->directValueMatch(lexer::End)) {
+            break;
+        }
         if (this->kindMatch(lexer::Separator)) {
             if (!this->next(result_error)) {
                 return false;
-            }
-            if (!this->directValueMatch(lexer::End)) {
-                break;
             }
             continue;
         }
@@ -950,7 +973,8 @@ bool plasma::parser::parser::parseIfStatement(std::any *result, error::error *re
             if (!this->next(result_error)) {
                 return false;
             }
-            if (this->directValueMatch(lexer::Elif) || this->directValueMatch(lexer::Else) ||
+            if (this->directValueMatch(lexer::Elif) ||
+                this->directValueMatch(lexer::Else) ||
                 this->directValueMatch(lexer::End)) {
                 break;
             }
@@ -968,7 +992,8 @@ bool plasma::parser::parser::parseIfStatement(std::any *result, error::error *re
                 if (!this->next(result_error)) {
                     return false;
                 }
-                if (this->directValueMatch(lexer::Else) || this->directValueMatch(lexer::End)) {
+                if (this->directValueMatch(lexer::Else) ||
+                    this->directValueMatch(lexer::End)) {
                     break;
                 }
                 continue;
@@ -1002,7 +1027,8 @@ bool plasma::parser::parser::parseIfStatement(std::any *result, error::error *re
                     if (!this->next(result_error)) {
                         return false;
                     }
-                    if (this->directValueMatch(lexer::Elif) || this->directValueMatch(lexer::Else) ||
+                    if (this->directValueMatch(lexer::Elif) ||
+                        this->directValueMatch(lexer::Else) ||
                         this->directValueMatch(lexer::End)) {
                         break;
                     }
@@ -1013,8 +1039,14 @@ bool plasma::parser::parser::parseIfStatement(std::any *result, error::error *re
                 }
                 elifBody.push_back(elifBodyNode);
             }
-            elifBlocks.push_back(ast::ElifBlock{elifCondition, elifBody});
-            if (this->directValueMatch(lexer::Else) || this->directValueMatch(lexer::End)) {
+            elifBlocks.push_back(
+                    ast::ElifBlock{
+                            .Condition = elifCondition,
+                            .Body = elifBody
+                    }
+            );
+            if (this->directValueMatch(lexer::Else) ||
+                this->directValueMatch(lexer::End)) {
                 break;
             }
         }
@@ -1052,7 +1084,12 @@ bool plasma::parser::parser::parseIfStatement(std::any *result, error::error *re
     if (!this->next(result_error)) {
         return false;
     }
-    (*result) = ast::IfStatement{condition, body, elifBlocks, elseBody};
+    (*result) = ast::IfStatement{
+            .Condition = condition,
+            .Body = body,
+            .ElifBlocks = elifBlocks,
+            .Else = elseBody
+    };
     return true;
 }
 
@@ -1335,7 +1372,7 @@ bool plasma::parser::parser::parseReturnStatement(std::any *result, error::error
             if (!this->next(result_error)) {
                 return false;
             }
-        } else if (!this->kindMatch(lexer::Separator) || this->kindMatch(lexer::EndOfFile)) {
+        } else if (!(this->kindMatch(lexer::Separator) || this->kindMatch(lexer::EndOfFile))) {
             newSyntaxError(this->currentLine(), ReturnStatement, result_error);
             return false;
         }
@@ -1370,12 +1407,14 @@ bool plasma::parser::parser::parseYieldStatement(std::any *result, error::error 
             if (!this->next(result_error)) {
                 return false;
             }
-        } else if (!this->kindMatch(lexer::Separator) || this->kindMatch(lexer::EndOfFile)) {
+        } else if (!(this->kindMatch(lexer::Separator) || this->kindMatch(lexer::EndOfFile))) {
             newSyntaxError(this->currentLine(), YieldStatement, result_error);
             return false;
         }
     }
-    (*result) = ast::YieldStatement{yield_results};
+    (*result) = ast::YieldStatement{
+            .Results = yield_results
+    };
     return true;
 }
 

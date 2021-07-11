@@ -764,8 +764,7 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
 }
 
 bool plasma::lexer::lexer::next(token *result, error::error *result_error) {
-    bool success = this->_next(result, result_error);
-    if (!success) {
+    if (!this->_next(result, result_error)) {
         return false;
     }
     if (result->kind == JunkKind) {
@@ -777,17 +776,6 @@ bool plasma::lexer::lexer::next(token *result, error::error *result_error) {
     if (result->kind == Whitespace) {
         return this->next(result, result_error);
     }
-    if (result->kind == Separator) {
-        if (!this->lastTokenIsSet()) {
-            return this->next(result, result_error);
-        }
-        if (this->lastToken.kind == Separator || this->lastToken.kind == Operator ||
-            this->lastToken.kind == Comparator || this->lastToken.directValue == Comma ||
-            this->lastToken.directValue == OpenParenthesesChar || this->lastToken.directValue == OpenBraceChar ||
-            this->lastToken.directValue == OpenSquareBracketChar) {
-            return this->next(result, result_error);
-        }
-    }
     this->lastToken = *result;
     return true;
 }
@@ -796,4 +784,3 @@ bool plasma::lexer::lexer::lastTokenIsSet() const {
     return this->lastToken.directValue == NotSet && this->lastToken.kind == NotSet && this->lastToken.line == -1 &&
            this->lastToken.string.length() == 0;
 }
-

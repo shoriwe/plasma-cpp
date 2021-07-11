@@ -7,6 +7,9 @@
 #include "print.h"
 #include "test_parser.h"
 
+
+std::string replace(std::string string, const std::string &old, const std::string &new_pattern);
+
 /*
  * Reconstruct expressions
  */
@@ -43,10 +46,58 @@ static std::string reconstruct_assign_statement(const plasma::ast::AssignStateme
 
 static std::string reconstruct_super_statement(const plasma::ast::SuperInvocationStatement &x);
 
+static std::string reconstruct_yield_statement(const plasma::ast::YieldStatement &x);
+
+static std::string reconstruct_return_statement(const plasma::ast::ReturnStatement &x);
+
+static std::string reconstruct_while_statement(const plasma::ast::WhileStatement &x);
+
+static std::string reconstruct_do_while_statement(const plasma::ast::DoWhileStatement &x);
+
+static std::string reconstruct_until_statement(const plasma::ast::UntilStatement &x);
+
+static std::string reconstruct_for_statement(const plasma::ast::ForStatement &x);
+
+static std::string reconstruct_switch_statement(const plasma::ast::SwitchStatement &x);
+
+static std::string reconstruct_try_statement(const plasma::ast::TryStatement &x);
+
+static std::string reconstruct_function_statement(const plasma::ast::FunctionDefinitionStatement &x);
+
+static std::string reconstruct_raise_statement(const plasma::ast::RaiseStatement &x);
+
+static std::string reconstruct_begin_statement(const plasma::ast::BeginStatement &x);
+
+static std::string reconstruct_end_statement(const plasma::ast::EndStatement &x);
+
+static std::string reconstruct_class_statement(const plasma::ast::ClassStatement &x);
+
+static std::string reconstruct_interface_statement(const plasma::ast::InterfaceStatement &x);
+
+static std::string reconstruct_module_statement(const plasma::ast::ModuleStatement &x);
+
 /*
  * Reconstruct nodes
  */
 static std::string reconstruct_node(std::any node);
+
+//
+
+std::string replace(std::string string, const std::string &old, const std::string &new_pattern) {
+    size_t index = 0;
+    while (true) {
+        /* Locate the substring to replace. */
+        index = string.find(old, index);
+        if (index == std::string::npos) break;
+
+        /* Make the replacement. */
+        string.replace(index, old.length(), new_pattern);
+
+        /* Advance index forward so the next iteration doesn't pick it up as well. */
+        index += 3;
+    }
+    return string;
+}
 
 static std::vector<std::string> initialize_parser_tests() {
     std::vector<std::string> tests;
@@ -88,8 +139,7 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("super(1, 2)");
     tests.emplace_back("super(1, 2, call((1, 2, 3, 4, 2 * (5 - 3))))");
     tests.emplace_back(
-            "if a > 2\n\tcall()\nelif a < 2\n\tif a == 0\n\t\tprint(\"\\\"a\\\" is zero\")\n\telse\n\t\tprint(\"\\\"a\\\" is non zero\")");
-    tests.emplace_back("\n\tend\nend");
+            "if a > 2\n\tcall()\nelif a < 2\n\tif a == 0\n\t\tprint(\"\\\"a\\\" is zero\")\n\telse\n\t\tprint(\"\\\"a\\\" is non zero\")\n\tend\nend");
     tests.emplace_back(
             "unless a > 2\n\tcall()\nelif a < 2\n\tif 1 if a < 2 else None\n\t\tprint(\"\\\"a\\\" is zero\")\n\telse\n\t\tprint(\"\\\"a\\\" is non zero\")\n\tend\n\tif 1 == 2\n\t\tprint(2)\n\tend\nend");
     tests.emplace_back(
@@ -99,8 +149,9 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("for a, b, c in range(10)\n\tprint(\"hello world!\")\nend");
     tests.emplace_back("until (1 + 2 * 3 / a) > 5\n\tif a > b\n\t\tbreak\n\tend\n\ta += 1\n\tb -= 1\nend");
     tests.emplace_back(
-            "module something\n\tclass Hello(a.b, a, c, Hello2)\n\tend\n\tclass Hello2(IHello)\n\tend\n\tinterface IHello\n\t\tdef SayHello()\n\t\t\tprint(\"Hello\")\n\t\tend\n\t\tdef SayHello()\n\t\t\tprint(\"Hello\")\n\t\tend\n\tend\nend");
+            "module something\n\tclass Hello(a.b, a, c, Hello2)\n\tend\n\tclass Hello2\n\tend\n\tclass Hello3(IHello)\n\tend\n\tinterface IHello\n\t\tdef SayHello()\n\t\t\tprint(\"Hello\")\n\t\tend\n\t\tdef SayHello()\n\t\t\tprint(\"Hello\")\n\t\tend\n\tend\n\tinterface IHello2(IHello)\n\t\tdef SayHello()\n\t\t\tprint(\"Hello\")\n\t\tend\n\t\tdef SayHello()\n\t\t\tprint(\"Hello\")\n\t\tend\n\tend\nend");
     tests.emplace_back("BEGIN\n\tNode = (1, 2)\nend");
+    tests.emplace_back("END\n\tNode = (1, 2)\nend");
     tests.emplace_back(
             "try\n\tprint(variable)\nexcept UndefinedIdentifier, AnyException as errors\n\tprint(errors)\nexcept NoToStringException as errors\n\tprint(errors)\nelse\n\tprint(\"Unknown *errors\")\n\traise UnknownException()\nfinally\n\tprint(\"Done\")\nend");
     tests.emplace_back("do\n\tprint(\"Hello\")\nwhile a > b");
@@ -264,6 +315,279 @@ static std::string reconstruct_super_statement(const plasma::ast::SuperInvocatio
     return result + ")";
 }
 
+static std::string reconstruct_yield_statement(const plasma::ast::YieldStatement &x) {
+    std::string result = "yield";
+    bool first = true;
+    for (const std::any &node : x.Results) {
+        if (first) {
+            first = false;
+            result += " ";
+        } else {
+            result += ", ";
+        }
+        result += reconstruct_node(node);
+    }
+    return result;
+}
+
+static std::string reconstruct_return_statement(const plasma::ast::ReturnStatement &x) {
+    std::string result = "return";
+    bool first = true;
+    for (const std::any &node : x.Results) {
+        if (first) {
+            first = false;
+            result += " ";
+        } else {
+            result += ", ";
+        }
+        result += reconstruct_node(node);
+    }
+    return result;
+}
+
+static std::string reconstruct_if_statement(const plasma::ast::IfStatement &x) {
+    std::string result = "if " + reconstruct_node(x.Condition);
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    for (const plasma::ast::ElifBlock &elif : x.ElifBlocks) {
+        result += "\nelif " + replace(reconstruct_node(elif.Condition), "\n", "\n\t");
+        for (const std::any &node : elif.Body) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    if (!x.Else.empty()) {
+        result += "\nelse";
+        for (const std::any &node : x.Else) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    result += "\nend";
+    return result;
+}
+
+static std::string reconstruct_unless_statement(const plasma::ast::UnlessStatement &x) {
+    std::string result = "unless " + reconstruct_node(x.Condition);
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    for (const plasma::ast::ElifBlock &elif : x.ElifBlocks) {
+        result += "\nelif " + reconstruct_node(elif.Condition);
+        for (const std::any &node : elif.Body) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    if (!x.Else.empty()) {
+        result += "\nelse";
+        for (const std::any &node : x.Else) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    result += "\nend";
+    return result;
+}
+
+static std::string reconstruct_while_statement(const plasma::ast::WhileStatement &x) {
+    std::string result = "while " + reconstruct_node(x.Condition);
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_do_while_statement(const plasma::ast::DoWhileStatement &x) {
+    std::string result = "do";
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nwhile " + reconstruct_node(x.Condition);
+}
+
+static std::string reconstruct_until_statement(const plasma::ast::UntilStatement &x) {
+    std::string result = "until " + reconstruct_node(x.Condition);
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_for_statement(const plasma::ast::ForStatement &x) {
+    std::string result = "for ";
+    bool first = true;
+    for (const plasma::ast::Identifier &receiver : x.Receivers) {
+        if (first) {
+            first = false;
+        } else {
+            result += ", ";
+        }
+        result += reconstruct_node(receiver);
+    }
+    result += " in " + reconstruct_node(x.Source);
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_switch_statement(const plasma::ast::SwitchStatement &x) {
+    std::string result = "switch " + reconstruct_node(x.Target);
+    for (const plasma::ast::CaseBlock &node : x.CaseBlocks) {
+        result += "\ncase";
+        bool first = true;
+        for (const std::any &node2 : node.Cases) {
+            if (first) {
+                first = false;
+                result += " ";
+            } else {
+                result += ", ";
+            }
+            result += reconstruct_node(node2);
+        }
+        for (const std::any &node2 : node.Body) {
+            result += "\n\t" + replace(reconstruct_node(node2), "\n", "\n\t");
+        }
+    }
+    if (!x.Default.empty()) {
+        result += "\ndefault";
+        for (const std::any &node : x.Default) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_try_statement(const plasma::ast::TryStatement &x) {
+    std::string result = "try";
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    for (const plasma::ast::ExceptBlock &node : x.ExceptBlocks) {
+        result += "\nexcept";
+        bool first = true;
+        for (const std::any &node2 : node.Targets) {
+            if (first) {
+                first = false;
+                result += " ";
+            } else {
+                result += ", ";
+            }
+            result += reconstruct_node(node2);
+        }
+        if (!node.CaptureName.Token.string.empty()) {
+            result += " as " + reconstruct_node(node.CaptureName);
+        }
+        for (const std::any &node2 : node.Body) {
+            result += "\n\t" + replace(reconstruct_node(node2), "\n", "\n\t");
+        }
+    }
+    if (!x.Else.empty()) {
+        result += "\nelse";
+        for (const std::any &node : x.Else) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    if (!x.Finally.empty()) {
+        result += "\nfinally";
+        for (const std::any &node : x.Finally) {
+            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        }
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_function_statement(const plasma::ast::FunctionDefinitionStatement &x) {
+    std::string result = "def " + reconstruct_node(x.Name) + "(";
+    bool first = true;
+    for (const plasma::ast::Identifier &argument : x.Arguments) {
+        if (first) {
+            first = false;
+        } else {
+            result += ", ";
+        }
+        result += reconstruct_node(argument);
+    }
+    result += ")";
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_raise_statement(const plasma::ast::RaiseStatement &x) {
+    std::string result = "raise";
+    if (x.X.has_value()) {
+        result += " " + reconstruct_node(x.X);
+    }
+    return result;
+}
+
+static std::string reconstruct_begin_statement(const plasma::ast::BeginStatement &x) {
+    std::string result = "BEGIN";
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_end_statement(const plasma::ast::EndStatement &x) {
+    std::string result = "END";
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_class_statement(const plasma::ast::ClassStatement &x) {
+    std::string result = "class " + reconstruct_node(x.Name);
+    if (!x.Bases.empty()) {
+        result += "(";
+        bool first = true;
+        for (const std::any &base : x.Bases) {
+            if (first) {
+                first = false;
+            } else {
+                result += ", ";
+            }
+            result += reconstruct_node(base);
+        }
+        result += ")";
+    }
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+static std::string reconstruct_interface_statement(const plasma::ast::InterfaceStatement &x) {
+    std::string result = "interface " + reconstruct_node(x.Name);
+    if (!x.Bases.empty()) {
+        result += "(";
+        bool first = true;
+        for (const std::any &base : x.Bases) {
+            if (first) {
+                first = false;
+            } else {
+                result += ", ";
+            }
+            result += reconstruct_node(base);
+        }
+        result += ")";
+    }
+    for (const plasma::ast::FunctionDefinitionStatement &node : x.MethodDefinitions) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
+
+static std::string reconstruct_module_statement(const plasma::ast::ModuleStatement &x) {
+    std::string result = "module " + reconstruct_node(x.Name);
+    for (const std::any &node : x.Body) {
+        result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    }
+    return result + "\nend";
+}
+
 /*
  * Reconstruct nodes
  */
@@ -304,10 +628,44 @@ static std::string reconstruct_node(std::any node) {
         return "redo";
     } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
         return "continue";
+    } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
+        return reconstruct_raise_statement(std::any_cast<plasma::ast::RaiseStatement>(node));
     } else if (node.type() == typeid(plasma::ast::ParenthesesExpression)) {
         return reconstruct_parentheses_expression(std::any_cast<plasma::ast::ParenthesesExpression>(node));
     } else if (node.type() == typeid(plasma::ast::GeneratorExpression)) {
         return reconstruct_generator_expression(std::any_cast<plasma::ast::GeneratorExpression>(node));
+    } else if (node.type() == typeid(plasma::ast::YieldStatement)) {
+        return reconstruct_yield_statement(std::any_cast<plasma::ast::YieldStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
+        return reconstruct_return_statement(std::any_cast<plasma::ast::ReturnStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::IfStatement)) {
+        return reconstruct_if_statement(std::any_cast<plasma::ast::IfStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
+        return reconstruct_unless_statement(std::any_cast<plasma::ast::UnlessStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
+        return reconstruct_while_statement(std::any_cast<plasma::ast::WhileStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
+        return reconstruct_do_while_statement(std::any_cast<plasma::ast::DoWhileStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
+        return reconstruct_until_statement(std::any_cast<plasma::ast::UntilStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::ForStatement)) {
+        return reconstruct_for_statement(std::any_cast<plasma::ast::ForStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
+        return reconstruct_switch_statement(std::any_cast<plasma::ast::SwitchStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::TryStatement)) {
+        return reconstruct_try_statement(std::any_cast<plasma::ast::TryStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
+        return reconstruct_function_statement(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::BeginStatement)) {
+        return reconstruct_begin_statement(std::any_cast<plasma::ast::BeginStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::EndStatement)) {
+        return reconstruct_end_statement(std::any_cast<plasma::ast::EndStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::ClassStatement)) {
+        return reconstruct_class_statement(std::any_cast<plasma::ast::ClassStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
+        return reconstruct_interface_statement(std::any_cast<plasma::ast::InterfaceStatement>(node));
+    } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
+        return reconstruct_module_statement(std::any_cast<plasma::ast::ModuleStatement>(node));
     }
     return node.type().name();
 }
@@ -317,7 +675,13 @@ static std::string reconstruct_code(plasma::ast::Program *program) {
     if (!program->Begin.Body.empty()) {
         result += reconstruct_node(program->Begin);
     }
+    bool first = true;
     for (const std::any &node : program->Body) {
+        if (first) {
+            first = false;
+        } else {
+            result += "\n";
+        }
         result += reconstruct_node(node);
     }
     if (!program->End.Body.empty()) {
