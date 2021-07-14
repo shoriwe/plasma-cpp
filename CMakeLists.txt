@@ -10,6 +10,16 @@ set(SOURCE_FILES
         src/lexer.cpp
         src/reader.cpp
         src/error.cpp
+        src/symbols.cpp
+        src/value.cpp
+        src/bytecode.cpp
+        src/method_call.cpp
+        src/context.cpp
+        src/force.cpp
+        src/memory.cpp
+        src/hash.cpp
+        src/construct.cpp
+        src/tools.cpp
         )
 
 set(TEST_SOURCE_FILES
