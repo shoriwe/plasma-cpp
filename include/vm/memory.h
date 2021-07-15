@@ -18,6 +18,8 @@ namespace plasma::memory {
                 this->content = new T[len];
             }
 
+            page() = default;
+
             ~page() {
                 delete this->content;
             }
@@ -45,10 +47,10 @@ namespace plasma::memory {
             this->nextIndex++;
             return result;
         }
-        
+
         size_t max_page_length() {
             size_t result = 0;
-            for (const auto& keyValue : this->pages) {
+            for (const auto &keyValue : this->pages) {
                 if (keyValue.first > result) {
                     result = keyValue.first;
                 }

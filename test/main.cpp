@@ -12,7 +12,7 @@ int main() {
     LOG("Lexer");
     test_lexer(&number_of_tests, &success);
     LOG("Parser");
-    test_parser(&number_of_tests,  &success);
+    test_parser(&number_of_tests, &success);
 
     LOG("Results");
     TEST_FINISH("Resume", number_of_tests, success);

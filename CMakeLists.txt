@@ -16,10 +16,12 @@ set(SOURCE_FILES
         src/method_call.cpp
         src/context.cpp
         src/force.cpp
-        src/memory.cpp
         src/hash.cpp
         src/construct.cpp
         src/tools.cpp
+        src/initialization.cpp
+        src/caching.cpp
+        src/object_creators.cpp
         )
 
 set(TEST_SOURCE_FILES

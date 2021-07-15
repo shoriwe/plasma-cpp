@@ -29,7 +29,7 @@ plasma::vm::value::get(struct context &c, virtual_machine *vm, const std::string
 
 plasma::vm::value *plasma::vm::value::get_type(virtual_machine *vm) const {
     if (this->type == nullptr) {
-        return vm->ForceMasterGetAny(this->typeName);
+        return vm->force_any_from_master(this->typeName);
     }
     return this->type;
 }

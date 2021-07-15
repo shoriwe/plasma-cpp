@@ -40,3 +40,5 @@ plasma::vm::symbol_table::~symbol_table() {
         parent->count++;
     }
 }
+
+plasma::vm::symbol_table::symbol_table() = default;

@@ -16,7 +16,7 @@
 namespace plasma::vm {
     typedef struct value *(*on_demand_loader)();
 
-    typedef struct value *(*object_loader)(struct context &c, struct virtual_machine &);
+    typedef struct value *(*object_loader)(struct context &c, struct virtual_machine *);
 
     typedef struct value *(*constructor_callback)(struct context &c, struct value *);
 
@@ -186,30 +186,22 @@ namespace plasma::vm {
 
         int64_t hash_bytes(const std::vector<int8_t> &bytes);
 
-        void load_builtin_object(const std::string &, object_loader);
+        // Initialization
 
-        void load_builtin_symbols(std::unordered_map<std::string, object_loader>);
+        void load_builtin_object(const std::string &symbol, object_loader loader);
 
-        // IO related
+        void load_builtin_symbols(const std::unordered_map<std::string, object_loader> &symbols);
 
-        [[nodiscard]] struct symbol_table *built_in_symbols() const;
+        void initialize_context(struct context &c);
 
-        int64_t next_id();
+        void initialize_builtin_symbols();
 
-        /*
-         * Prepare the context to be used  by the virtual machine
-         */
-        void InitializeContext(struct context &);
-
-        /*
-         * Initialize the vm built in symbol just once
-         */
-        void InitializeBuiltIn();
+        uint64_t next_id();
 
         // Object creation tools
-        bool construct_subtype(struct context &c, struct value *, struct value *, struct value *);
+        value *construct_subtype(struct context &c, value *subType, value *self);
 
-        bool construct_object(struct context &c, struct value *, struct symbol_table *, struct value *, struct value *);
+        value *construct_object(struct context &c, struct value *type, bool *success);
 
         // Function calls
         /*
@@ -220,35 +212,36 @@ namespace plasma::vm {
                                     const std::vector<struct value *> &arguments, bool *success);
 
         // Object Creators
-        struct value *NewObject(struct context &c, bool isBuiltIn, const std::string &typeName);
+        struct value *new_object(struct context &c, bool isBuiltIn, const std::string &typeName, value *type);
 
-        struct value *NewHashTable(struct context &c, bool isBuiltIn);
+        struct value *new_hash_table(struct context &c, bool isBuiltIn);
 
-        struct value *NewArray(struct context &c, bool isBuiltIn, std::vector<struct value *> content);
+        struct value *new_array(struct context &c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *NewFunction(struct context &c, bool isBuiltIn, struct callable callable_);
+        struct value *new_function(struct context &c, bool isBuiltIn, const struct callable &callable_);
 
-        struct value *NewBytes(struct context &c, bool isBuiltIn, std::vector<uint8_t> bytes);
+        struct value *new_bytes(struct context &c, bool isBuiltIn, const std::vector<uint8_t> &bytes);
 
-        struct value *NewIterator(struct context &c, bool isBuiltIn);
+        struct value *new_iterator(struct context &c, bool isBuiltIn);
 
-        struct value *NewTuple(struct context &c, bool isBuiltIn, std::vector<struct value *> content);
+        struct value *new_tuple(struct context &c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *NewNone(struct context &c, bool isBuiltIn);
+        struct value *new_none(struct context &c, bool isBuiltIn);
 
         struct value *
-        NewType(struct context &c, bool isBuiltIn, const std::string &name, std::vector<struct value *> inheritedTypes,
-                struct constructor constructor);
+        new_type(struct context &c, bool isBuiltIn, const std::string &name,
+                 const std::vector<struct value *> &inheritedTypes,
+                 const struct constructor &constructor);
 
-        struct value *NewFloat(struct context &c, bool isBuiltIn, long double value);
+        struct value *new_float(struct context &c, bool isBuiltIn, long double value_);
 
-        struct value *NewModule(struct context &c, bool isBuiltIn);
+        struct value *new_module(struct context &c, bool isBuiltIn);
 
-        struct value *NewBool(struct context &c, bool isBuiltIn, bool value);
+        struct value *new_bool(struct context &c, bool isBuiltIn, bool value_);
 
-        struct value *NewInteger(struct context &c, bool isBuiltIn, int64_t value);
+        struct value *new_integer(struct context &c, bool isBuiltIn, int64_t value_);
 
-        struct value *NewString(struct context &c, bool isBuiltIn, std::string value);
+        struct value *new_string(struct context &c, bool isBuiltIn, const std::string &value_);
 
         // Error Creators
         struct value *NewFloatParsingError(struct context &c);
@@ -277,19 +270,21 @@ namespace plasma::vm {
 
         struct value *NewBuiltInSymbolProtectionError(struct context &c, struct value *source, std::string symbol);
 
-        struct value *NewObjectNotCallable(struct context &c, struct value *objectType);
+        struct value *NewObjectNotCallableError(struct context &c, struct value *objectType);
 
         // Basic object caching
-        struct value *GetNone();
+        struct value *get_none();
 
-        struct value *GetFalse();
+        struct value *get_false();
 
-        struct value *GetTrue();
+        struct value *get_true();
 
         // Object Initializers
         struct value *RuntimeErrorInitialize(struct context &c, struct value *errorObject);
 
         constructor_callback CallableInitialize(bool isBuiltIn);
+
+        constructor_callback TypeInitialize(bool isBuiltIn);
 
         constructor_callback ArrayInitialize(bool isBuiltIn);
 
@@ -314,14 +309,14 @@ namespace plasma::vm {
         constructor_callback NoneInitialize(bool isBuiltIn);
 
         // Force Operation
-        struct value *ForceGetSelf(struct context &c, const std::string &symbol, struct value *source);
+        struct value *force_get_from_source(struct context &c, const std::string &symbol, struct value *source);
 
-        struct value *ForceMasterGetAny(const std::string &symbol);
+        struct value *force_any_from_master(const std::string &symbol);
 
-        struct value *ForceConstruction(struct context &c, struct value *type_);
+        struct value *force_construction(struct context &c, struct value *type_);
 
         void
-        ForceInitialization(struct context &c, struct value *object, const std::vector<struct value *> &initArgument);
+        force_initialization(plasma::vm::context &c, struct value *object, const std::vector<struct value *> &initArgument);
 
         // Code execution
         struct value *Execute(struct context &c, bytecode *bc, bool *success);
@@ -378,7 +373,7 @@ namespace plasma::vm {
 
         struct value *loadForLoopArguments(struct context &c, struct value *);
 
-        struct value *unpackForArguments(struct context &c, loopSettings *LoopSettings, result Value, struct value *);
+        //struct value *unpackForArguments(struct context &c, loopSettings *LoopSettings, result Value, struct value *);
 
         struct value *unpackForLoopOP(struct context &c, bytecode *bc, struct value *);
 
@@ -464,7 +459,7 @@ namespace plasma::vm {
 
     struct symbol_table {
         // Garbage collector
-        size_t pageIndex;
+        size_t pageIndex = SIZE_MAX;
         uint64_t count = 0;
         //
         symbol_table *parent = nullptr;
@@ -477,6 +472,8 @@ namespace plasma::vm {
         value *get_any(const std::string &symbol);
 
         explicit symbol_table(symbol_table *parentSymbolTable);
+
+        symbol_table();
 
         ~symbol_table();
     };
