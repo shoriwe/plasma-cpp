@@ -28,7 +28,7 @@ plasma::vm::value *plasma::vm::virtual_machine::force_construction(struct contex
     return result;
 }
 
-void plasma::vm::virtual_machine::force_initialization(plasma::vm::context &c, plasma::vm::value *object,
+void plasma::vm::virtual_machine::force_initialization(const plasma::vm::context &c, plasma::vm::value *object,
                                                        const std::vector<plasma::vm::value *> &initArgument) {
     bool success = false;
     value *initialize = object->get(c, this, Initialize, &success);

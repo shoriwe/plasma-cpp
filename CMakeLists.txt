@@ -22,6 +22,8 @@ set(SOURCE_FILES
         src/initialization.cpp
         src/caching.cpp
         src/object_creators.cpp
+        src/error_creators.cpp
+        src/integer.cpp
         )
 
 set(TEST_SOURCE_FILES
