@@ -1,9 +1,9 @@
 #include "vm/virtual_machine.h"
 
 plasma::vm::value *
-plasma::vm::virtual_machine::new_object(struct context &c, bool isBuiltIn, const std::string &typeName,
+plasma::vm::virtual_machine::new_object(context *c, bool isBuiltIn, const std::string &typeName,
                                         value *type) {
-    value *result = c.allocate_value();
+    value *result = c->allocate_value();
     result->typeId = Object;
 
     result->id = this->next_id();
@@ -24,7 +24,7 @@ plasma::vm::virtual_machine::new_object(struct context &c, bool isBuiltIn, const
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_hash_table(struct context &c, bool isBuiltIn) {
+plasma::vm::value *plasma::vm::virtual_machine::new_hash_table(context *c, bool isBuiltIn) {
     value *result = this->new_object(c, isBuiltIn, HashName, nullptr);
     result->typeId = HashTable;
     this->HashTableInitialize(isBuiltIn)(c, result);
@@ -32,7 +32,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_hash_table(struct context &c
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_array(struct context &c, bool isBuiltIn,
+plasma::vm::value *plasma::vm::virtual_machine::new_array(context *c, bool isBuiltIn,
                                                           const std::vector<plasma::vm::value *> &content) {
     value *result = this->new_object(c, isBuiltIn, ArrayName, nullptr);
     result->typeId = Array;
@@ -43,8 +43,8 @@ plasma::vm::value *plasma::vm::virtual_machine::new_array(struct context &c, boo
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::new_function(struct context &c, bool isBuiltIn,
-                                          const struct callable &callable_) {
+plasma::vm::virtual_machine::new_function(context *c, bool isBuiltIn,
+                                          const callable &callable_) {
 
     value *result = this->new_object(c, isBuiltIn, FunctionName, nullptr);
     result->typeId = Function;
@@ -54,7 +54,7 @@ plasma::vm::virtual_machine::new_function(struct context &c, bool isBuiltIn,
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::new_bytes(struct context &c, bool isBuiltIn, const std::vector<uint8_t> &bytes) {
+plasma::vm::virtual_machine::new_bytes(context *c, bool isBuiltIn, const std::vector<uint8_t> &bytes) {
     value *result = this->new_object(c, isBuiltIn, BytesName, nullptr);
     result->typeId = Bytes;
     result->bytes = bytes;
@@ -63,7 +63,7 @@ plasma::vm::virtual_machine::new_bytes(struct context &c, bool isBuiltIn, const 
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_iterator(struct context &c, bool isBuiltIn) {
+plasma::vm::value *plasma::vm::virtual_machine::new_iterator(context *c, bool isBuiltIn) {
     value *result = this->new_object(c, isBuiltIn, IteratorName, nullptr);
     result->typeId = Iterator;
     this->IteratorInitialize(isBuiltIn)(c, result);
@@ -71,7 +71,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_iterator(struct context &c, 
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_tuple(struct context &c, bool isBuiltIn,
+plasma::vm::value *plasma::vm::virtual_machine::new_tuple(context *c, bool isBuiltIn,
                                                           const std::vector<plasma::vm::value *> &content) {
     value *result = this->new_object(c, isBuiltIn, TupleName, nullptr);
     result->typeId = Tuple;
@@ -81,7 +81,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_tuple(struct context &c, boo
 
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_none(struct context &c, bool isBuiltIn) {
+plasma::vm::value *plasma::vm::virtual_machine::new_none(context *c, bool isBuiltIn) {
     value *result = this->new_object(c, isBuiltIn, NoneName, nullptr);
     result->typeId = NoneType;
     this->NoneInitialize(isBuiltIn)(c, result);
@@ -90,9 +90,9 @@ plasma::vm::value *plasma::vm::virtual_machine::new_none(struct context &c, bool
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::new_type(struct context &c, bool isBuiltIn, const std::string &name,
+plasma::vm::virtual_machine::new_type(context *c, bool isBuiltIn, const std::string &name,
                                       const std::vector<plasma::vm::value *> &inheritedTypes,
-                                      const struct constructor &constructor) {
+                                      const constructor &constructor) {
     value *result = this->new_object(c, isBuiltIn, TypeName, nullptr);
     result->typeId = Type;
     result->constructor_ = constructor;
@@ -102,7 +102,7 @@ plasma::vm::virtual_machine::new_type(struct context &c, bool isBuiltIn, const s
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_float(struct context &c, bool isBuiltIn, long double value_) {
+plasma::vm::value *plasma::vm::virtual_machine::new_float(context *c, bool isBuiltIn, long double value_) {
     value * result = this->new_object(c, isBuiltIn, FloatName, nullptr);
     result->typeId = Float;
     result->floating = value_;
@@ -111,14 +111,14 @@ plasma::vm::value *plasma::vm::virtual_machine::new_float(struct context &c, boo
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_module(struct context &c, bool isBuiltIn) {
+plasma::vm::value *plasma::vm::virtual_machine::new_module(context *c, bool isBuiltIn) {
     value *result = this->new_object(c, isBuiltIn, ModuleName, nullptr);
     result->typeId = Module;
     result->set(Self, result);
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_bool(struct context &c, bool isBuiltIn, bool value_) {
+plasma::vm::value *plasma::vm::virtual_machine::new_bool(context *c, bool isBuiltIn, bool value_) {
     value *result = this->new_object(c, isBuiltIn, BoolName, nullptr);
     result->typeId = Boolean;
     result->boolean = value_;
@@ -127,7 +127,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_bool(struct context &c, bool
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_integer(struct context &c, bool isBuiltIn, int64_t value_) {
+plasma::vm::value *plasma::vm::virtual_machine::new_integer(context *c, bool isBuiltIn, int64_t value_) {
     value *result = this->new_object(c, isBuiltIn, IntegerName, nullptr);
     result->typeId = Integer;
     result->integer = value_;
@@ -136,7 +136,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_integer(struct context &c, b
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_string(struct context &c, bool isBuiltIn, const std::string &value_) {
+plasma::vm::value *plasma::vm::virtual_machine::new_string(context *c, bool isBuiltIn, const std::string &value_) {
     value *result = this->new_object(c, isBuiltIn, StringName, nullptr);
     result->typeId = String;
     result->string = value_;

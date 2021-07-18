@@ -10,7 +10,7 @@ void plasma::vm::value::set(const std::string &s, value *v) const {
 }
 
 plasma::vm::value *
-plasma::vm::value::get(struct context &c, virtual_machine *vm, const std::string &symbol, bool *success) {
+plasma::vm::value::get(context *c, virtual_machine *vm, const std::string &symbol, bool *success) {
     value *result = this->symbols->get_self(symbol);
     if (result == nullptr) {
         // Try to get the value from the onDemand map
@@ -68,7 +68,7 @@ bool plasma::vm::value::implements(virtual_machine *vm, value *v) {
     return object_implements(vm, this, v);
 }
 
-plasma::vm::value *plasma::vm::value::add_key_value(struct context &c, virtual_machine *vm, value *key, value *v) {
+plasma::vm::value *plasma::vm::value::add_key_value(context *c, virtual_machine *vm, value *key, value *v) {
     int64_t hash_ = 0;
     value *hashingError = vm->calculate_hash(c, key, &hash_);
     if (hashingError != nullptr) {

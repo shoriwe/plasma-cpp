@@ -18,28 +18,28 @@ namespace plasma::vm {
     typedef std::function<struct value *()> on_demand_loader;
     // typedef struct value *(*on_demand_loader)();
 
-    typedef std::function<struct value *(struct context &, struct virtual_machine *)> object_loader;
-    // typedef struct value *(*object_loader)(const struct context &c, struct virtual_machine *);
+    typedef std::function<struct value *(struct context *, struct virtual_machine *)> object_loader;
+    // typedef struct value *(*object_loader)(struct context *c, struct virtual_machine *);
 
-    typedef std::function<struct value *(struct context &, value *)> constructor_callback;
-    // typedef struct value *(*constructor_callback)(const struct context &c, struct value *);
+    typedef std::function<struct value *(struct context *, value *)> constructor_callback;
+    // typedef struct value *(*constructor_callback)(struct context *c, struct value *);
 
     /*
      * - Returns the result when success
      * - Returns an error object when fails
      */
-    typedef std::function<struct value *(struct value *, std::vector<struct value *>, bool *)> function_callback;
+    typedef std::function<struct value *(struct value *, const std::vector<struct value *> &,
+                                         bool *)> function_callback;
     // typedef struct value *(*function_callback)(struct value *self, std::vector<struct value *> arguments,
     //                                            bool *success);
 
-    //
+    // Types
     const char TypeName[] = "Type";
+    const char CallableName[] = "Callable";
     const char ObjectName[] = "Object";
     const char FunctionName[] = "Function";
     const char StringName[] = "String";
     const char BoolName[] = "Bool";
-    const char TrueName[] = "True";
-    const char FalseName[] = "False";
     const char TupleName[] = "Tuple";
     const char IntegerName[] = "Integer";
     const char FloatName[] = "Float";
@@ -49,6 +49,9 @@ namespace plasma::vm {
     const char HashName[] = "Hash";
     const char IteratorName[] = "Iterator";
     const char ModuleName[] = "Module";
+    // Constants
+    const char True[] = "True";
+    const char False[] = "False";
     const char None[] = "None";
     // default symbols  names
     const char Self[] = "self";
@@ -193,7 +196,7 @@ namespace plasma::vm {
         // Attributes
         uint64_t seed;
         uint64_t currentId;
-        context &masterContext;
+        context *masterContext;
         std::basic_ifstream<unsigned char> stdin_file;
         std::basic_ifstream<unsigned char> stdout_file;
         std::basic_ifstream<unsigned char> stderr_file;
@@ -208,89 +211,89 @@ namespace plasma::vm {
 
         // Initialization
 
-        void load_builtin_object(const std::string &symbol, object_loader loader);
+        void load_builtin_object(const std::string &symbol, const object_loader &loader);
 
         void load_builtin_symbols(const std::unordered_map<std::string, object_loader> &symbols);
 
-        void initialize_context(const struct context &c);
+        void initialize_context(struct context *c);
 
         void initialize_builtin_symbols();
 
         uint64_t next_id();
 
         // Object creation tools
-        value *construct_subtype(const struct context &c, value *subType, value *self);
+        value *construct_subtype(struct context *c, value *subType, value *self);
 
-        value *construct_object(const struct context &c, struct value *type, bool *success);
+        value *construct_object(struct context *c, struct value *type, bool *success);
 
         // Function calls
         /*
          * - Returns the result on success
          * - Returns an error object when fails
          */
-        struct value *call_function(const struct context &c, struct value *function,
+        struct value *call_function(struct context *c, struct value *function,
                                     const std::vector<struct value *> &arguments, bool *success);
 
         // Object Creators
-        struct value *new_object(const struct context &c, bool isBuiltIn, const std::string &typeName, value *type);
+        struct value *new_object(struct context *c, bool isBuiltIn, const std::string &typeName, value *type);
 
-        struct value *new_hash_table(const struct context &c, bool isBuiltIn);
+        struct value *new_hash_table(struct context *c, bool isBuiltIn);
 
-        struct value *new_array(const struct context &c, bool isBuiltIn, const std::vector<struct value *> &content);
+        struct value *new_array(struct context *c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *new_function(const struct context &c, bool isBuiltIn, const struct callable &callable_);
+        struct value *new_function(struct context *c, bool isBuiltIn, const struct callable &callable_);
 
-        struct value *new_bytes(const struct context &c, bool isBuiltIn, const std::vector<uint8_t> &bytes);
+        struct value *new_bytes(struct context *c, bool isBuiltIn, const std::vector<uint8_t> &bytes);
 
-        struct value *new_iterator(const struct context &c, bool isBuiltIn);
+        struct value *new_iterator(struct context *c, bool isBuiltIn);
 
-        struct value *new_tuple(const struct context &c, bool isBuiltIn, const std::vector<struct value *> &content);
+        struct value *new_tuple(struct context *c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *new_none(const struct context &c, bool isBuiltIn);
+        struct value *new_none(struct context *c, bool isBuiltIn);
 
         struct value *
-        new_type(const struct context &c, bool isBuiltIn, const std::string &name,
+        new_type(struct context *c, bool isBuiltIn, const std::string &name,
                  const std::vector<struct value *> &inheritedTypes,
                  const struct constructor &constructor);
 
-        struct value *new_float(const struct context &c, bool isBuiltIn, long double value_);
+        struct value *new_float(struct context *c, bool isBuiltIn, long double value_);
 
-        struct value *new_module(const struct context &c, bool isBuiltIn);
+        struct value *new_module(struct context *c, bool isBuiltIn);
 
-        struct value *new_bool(const struct context &c, bool isBuiltIn, bool value_);
+        struct value *new_bool(struct context *c, bool isBuiltIn, bool value_);
 
-        struct value *new_integer(const struct context &c, bool isBuiltIn, int64_t value_);
+        struct value *new_integer(struct context *c, bool isBuiltIn, int64_t value_);
 
-        struct value *new_string(const struct context &c, bool isBuiltIn, const std::string &value_);
+        struct value *new_string(struct context *c, bool isBuiltIn, const std::string &value_);
 
         // Error Creators
-        struct value *NewFloatParsingError(const struct context &c);
+        struct value *NewFloatParsingError(struct context *c);
 
-        struct value *NewIntegerParsingError(const struct context &c);
+        struct value *NewIntegerParsingError(struct context *c);
 
-        struct value *NewKeyNotFoundError(const struct context &c, struct value *key);
+        struct value *NewKeyNotFoundError(struct context *c, struct value *key);
 
-        struct value *NewIndexOutOfRange(const struct context &c, size_t length, size_t requestedIndex);
+        struct value *NewIndexOutOfRange(struct context *c, size_t length, size_t requestedIndex);
 
-        struct value *NewUnhashableTypeError(const struct context &c, struct value *objectType);
+        struct value *NewUnhashableTypeError(struct context *c, struct value *objectType);
 
-        struct value *NewNotImplementedCallableError(const struct context &c, std::string symbol);
+        struct value *NewNotImplementedCallableError(struct context *c, std::string symbol);
 
-        struct value *NewInvalidNumberOfArgumentsError(const struct context &c, size_t expected, size_t received);
-
-        struct value *
-        NewObjectWithNameNotFoundError(const struct context &c, struct value *source, const std::string &symbol);
+        struct value *NewInvalidNumberOfArgumentsError(struct context *c, size_t expected, size_t received);
 
         struct value *
-        NewInvalidTypeError(const struct context &c, struct value *receivedType,
+        NewObjectWithNameNotFoundError(struct context *c, struct value *source, const std::string &symbol);
+
+        struct value *
+        NewInvalidTypeError(struct context *c, struct value *receivedType,
                             const std::vector<std::string> &expectedTypes);
 
-        struct value *NewObjectConstructionError(const struct context &c, value *type, const std::string &errorMessage);
+        struct value *NewObjectConstructionError(struct context *c, value *type, const std::string &errorMessage);
 
         struct value *
-        NewBuiltInSymbolProtectionError(const struct context &c, struct value *source, const std::string &symbol);
+        NewBuiltInSymbolProtectionError(struct context *c, struct value *source, const std::string &symbol);
 
-        struct value *NewObjectNotCallableError(const struct context &c, struct value *objectType);
+        struct value *NewObjectNotCallableError(struct context *c, struct value *objectType);
 
         // Basic object caching
         struct value *get_none();
@@ -299,8 +302,10 @@ namespace plasma::vm {
 
         struct value *get_true();
 
+        struct value  *get_boolean(bool condition);
+
         // Object Initializers
-        struct value *RuntimeErrorInitialize(const struct context &c, struct value *errorObject);
+        struct value *RuntimeErrorInitialize(struct context *c, struct value *errorObject);
 
         constructor_callback CallableInitialize(bool isBuiltIn);
 
@@ -329,58 +334,58 @@ namespace plasma::vm {
         constructor_callback NoneInitialize(bool isBuiltIn);
 
         // Force Operation
-        struct value *force_get_from_source(const struct context &c, const std::string &symbol, struct value *source);
+        struct value *force_get_from_source(struct context *c, const std::string &symbol, struct value *source);
 
         struct value *force_any_from_master(const std::string &symbol);
 
-        struct value *force_construction(const struct context &c, struct value *type_);
+        struct value *force_construction(struct context *c, struct value *type_);
 
         void
-        force_initialization(const plasma::vm::context &c, struct value *object,
+        force_initialization(plasma::vm::context *c, struct value *object,
                              const std::vector<struct value *> &initArgument);
 
         // Code execution
-        struct value *Execute(const struct context &c, bytecode *bc, bool *success);
+        struct value *Execute(struct context *c, bytecode *bc, bool *success);
 
         // Tools
-        value *equals(const struct context &c, struct value *leftHandSide, struct value *rightHandSide, bool *result);
+        value *equals(struct context *c, struct value *leftHandSide, struct value *rightHandSide, bool *result);
 
-        value *calculate_hash(const struct context &c, struct value *v, int64_t *hash_);
+        value *calculate_hash(struct context *c, struct value *v, int64_t *hash_);
 
         struct value *
-        repeat(const struct context &c, const std::vector<struct value *> &content, size_t times,
+        repeat(struct context *c, const std::vector<struct value *> &content, size_t times,
                std::vector<struct value *> *result);
 
-        struct value *quickGetBool(const struct context &c, struct value *v, bool *result);
+        struct value *quickGetBool(struct context *c, struct value *v, bool *result);
 
         // Operations callbacks
         //// Object creation
-        struct value *newTupleOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newTupleOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newArrayOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newArrayOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newHashOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newHashOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newStringOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newStringOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newBytesOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newBytesOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newIntegerOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newIntegerOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newFloatOP(const struct context &c, instruction instruct, struct value *);
+        struct value *newFloatOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *newFunctionOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *newFunctionOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
         struct value *
-        newIteratorOP(const struct context &c, bytecode *bc, instruction instruct, struct value *, struct value *);
+        newIteratorOP(struct context *c, bytecode *bc, instruction instruct, struct value *, struct value *);
 
-        struct value *newModuleOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *newModuleOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
-        struct value *newClassOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *newClassOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
-        struct value *newClassFunctionOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *newClassFunctionOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
-        struct value *newLambdaFunctionOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *newLambdaFunctionOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
         //// Object request
         struct value *newTrueBoolOP(struct value *);
@@ -390,64 +395,64 @@ namespace plasma::vm {
         struct value *getNoneOP(struct value *);
 
         //// Loop setup and operation
-        struct value *setupForLoopOP(const struct context &c, instruction instruct, struct value *);
+        struct value *setupForLoopOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *loadForLoopArguments(const struct context &c, struct value *);
+        struct value *loadForLoopArguments(struct context *c, struct value *);
 
-        //struct value *unpackForArguments(const struct context &c, loopSettings *LoopSettings, result Value, struct value *);
+        //struct value *unpackForArguments(struct context *c, loopSettings *LoopSettings, result Value, struct value *);
 
-        struct value *unpackForLoopOP(const struct context &c, bytecode *bc, struct value *);
+        struct value *unpackForLoopOP(struct context *c, bytecode *bc, struct value *);
 
         //// Try blocks
-        struct value *setupTryOP(const struct context &c, bytecode *bc, instruction instruct);
+        struct value *setupTryOP(struct context *c, bytecode *bc, instruction instruct);
 
-        struct value *popTryOP(const struct context &c);
+        struct value *popTryOP(struct context *c);
 
-        struct value *exceptOP(const struct context &c, bytecode *bc, instruction instruct);
+        struct value *exceptOP(struct context *c, bytecode *bc, instruction instruct);
 
-        struct value *tryJumpOP(const struct context &c, bytecode *bc);
+        struct value *tryJumpOP(struct context *c, bytecode *bc);
 
-        struct value *raiseOP(const struct context &c, struct value *);
+        struct value *raiseOP(struct context *c, struct value *);
 
         //// Conditions (if, unless and switch)
-        struct value *caseOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *caseOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
-        struct value *ifJumpOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *ifJumpOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
-        struct value *unlessJumpOP(const struct context &c, bytecode *bc, instruction instruct, struct value *);
+        struct value *unlessJumpOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
 
         //// Binary, unary and parentheses operations
-        struct value *newParenthesesOP(const struct context &c, struct value *);
+        struct value *newParenthesesOP(struct context *c, struct value *);
 
-        struct value *leftBinaryExpressionFuncCall(const struct context &c, std::string, struct value *);
+        struct value *leftBinaryExpressionFuncCall(struct context *c, std::string, struct value *);
 
         struct value *
-        rightBinaryExpressionFuncCall(const struct context &c, struct value *, struct value *, std::string, struct value *,
+        rightBinaryExpressionFuncCall(struct context *c, struct value *, struct value *, std::string, struct value *,
                                       struct value *);
 
         //// Function calls
-        struct value *loadFunctionArgumentsOP(const struct context &c, instruction instruct, struct value *);
+        struct value *loadFunctionArgumentsOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *noArgsGetAndCall(const struct context &c, std::string, struct value *);
+        struct value *noArgsGetAndCall(struct context *c, std::string, struct value *);
 
-        struct value *methodInvocationOP(const struct context &c, instruction instruct, struct value *, struct value *);
+        struct value *methodInvocationOP(struct context *c, instruction instruct, struct value *, struct value *);
 
         //// Symbol assign and request
-        struct value *selectNameFromObjectOP(const struct context &c, instruction instruct, struct value *, struct value *);
+        struct value *selectNameFromObjectOP(struct context *c, instruction instruct, struct value *, struct value *);
 
-        struct value *getIdentifierOP(const struct context &c, instruction instruct, struct value *, struct value *);
+        struct value *getIdentifierOP(struct context *c, instruction instruct, struct value *, struct value *);
 
-        struct value *assignIdentifierOP(const struct context &c, instruction instruct, struct value *);
+        struct value *assignIdentifierOP(struct context *c, instruction instruct, struct value *);
 
-        struct value *assignSelectorOP(const struct context &c, instruction instruct, struct value *);
+        struct value *assignSelectorOP(struct context *c, instruction instruct, struct value *);
 
         //// Index assign and request
-        struct value *assignIndexOP(const struct context &c, struct value *);
+        struct value *assignIndexOP(struct context *c, struct value *);
 
-        struct value *indexOP(const struct context &c, struct value *, struct value *);
+        struct value *indexOP(struct context *c, struct value *, struct value *);
 
         //// Function  return
-        struct value *returnOP(const struct context &c, instruction instruct, struct value *);
+        struct value *returnOP(struct context *c, instruction instruct, struct value *);
 
         //// other control flow related
         struct value *jumpOP(bytecode *bc, instruction instruct, struct value *);
@@ -484,7 +489,7 @@ namespace plasma::vm {
          * - Returns nullptr on success
          * - Returns an error object when fails
          */
-        value *construct(const struct context &c, virtual_machine *vm, value *self) const;
+        value *construct(struct context *c, virtual_machine *vm, value *self) const;
     };
 
     struct symbol_table {
@@ -549,7 +554,7 @@ namespace plasma::vm {
          * - Returns the requested object when success is true
          * - Returns an error object when the success is false
          */
-        value *get(const struct context &c, virtual_machine *vm, const std::string &symbol, bool *success);
+        value *get(struct context *c, virtual_machine *vm, const std::string &symbol, bool *success);
 
         value *get_type(virtual_machine *vm) const;
 
@@ -561,7 +566,7 @@ namespace plasma::vm {
          * - Returns nullptr on success
          * - Return an error object when fails
          */
-        value *add_key_value(const struct context &c, virtual_machine *vm, value *key, value *v);
+        value *add_key_value(struct context *c, virtual_machine *vm, value *key, value *v);
     };
 
     struct context {

@@ -1,7 +1,7 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::value *plasma::vm::virtual_machine::force_get_from_source(struct context &c, const std::string &symbol,
+plasma::vm::value *plasma::vm::virtual_machine::force_get_from_source(context *c, const std::string &symbol,
                                                                       plasma::vm::value *source) {
     bool success = false;
     plasma::vm::value *result = source->get(c, this, symbol, &success);
@@ -19,7 +19,7 @@ plasma::vm::value *plasma::vm::virtual_machine::force_any_from_master(const std:
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::force_construction(struct context &c, plasma::vm::value *type_) {
+plasma::vm::value *plasma::vm::virtual_machine::force_construction(context *c, plasma::vm::value *type_) {
     bool success;
     value *result = this->construct_object(c, type_, &success);
     if (!success) {
@@ -28,7 +28,7 @@ plasma::vm::value *plasma::vm::virtual_machine::force_construction(struct contex
     return result;
 }
 
-void plasma::vm::virtual_machine::force_initialization(const plasma::vm::context &c, plasma::vm::value *object,
+void plasma::vm::virtual_machine::force_initialization(plasma::vm::context *c, plasma::vm::value *object,
                                                        const std::vector<plasma::vm::value *> &initArgument) {
     bool success = false;
     value *initialize = object->get(c, this, Initialize, &success);

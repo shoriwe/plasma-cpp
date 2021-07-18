@@ -16,7 +16,7 @@ set(SOURCE_FILES
         src/method_call.cpp
         src/context.cpp
         src/force.cpp
-        src/hash.cpp
+        src/hashing.cpp
         src/construct.cpp
         src/tools.cpp
         src/initialization.cpp
@@ -24,6 +24,7 @@ set(SOURCE_FILES
         src/object_creators.cpp
         src/error_creators.cpp
         src/integer.cpp
+        src/float.cpp
         )
 
 set(TEST_SOURCE_FILES

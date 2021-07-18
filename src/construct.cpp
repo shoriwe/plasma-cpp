@@ -1,6 +1,6 @@
 #include "vm/virtual_machine.h"
 
-plasma::vm::value *plasma::vm::virtual_machine::construct_subtype(const plasma::vm::context &c, value *subType, value *self) {
+plasma::vm::value *plasma::vm::virtual_machine::construct_subtype(plasma::vm::context *c, value *subType, value *self) {
     value *subTypeConstructionError;
     for (auto subSubType : subType->subTypes) {
         self->symbols->parent = subSubType->symbols->parent;
@@ -15,7 +15,7 @@ plasma::vm::value *plasma::vm::virtual_machine::construct_subtype(const plasma::
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::construct_object(const plasma::vm::context &c, plasma::vm::value *type, bool *success) {
+plasma::vm::virtual_machine::construct_object(plasma::vm::context *c, plasma::vm::value *type, bool *success) {
     value *result = this->new_object(c, false, type->name, type);
     value *subTypeInitializationError;
     for (auto subType : type->subTypes) {
@@ -38,16 +38,16 @@ plasma::vm::virtual_machine::construct_object(const plasma::vm::context &c, plas
     return result;
 }
 
-plasma::vm::value *plasma::vm::constructor::construct(const plasma::vm::context &c, virtual_machine *vm, value *self) const {
+plasma::vm::value *plasma::vm::constructor::construct(context *c, virtual_machine *vm, value *self) const {
     if (this->isBuiltIn) {
         return this->callback(c, self);
     }
-    c.push_symbol_table(self->symbols);
-    c.push_value(self);
+    c->push_symbol_table(self->symbols);
+    c->push_value(self);
     bool success = false;
     bytecode bc = bytecode(this->code);
     value *result = vm->Execute(c, &bc, &success);
-    c.pop_symbol_table();
+    c->pop_symbol_table();
     if (success) {
         return nullptr;
     }

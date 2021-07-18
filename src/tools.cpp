@@ -3,7 +3,7 @@
 #include "vm/virtual_machine.h"
 
 plasma::vm::value *
-plasma::vm::virtual_machine::equals(struct context &c, struct value *leftHandSide, struct value *rightHandSide,
+plasma::vm::virtual_machine::equals(context *c, value *leftHandSide, value *rightHandSide,
                                     bool *result) {
     (*result) = false;
     bool success = false;
@@ -31,7 +31,7 @@ plasma::vm::virtual_machine::equals(struct context &c, struct value *leftHandSid
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::calculate_hash(const plasma::vm::context &c, plasma::vm::value *v, int64_t *hash_) {
+plasma::vm::virtual_machine::calculate_hash(plasma::vm::context *c, plasma::vm::value *v, int64_t *hash_) {
     bool success = false;
     value *hashFunction = v->get(c, this, Hash, &success);
     if (!success) {
@@ -50,7 +50,7 @@ plasma::vm::virtual_machine::calculate_hash(const plasma::vm::context &c, plasma
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::repeat(const plasma::vm::context &c, const std::vector<plasma::vm::value *> &content,
+plasma::vm::virtual_machine::repeat(plasma::vm::context *c, const std::vector<plasma::vm::value *> &content,
                                     size_t times,
                                     std::vector<plasma::vm::value *> *result) {
     if (times == 0) {
@@ -90,7 +90,7 @@ plasma::vm::virtual_machine::repeat(const plasma::vm::context &c, const std::vec
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::quickGetBool(const plasma::vm::context &c, plasma::vm::value *v, bool *result) {
+plasma::vm::virtual_machine::quickGetBool(plasma::vm::context *c, plasma::vm::value *v, bool *result) {
     (*result) = false;
     if (v->typeId == Boolean) {
         (*result) = v->boolean;

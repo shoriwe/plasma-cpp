@@ -1,18 +1,18 @@
 #include "vm/virtual_machine.h"
 
 
-void plasma::vm::virtual_machine::load_builtin_object(const std::string &symbol, object_loader loader) {
-    this->masterContext.peek_symbol_table()->set(symbol, loader(this->masterContext, this));
+void plasma::vm::virtual_machine::load_builtin_object(const std::string &symbol, const object_loader& loader) {
+    this->masterContext->peek_symbol_table()->set(symbol, loader(this->masterContext, this));
 }
 
 void plasma::vm::virtual_machine::load_builtin_symbols(const std::unordered_map<std::string, object_loader> &symbols) {
     for (const auto &keyValue : symbols) {
-        this->masterContext.peek_symbol_table()->set(keyValue.first, keyValue.second(this->masterContext, this));
+        this->masterContext->peek_symbol_table()->set(keyValue.first, keyValue.second(this->masterContext, this));
     }
 }
 
-void plasma::vm::virtual_machine::initialize_context(struct context &c) {
-    symbol_table *symbols = c.allocate_symbol_table(this->builtInSymbolTable);
+void plasma::vm::virtual_machine::initialize_context(context *c) {
+    symbol_table *symbols = c->allocate_symbol_table(this->builtInSymbolTable);
     value *builtIn = this->new_object(c, true, ObjectName, nullptr);
     builtIn->symbols = this->builtInSymbolTable;
     symbols->set(
