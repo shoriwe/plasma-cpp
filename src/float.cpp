@@ -9,9 +9,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
@@ -26,9 +25,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -55,9 +53,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -84,9 +81,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -113,9 +109,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -142,9 +137,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -171,9 +165,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -200,9 +193,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -230,9 +222,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -260,9 +251,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -290,9 +280,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -320,9 +309,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -351,9 +339,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -382,9 +369,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -411,9 +397,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -440,9 +425,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -469,9 +453,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -498,9 +481,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -527,9 +509,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -556,9 +537,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -585,9 +565,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -614,9 +593,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -643,9 +621,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -672,9 +649,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
@@ -701,9 +677,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
@@ -730,9 +705,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         if (self->hash == 0) {
@@ -752,9 +726,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
@@ -769,9 +742,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
@@ -786,9 +758,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
@@ -803,9 +774,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
@@ -820,9 +790,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                 [=]() -> value * {
                     return this->new_function(
                             c,
-                            isBuiltIn,
-                            new_builtin_class_callable(
-                                    object,
+                            isBuiltIn, object,
+                            new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;

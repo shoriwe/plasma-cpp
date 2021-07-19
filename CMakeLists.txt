@@ -25,6 +25,12 @@ set(SOURCE_FILES
         src/error_creators.cpp
         src/integer.cpp
         src/float.cpp
+        src/type.cpp
+        src/iterator.cpp
+        src/bool.cpp
+        src/none.cpp
+        src/runtime_error.cpp
+        src/callable.cpp
         )
 
 set(TEST_SOURCE_FILES

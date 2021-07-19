@@ -44,9 +44,10 @@ plasma::vm::value *plasma::vm::virtual_machine::new_array(context *c, bool isBui
 
 plasma::vm::value *
 plasma::vm::virtual_machine::new_function(context *c, bool isBuiltIn,
-                                          const callable &callable_) {
+                                          value *self, const callable &callable_) {
 
     value *result = this->new_object(c, isBuiltIn, FunctionName, nullptr);
+    result->self = self;
     result->typeId = Function;
     result->callable_ = callable_;
     result->set(Self, result);
@@ -103,7 +104,7 @@ plasma::vm::virtual_machine::new_type(context *c, bool isBuiltIn, const std::str
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_float(context *c, bool isBuiltIn, long double value_) {
-    value * result = this->new_object(c, isBuiltIn, FloatName, nullptr);
+    value *result = this->new_object(c, isBuiltIn, FloatName, nullptr);
     result->typeId = Float;
     result->floating = value_;
     this->FloatInitialize(isBuiltIn)(c, result);

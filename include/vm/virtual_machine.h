@@ -241,7 +241,7 @@ namespace plasma::vm {
 
         struct value *new_array(struct context *c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *new_function(struct context *c, bool isBuiltIn, const struct callable &callable_);
+        struct value *new_function(struct context *c, bool isBuiltIn, value *self, const struct callable &callable_);
 
         struct value *new_bytes(struct context *c, bool isBuiltIn, const std::vector<uint8_t> &bytes);
 
@@ -302,7 +302,7 @@ namespace plasma::vm {
 
         struct value *get_true();
 
-        struct value  *get_boolean(bool condition);
+        struct value *get_boolean(bool condition);
 
         // Object Initializers
         struct value *RuntimeErrorInitialize(struct context *c, struct value *errorObject);
@@ -474,10 +474,6 @@ namespace plasma::vm {
 
     callable new_plasma_callable(size_t number_of_arguments, instruction code[]);
 
-    callable new_builtin_class_callable(struct value *self, size_t number_of_arguments, function_callback);
-
-    callable new_plasma_class_callable(struct value *self, size_t number_of_arguments, instruction code[]);
-
 
     struct constructor {
         bool isBuiltIn;
@@ -516,7 +512,6 @@ namespace plasma::vm {
     struct value {
         // Garbage collector
         size_t pageIndex;
-        value *self = nullptr; // Used as root by functions defined in classes and interfaces
         bool marked = false;
         bool isSet = false; // Used to  distinguish between values initialized
         //
@@ -527,6 +522,8 @@ namespace plasma::vm {
         std::string name; // This is the name of the identifier that initially own this type
         // Function Related (used only when typeId is equal to Function)
         callable callable_;
+        value *self = nullptr; // Also used as root by functions defined in classes and interfaces
+        //
         bool isBuiltIn = false;
         int64_t id = 0;
         std::string typeName;
