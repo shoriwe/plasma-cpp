@@ -31,6 +31,12 @@ set(SOURCE_FILES
         src/none.cpp
         src/runtime_error.cpp
         src/callable.cpp
+        src/array.cpp
+        src/tuple.cpp
+        src/object.cpp
+        src/bytes.cpp
+        src/string.cpp
+        src/hash_table.cpp
         )
 
 set(TEST_SOURCE_FILES

@@ -112,6 +112,6 @@ int64_t plasma::vm::virtual_machine::hash_string(const std::string &string) {
     return MurmurHash64(&(*string.begin()), string.size(), this->seed);
 }
 
-int64_t plasma::vm::virtual_machine::hash_bytes(const std::vector<int8_t> &bytes) {
+int64_t plasma::vm::virtual_machine::hash_bytes(const std::vector<uint8_t> &bytes) {
     return MurmurHash64(&(*bytes.begin()), bytes.size(), this->seed);
 }

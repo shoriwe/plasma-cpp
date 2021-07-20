@@ -20,14 +20,14 @@ plasma::vm::virtual_machine::equals(context *c, value *leftHandSide, value *righ
         if (!success) {
             return resultValue;
         }
-        return this->quickGetBool(c, resultValue, result);
+        return this->quick_get_bool(c, resultValue, result);
     }
     success = false;
     resultValue = this->call_function(c, equalsFunction, std::vector<value *>{rightHandSide,}, &success);
     if (!success) {
         return resultValue;
     }
-    return this->quickGetBool(c, resultValue, result);
+    return this->quick_get_bool(c, resultValue, result);
 }
 
 plasma::vm::value *
@@ -50,9 +50,9 @@ plasma::vm::virtual_machine::calculate_hash(plasma::vm::context *c, plasma::vm::
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::repeat(plasma::vm::context *c, const std::vector<plasma::vm::value *> &content,
-                                    size_t times,
-                                    std::vector<plasma::vm::value *> *result) {
+plasma::vm::virtual_machine::content_repeat(struct context *c, const std::vector<plasma::vm::value *> &content,
+                                            size_t times,
+                                            std::vector<plasma::vm::value *> *result) {
     if (times == 0) {
         return nullptr;
     }
@@ -90,7 +90,7 @@ plasma::vm::virtual_machine::repeat(plasma::vm::context *c, const std::vector<pl
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::quickGetBool(plasma::vm::context *c, plasma::vm::value *v, bool *result) {
+plasma::vm::virtual_machine::quick_get_bool(struct context *c, plasma::vm::value *v, bool *result) {
     (*result) = false;
     if (v->typeId == Boolean) {
         (*result) = v->boolean;

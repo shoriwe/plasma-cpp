@@ -46,7 +46,7 @@ namespace plasma::vm {
     const char ArrayName[] = "Array";
     const char NoneName[] = "NoneType";
     const char BytesName[] = "Bytes";
-    const char HashName[] = "Hash";
+    const char HashTableName[] = "HashTable";
     const char IteratorName[] = "Iterator";
     const char ModuleName[] = "Module";
     // Constants
@@ -126,7 +126,6 @@ namespace plasma::vm {
     const char GetFloat[] = "GetFloat";
     const char GetContent[] = "GetContent";
     const char GetKeyValues[] = "GetKeyValues";
-    const char GetLength[] = "GetLength";
     const char SetBool[] = "SetBool";
     const char SetBytes[] = "SetBytes";
     const char SetString[] = "SetString";
@@ -134,7 +133,6 @@ namespace plasma::vm {
     const char SetFloat[] = "SetFloat";
     const char SetContent[] = "SetContent";
     const char SetKeyValues[] = "SetKeyValues";
-    const char SetLength[] = "SetLength";
     // Built-In errors names
     const char RuntimeError[] = "RuntimeError";
     const char InvalidTypeError[] = "InvalidTypeError";
@@ -202,13 +200,6 @@ namespace plasma::vm {
         std::basic_ifstream<unsigned char> stderr_file;
         struct symbol_table *builtInSymbolTable;
 
-        // Methods
-        int64_t hash_array(const std::vector<int64_t> &values);
-
-        int64_t hash_string(const std::string &string);
-
-        int64_t hash_bytes(const std::vector<int8_t> &bytes);
-
         // Initialization
 
         void load_builtin_object(const std::string &symbol, const object_loader &loader);
@@ -256,41 +247,41 @@ namespace plasma::vm {
                  const std::vector<struct value *> &inheritedTypes,
                  const struct constructor &constructor);
 
-        struct value *new_float(struct context *c, bool isBuiltIn, long double value_);
+        value *new_float(struct context *c, bool isBuiltIn, long double value_);
 
-        struct value *new_module(struct context *c, bool isBuiltIn);
+        value *new_module(struct context *c, bool isBuiltIn);
 
-        struct value *new_bool(struct context *c, bool isBuiltIn, bool value_);
+        value *new_bool(struct context *c, bool isBuiltIn, bool value_);
 
-        struct value *new_integer(struct context *c, bool isBuiltIn, int64_t value_);
+        value *new_integer(struct context *c, bool isBuiltIn, int64_t value_);
 
-        struct value *new_string(struct context *c, bool isBuiltIn, const std::string &value_);
+        value *new_string(struct context *c, bool isBuiltIn, const std::string &value_);
 
         // Error Creators
-        struct value *NewFloatParsingError(struct context *c);
+        value *NewFloatParsingError(struct context *c);
 
-        struct value *NewIntegerParsingError(struct context *c);
+        value *NewIntegerParsingError(struct context *c);
 
-        struct value *NewKeyNotFoundError(struct context *c, struct value *key);
+        value *NewKeyNotFoundError(struct context *c, struct value *key);
 
-        struct value *NewIndexOutOfRange(struct context *c, size_t length, size_t requestedIndex);
+        value *NewIndexOutOfRange(struct context *c, size_t length, size_t requestedIndex);
 
-        struct value *NewUnhashableTypeError(struct context *c, struct value *objectType);
+        value *NewUnhashableTypeError(struct context *c, struct value *objectType);
 
-        struct value *NewNotImplementedCallableError(struct context *c, std::string symbol);
+        value *NewNotImplementedCallableError(struct context *c, std::string symbol);
 
-        struct value *NewInvalidNumberOfArgumentsError(struct context *c, size_t expected, size_t received);
+        value *NewInvalidNumberOfArgumentsError(struct context *c, size_t expected, size_t received);
 
-        struct value *
+        value *
         NewObjectWithNameNotFoundError(struct context *c, struct value *source, const std::string &symbol);
 
-        struct value *
+        value *
         NewInvalidTypeError(struct context *c, struct value *receivedType,
                             const std::vector<std::string> &expectedTypes);
 
-        struct value *NewObjectConstructionError(struct context *c, value *type, const std::string &errorMessage);
+        value *NewObjectConstructionError(struct context *c, value *type, const std::string &errorMessage);
 
-        struct value *
+        value *
         NewBuiltInSymbolProtectionError(struct context *c, struct value *source, const std::string &symbol);
 
         struct value *NewObjectNotCallableError(struct context *c, struct value *objectType);
@@ -345,18 +336,105 @@ namespace plasma::vm {
                              const std::vector<struct value *> &initArgument);
 
         // Code execution
-        struct value *Execute(struct context *c, bytecode *bc, bool *success);
+        value *Execute(struct context *c, bytecode *bc, bool *success);
 
         // Tools
+        //// Content (Arrays and Tuples) related
+
+        value *content_index(value *index, const std::vector<value *> &content, bool *success);
+
+        value *content_assign(value *container, value *index, bool *success);
+
+        value *content_to_string(value *container, bool *success);
+
+        value *content_iterator(value *container);
+
+        value *content_equals(const std::vector<value *> &leftHandSide, const std::vector<value *> &rightHandSide,
+                              bool *result);
+
+        value *content_contains(const std::vector<value *> &content, value *object, bool *result);
+
+        value *
+        content_repeat(struct context *c, const std::vector<struct value *> &content, size_t times,
+                       std::vector<struct value *> *result);
+
+        //// Bytes
+
+        value *bytes_index(value *index, const std::vector<uint8_t> &bytes, bool *success);
+
+        value *bytes_to_string(value *bytesObject);
+
+        std::vector<value *> bytes_to_integer_content(const std::vector<uint8_t> &bytes);
+
+        value *bytes_iterator(value *bytesObject);
+
+        value *bytes_equals(const std::vector<uint8_t> &leftHandSide, const std::vector<uint8_t> &rightHandSide,
+                            bool *result);
+
+        value *bytes_contains(const std::vector<uint8_t> &bytes, value *subBytes, bool *result);
+
+        value *
+        bytes_repeat(struct context *c, const std::vector<uint8_t> &bytes, size_t times,
+                     std::vector<uint8_t> *result);
+
+        //// Strings
+
+        value *string_index(value *index, const std::string &string, bool *success);
+
+        std::vector<value *> string_to_integer_content(const std::string &string);
+
+        value *string_iterator(value *stringObject);
+
+        value *string_equals(const std::string &leftHandSide, const std::string &rightHandSide,
+                             bool *result);
+
+        value *string_contains(const std::string &string, value *subString, bool *result);
+
+        value *
+        string_repeat(struct context *c, const std::string &string, size_t times,
+                      std::string *result);
+
+        //// HashTable
+
+        value *hashtable_index(value *key, const std::unordered_map<int64_t, std::vector<struct key_value>> &content,
+                               bool *success);
+
+        value *hashtable_assign(value *hashtable, value *key, bool *success);
+
+        value *hashtable_iterator(value *hashtableObject);
+
+        value *hashtable_to_string(value *hashtableObject, bool *success);
+
+        std::vector<value *>
+        hashtable_to_content(const std::unordered_map<int64_t, std::vector<struct key_value>> &keyValues);
+
+        value *hashtable_equals(const std::unordered_map<int64_t, std::vector<struct key_value>> &leftHandSide,
+                                const std::unordered_map<int64_t, std::vector<struct key_value>> &rightHandSide,
+                                bool *result);
+
+        value *
+        hashtable_contains(const std::unordered_map<int64_t, std::vector<struct key_value>> &keyValues, value *object,
+                           bool *result);
+
+        value *
+        hashtable_copy(const std::unordered_map<int64_t, std::vector<struct key_value>> &keyValues, bool *success);
+
+        //// Hashing
+
+        int64_t hash_array(const std::vector<int64_t> &values);
+
+        int64_t hash_string(const std::string &string);
+
+        int64_t hash_bytes(const std::vector<uint8_t> &bytes);
+
+        //// Any
+        size_t calculate_index(int64_t index, size_t length, bool *fail);
+
         value *equals(struct context *c, struct value *leftHandSide, struct value *rightHandSide, bool *result);
 
         value *calculate_hash(struct context *c, struct value *v, int64_t *hash_);
 
-        struct value *
-        repeat(struct context *c, const std::vector<struct value *> &content, size_t times,
-               std::vector<struct value *> *result);
-
-        struct value *quickGetBool(struct context *c, struct value *v, bool *result);
+        value *quick_get_bool(struct context *c, struct value *v, bool *result);
 
         // Operations callbacks
         //// Object creation

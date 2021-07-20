@@ -25,7 +25,7 @@ plasma::vm::virtual_machine::new_object(context *c, bool isBuiltIn, const std::s
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_hash_table(context *c, bool isBuiltIn) {
-    value *result = this->new_object(c, isBuiltIn, HashName, nullptr);
+    value *result = this->new_object(c, isBuiltIn, HashTableName, nullptr);
     result->typeId = HashTable;
     this->HashTableInitialize(isBuiltIn)(c, result);
     result->set(Self, result);
@@ -95,6 +95,7 @@ plasma::vm::virtual_machine::new_type(context *c, bool isBuiltIn, const std::str
                                       const std::vector<plasma::vm::value *> &inheritedTypes,
                                       const constructor &constructor) {
     value *result = this->new_object(c, isBuiltIn, TypeName, nullptr);
+    result->subTypes = inheritedTypes;
     result->typeId = Type;
     result->constructor_ = constructor;
     result->name = name;
