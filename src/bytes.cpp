@@ -84,9 +84,11 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             );
                                         }
                                         std::vector<uint8_t> repeatedContent;
-                                        value *multiplicationError = this->bytes_repeat(c, self->bytes,
-                                                                                        std::abs(right->integer),
-                                                                                        &repeatedContent);
+                                        value *multiplicationError = plasma::vm::virtual_machine::bytes_repeat(
+                                                self,
+                                                std::abs(right->integer),
+                                                &repeatedContent
+                                        );
                                         if (multiplicationError != nullptr) {
                                             (*success) = false;
                                             return multiplicationError;
@@ -121,9 +123,11 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             );
                                         }
                                         std::vector<uint8_t> repeatedContent;
-                                        value *multiplicationError = this->bytes_repeat(c, self->bytes,
-                                                                                        std::abs(left->integer),
-                                                                                        &repeatedContent);
+                                        value *multiplicationError = plasma::vm::virtual_machine::bytes_repeat(
+                                                self,
+                                                std::abs(left->integer),
+                                                &repeatedContent
+                                        );
                                         if (multiplicationError != nullptr) {
                                             (*success) = false;
                                             return multiplicationError;
@@ -154,8 +158,11 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->bytes_equals(self->bytes, right->bytes,
-                                                                                    &comparison);
+                                        value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
+                                                self,
+                                                right,
+                                                &comparison
+                                        );
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -183,8 +190,11 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->bytes_equals(left->bytes, self->bytes,
-                                                                                    &comparison);
+                                        value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
+                                                left,
+                                                self,
+                                                &comparison
+                                        );
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -212,8 +222,11 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->bytes_equals(self->bytes, right->bytes,
-                                                                                    &comparison);
+                                        value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
+                                                self,
+                                                right,
+                                                &comparison
+                                        );
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -241,8 +254,11 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->bytes_equals(left->bytes, self->bytes,
-                                                                                    &comparison);
+                                        value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
+                                                left,
+                                                self,
+                                                &comparison
+                                        );
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -266,7 +282,12 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *element = arguments[0];
                                         bool contains = false;
-                                        value *containsError = this->bytes_contains(self->bytes, element, &contains);
+                                        value *containsError = this->bytes_contains(
+                                                c,
+                                                self,
+                                                element,
+                                                &contains
+                                        );
                                         if (containsError != nullptr) {
                                             (*success) = false;
                                             return containsError;
@@ -290,7 +311,12 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *source = arguments[0];
                                         bool contains = false;
-                                        value *containsError = this->bytes_contains(source->bytes, self, &contains);
+                                        value *containsError = this->bytes_contains(
+                                                c,
+                                                source,
+                                                self,
+                                                &contains
+                                        );
                                         if (containsError != nullptr) {
                                             (*success) = false;
                                             return containsError;
@@ -349,7 +375,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                             new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->bytes_index(arguments[0], self->bytes, success);
+                                        return this->bytes_index(c, self, arguments[0], success);
                                     }
                             )
                     );
@@ -366,7 +392,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->bytes_iterator(self);
+                                        return this->bytes_iterator(c, self);
                                     }
                             )
                     );
@@ -383,7 +409,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->bytes_to_string(self);
+                                        return this->bytes_to_string(c, self);
                                     }
                             )
                     );
@@ -416,7 +442,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->new_array(c, false, this->bytes_to_integer_content(self->bytes));
+                                        return this->new_array(c, false, this->bytes_to_integer_content(c, self));
                                     }
                             )
                     );
@@ -433,7 +459,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->new_tuple(c, false, this->bytes_to_integer_content(self->bytes));
+                                        return this->new_tuple(c, false, this->bytes_to_integer_content(c, self));
                                     }
                             )
                     );

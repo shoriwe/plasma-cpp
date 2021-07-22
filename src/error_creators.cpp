@@ -78,7 +78,7 @@ plasma::vm::virtual_machine::NewObjectWithNameNotFoundError(plasma::vm::context 
 
 plasma::vm::value *
 plasma::vm::virtual_machine::NewInvalidTypeError(plasma::vm::context *c, plasma::vm::value *receivedType,
-                                                 const std::vector<std::string>& expectedTypes) {
+                                                 const std::vector<std::string> &expectedTypes) {
     value *errorType = this->force_any_from_master(InvalidTypeError);
     value *result = this->force_construction(c, errorType);
     std::string expecting;

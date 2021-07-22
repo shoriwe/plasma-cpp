@@ -32,7 +32,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         bool result = false;
-                                        value *boolError = this->quick_get_bool(c, self, &result);
+                                        value *boolError = this->interpret_as_boolean(c, self, &result);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
@@ -56,13 +56,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *boolError;
                                         bool left;
-                                        boolError = this->quick_get_bool(c, self, &left);
+                                        boolError = this->interpret_as_boolean(c, self, &left);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
                                         }
                                         bool right;
-                                        boolError = this->quick_get_bool(c, arguments[0], &right);
+                                        boolError = this->interpret_as_boolean(c, arguments[0], &right);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
@@ -86,13 +86,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *boolError;
                                         bool left;
-                                        boolError = this->quick_get_bool(c, arguments[0], &left);
+                                        boolError = this->interpret_as_boolean(c, arguments[0], &left);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
                                         }
                                         bool right;
-                                        boolError = this->quick_get_bool(c, self, &right);
+                                        boolError = this->interpret_as_boolean(c, self, &right);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
@@ -116,13 +116,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *boolError;
                                         bool left;
-                                        boolError = this->quick_get_bool(c, self, &left);
+                                        boolError = this->interpret_as_boolean(c, self, &left);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
                                         }
                                         bool right;
-                                        boolError = this->quick_get_bool(c, arguments[0], &right);
+                                        boolError = this->interpret_as_boolean(c, arguments[0], &right);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
@@ -146,13 +146,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *boolError;
                                         bool left;
-                                        boolError = this->quick_get_bool(c, arguments[0], &left);
+                                        boolError = this->interpret_as_boolean(c, arguments[0], &left);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
                                         }
                                         bool right;
-                                        boolError = this->quick_get_bool(c, self, &right);
+                                        boolError = this->interpret_as_boolean(c, self, &right);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
@@ -176,13 +176,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *boolError;
                                         bool left;
-                                        boolError = this->quick_get_bool(c, self, &left);
+                                        boolError = this->interpret_as_boolean(c, self, &left);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
                                         }
                                         bool right;
-                                        boolError = this->quick_get_bool(c, arguments[0], &right);
+                                        boolError = this->interpret_as_boolean(c, arguments[0], &right);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
@@ -206,13 +206,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *boolError;
                                         bool left;
-                                        boolError = this->quick_get_bool(c, arguments[0], &left);
+                                        boolError = this->interpret_as_boolean(c, arguments[0], &left);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;
                                         }
                                         bool right;
-                                        boolError = this->quick_get_bool(c, self, &right);
+                                        boolError = this->interpret_as_boolean(c, self, &right);
                                         if (boolError != nullptr) {
                                             (*success) = false;
                                             return boolError;

@@ -156,8 +156,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->content_equals(self->content, right->content,
-                                                                                      &comparison);
+                                        value *comparisonError = this->content_equals(c, self, right, &comparison);
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -185,8 +184,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->content_equals(left->content, self->content,
-                                                                                      &comparison);
+                                        value *comparisonError = this->content_equals(c, left, self, &comparison);
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -214,8 +212,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->content_equals(self->content, right->content,
-                                                                                      &comparison);
+                                        value *comparisonError = this->content_equals(c, self, right, &comparison);
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -243,8 +240,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                             return this->get_false();
                                         }
                                         bool comparison = false;
-                                        value *comparisonError = this->content_equals(left->content, self->content,
-                                                                                      &comparison);
+                                        value *comparisonError = this->content_equals(c, left, self, &comparison);
                                         if (comparisonError != nullptr) {
                                             (*success) = false;
                                             return comparisonError;
@@ -268,7 +264,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *right = arguments[0];
                                         bool contains = false;
-                                        value *containsError = this->content_contains(self->content, right, &contains);
+                                        value *containsError = this->content_contains(c, self, right, &contains);
                                         if (containsError != nullptr) {
                                             (*success) = false;
                                             return containsError;
@@ -292,7 +288,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *left = arguments[0];
                                         bool contains = false;
-                                        value *containsError = this->content_contains(left->content, self, &contains);
+                                        value *containsError = this->content_contains(c, left, self, &contains);
                                         if (containsError != nullptr) {
                                             (*success) = false;
                                             return containsError;
@@ -354,7 +350,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                             new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->content_index(arguments[0], self->content, success);
+                                        return this->content_index(c, arguments[0], self, success);
                                     }
                             )
                     );
@@ -368,9 +364,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                             isBuiltIn,
                             object,
                             new_builtin_callable(
-                                    1,
+                                    2,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->content_assign(self, arguments[0], success);
+                                        return this->content_assign(c, self, arguments[0], arguments[1], success);
                                     }
                             )
                     );
@@ -387,7 +383,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->content_iterator(self);
+                                        return this->content_iterator(c, self);
                                     }
                             )
                     );
@@ -403,7 +399,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                             new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->content_to_string(self, success);
+                                        return this->content_to_string(c, self, success);
                                     }
                             )
                     );

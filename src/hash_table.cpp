@@ -18,8 +18,12 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return this->get_false();
                                         }
                                         bool result;
-                                        value *equalsError = this->hashtable_equals(self->keyValues, right->keyValues,
-                                                                                    &result);
+                                        value *equalsError = this->hashtable_equals(
+                                                c,
+                                                self,
+                                                right,
+                                                &result
+                                        );
                                         if (equalsError != nullptr) {
                                             (*success) = false;
                                             return equalsError;
@@ -47,8 +51,12 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return this->get_false();
                                         }
                                         bool result;
-                                        value *equalsError = this->hashtable_equals(left->keyValues, self->keyValues,
-                                                                                    &result);
+                                        value *equalsError = this->hashtable_equals(
+                                                c,
+                                                left,
+                                                self,
+                                                &result
+                                        );
                                         if (equalsError != nullptr) {
                                             (*success) = false;
                                             return equalsError;
@@ -76,8 +84,12 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return this->get_false();
                                         }
                                         bool result;
-                                        value *equalsError = this->hashtable_equals(self->keyValues, right->keyValues,
-                                                                                    &result);
+                                        value *equalsError = this->hashtable_equals(
+                                                c,
+                                                self,
+                                                right,
+                                                &result
+                                        );
                                         if (equalsError != nullptr) {
                                             (*success) = false;
                                             return equalsError;
@@ -105,7 +117,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return this->get_false();
                                         }
                                         bool result;
-                                        value *equalsError = this->hashtable_equals(left->keyValues, self->keyValues,
+                                        value *equalsError = this->hashtable_equals(c, left, self,
                                                                                     &result);
                                         if (equalsError != nullptr) {
                                             (*success) = false;
@@ -130,7 +142,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *element = arguments[0];
                                         bool contains = false;
-                                        value *containsError = this->hashtable_contains(self->keyValues, element,
+                                        value *containsError = this->hashtable_contains(c, self, element,
                                                                                         &contains);
                                         if (containsError != nullptr) {
                                             (*success) = false;
@@ -155,7 +167,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         value *source = arguments[0];
                                         bool contains = false;
-                                        value *containsError = this->hashtable_contains(source->keyValues, self,
+                                        value *containsError = this->hashtable_contains(c, source, self,
                                                                                         &contains);
                                         if (containsError != nullptr) {
                                             (*success) = false;
@@ -195,7 +207,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                             new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->hashtable_copy(self->keyValues, success);
+                                        return this->hashtable_copy(c, self, success);
                                     }
                             )
                     );
@@ -211,7 +223,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                             new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->hashtable_index(arguments[0], self->keyValues, success);
+                                        return this->hashtable_index(c, self, arguments[0], success);
                                     }
                             )
                     );
@@ -227,7 +239,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                             new_builtin_callable(
                                     1,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->hashtable_assign(self, arguments[0], success);
+                                        return this->hashtable_assign(c, self, arguments[0], arguments[1], success);
                                     }
                             )
                     );
@@ -244,7 +256,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->hashtable_iterator(self);
+                                        return this->hashtable_iterator(c, self);
                                     }
                             )
                     );
@@ -260,7 +272,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                             new_builtin_callable(
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->hashtable_to_string(self, success);
+                                        return this->hashtable_to_string(c, self, success);
                                     }
                             )
                     );
@@ -293,7 +305,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->new_array(c, false, hashtable_to_content(self->keyValues));
+                                        return this->new_array(c, false, hashtable_to_content(self));
                                     }
                             )
                     );
@@ -310,7 +322,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                     0,
                                     [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
-                                        return this->new_tuple(c, false, hashtable_to_content(self->keyValues));
+                                        return this->new_tuple(c, false, hashtable_to_content(self));
                                     }
                             )
                     );

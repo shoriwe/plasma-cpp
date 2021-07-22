@@ -11,7 +11,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TypeInitialize(boo
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *>& arguments, bool *success) -> value * {
+                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_string(c, false, "Type@" + self->name);
                                     }

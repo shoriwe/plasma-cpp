@@ -341,18 +341,17 @@ namespace plasma::vm {
         // Tools
         //// Content (Arrays and Tuples) related
 
-        value *content_index(value *index, const std::vector<value *> &content, bool *success);
+        value *content_index(context *c, value *index, value *source, bool *success);
 
-        value *content_assign(value *container, value *index, bool *success);
+        value *content_assign(context *c, value *container, value *index, value *object, bool *success);
 
-        value *content_to_string(value *container, bool *success);
+        value *content_to_string(context *c, value *container, bool *success);
 
-        value *content_iterator(value *container);
+        value *content_iterator(context *c, value *source);
 
-        value *content_equals(const std::vector<value *> &leftHandSide, const std::vector<value *> &rightHandSide,
-                              bool *result);
+        value *content_equals(context *c, value *leftHandSide, value *rightHandSide, bool *result);
 
-        value *content_contains(const std::vector<value *> &content, value *object, bool *result);
+        value *content_contains(context *c, value *container, value *object, bool *result);
 
         value *
         content_repeat(struct context *c, const std::vector<struct value *> &content, size_t times,
@@ -360,64 +359,51 @@ namespace plasma::vm {
 
         //// Bytes
 
-        value *bytes_index(value *index, const std::vector<uint8_t> &bytes, bool *success);
+        value *bytes_index(context *c, value *source, value *index, bool *success);
 
-        value *bytes_to_string(value *bytesObject);
+        value *bytes_to_string(context *c, value *bytesObject);
 
-        std::vector<value *> bytes_to_integer_content(const std::vector<uint8_t> &bytes);
+        std::vector<value *> bytes_to_integer_content(context *c, value *bytes);
 
-        value *bytes_iterator(value *bytesObject);
+        value *bytes_iterator(context *c, value *bytes);
 
-        value *bytes_equals(const std::vector<uint8_t> &leftHandSide, const std::vector<uint8_t> &rightHandSide,
-                            bool *result);
+        static value *bytes_equals(value *leftHandSide, value *rightHandSide, bool *result);
 
-        value *bytes_contains(const std::vector<uint8_t> &bytes, value *subBytes, bool *result);
+        value *bytes_contains(context *c, value *bytes, value *subBytes, bool *result);
 
-        value *
-        bytes_repeat(struct context *c, const std::vector<uint8_t> &bytes, size_t times,
-                     std::vector<uint8_t> *result);
+        static value *bytes_repeat(value *bytes, size_t times, std::vector<uint8_t> *result);
 
         //// Strings
 
-        value *string_index(value *index, const std::string &string, bool *success);
+        value *string_index(context *c, value *source, value *index, bool *success);
 
-        std::vector<value *> string_to_integer_content(const std::string &string);
+        std::vector<value *> string_to_integer_content(context *c, value *string);
 
-        value *string_iterator(value *stringObject);
+        value *string_iterator(context *c, value *string);
 
-        value *string_equals(const std::string &leftHandSide, const std::string &rightHandSide,
-                             bool *result);
+        static value *string_equals(value *leftHandSide, value *rightHandSide, bool *result);
 
-        value *string_contains(const std::string &string, value *subString, bool *result);
+        static value *string_contains(value *string, value *subString, bool *result);
 
-        value *
-        string_repeat(struct context *c, const std::string &string, size_t times,
-                      std::string *result);
+        static value *string_repeat(value *string, size_t times, std::string *result);
 
         //// HashTable
 
-        value *hashtable_index(value *key, const std::unordered_map<int64_t, std::vector<struct key_value>> &content,
-                               bool *success);
+        value *hashtable_index(context *c, value *source, value *key, bool *success);
 
-        value *hashtable_assign(value *hashtable, value *key, bool *success);
+        value *hashtable_assign(context *c, value *source, value *key, value *object, bool *success);
 
-        value *hashtable_iterator(value *hashtableObject);
+        value *hashtable_iterator(context *c, value *hashtable);
 
-        value *hashtable_to_string(value *hashtableObject, bool *success);
+        value *hashtable_to_string(context *c, value *hashtableObject, bool *success);
 
-        std::vector<value *>
-        hashtable_to_content(const std::unordered_map<int64_t, std::vector<struct key_value>> &keyValues);
+        static std::vector<value *> hashtable_to_content(value *hashTable);
 
-        value *hashtable_equals(const std::unordered_map<int64_t, std::vector<struct key_value>> &leftHandSide,
-                                const std::unordered_map<int64_t, std::vector<struct key_value>> &rightHandSide,
-                                bool *result);
+        value *hashtable_equals(context *c, value *leftHandSide, value *rightHandSide, bool *result);
 
-        value *
-        hashtable_contains(const std::unordered_map<int64_t, std::vector<struct key_value>> &keyValues, value *object,
-                           bool *result);
+        value *hashtable_contains(context *c, value *hashTable, value *object, bool *result);
 
-        value *
-        hashtable_copy(const std::unordered_map<int64_t, std::vector<struct key_value>> &keyValues, bool *success);
+        value *hashtable_copy(context *c, value *hashTable, bool *success);
 
         //// Hashing
 
@@ -428,112 +414,112 @@ namespace plasma::vm {
         int64_t hash_bytes(const std::vector<uint8_t> &bytes);
 
         //// Any
-        size_t calculate_index(int64_t index, size_t length, bool *fail);
+        static size_t calculate_index(int64_t index, size_t length, bool *fail);
 
         value *equals(struct context *c, struct value *leftHandSide, struct value *rightHandSide, bool *result);
 
         value *calculate_hash(struct context *c, struct value *v, int64_t *hash_);
 
-        value *quick_get_bool(struct context *c, struct value *v, bool *result);
+        value *interpret_as_boolean(struct context *c, struct value *v, bool *result);
 
         // Operations callbacks
         //// Object creation
-        struct value *newTupleOP(struct context *c, instruction instruct, struct value *);
+        // value *newTupleOP(context *c, instruction instruct, value *);
 
-        struct value *newArrayOP(struct context *c, instruction instruct, struct value *);
+        // value *newArrayOP(context *c, instruction instruct, value *);
 
-        struct value *newHashOP(struct context *c, instruction instruct, struct value *);
+        // value *newHashOP(context *c, instruction instruct, value *);
 
-        struct value *newStringOP(struct context *c, instruction instruct, struct value *);
+        // value *newStringOP(context *c, instruction instruct, value *);
 
-        struct value *newBytesOP(struct context *c, instruction instruct, struct value *);
+        // value *newBytesOP(context *c, instruction instruct, value *);
 
-        struct value *newIntegerOP(struct context *c, instruction instruct, struct value *);
+        // value *newIntegerOP(context *c, instruction instruct, value *);
 
-        struct value *newFloatOP(struct context *c, instruction instruct, struct value *);
+        // value *newFloatOP(context *c, instruction instruct, value *);
 
-        struct value *newFunctionOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *newFunctionOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        struct value *
-        newIteratorOP(struct context *c, bytecode *bc, instruction instruct, struct value *, struct value *);
+        // value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *, value *);
 
-        struct value *newModuleOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *newModuleOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        struct value *newClassOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *newClassOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        struct value *newClassFunctionOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *newClassFunctionOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        struct value *newLambdaFunctionOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        //// Object request
-        struct value *newTrueBoolOP(struct value *);
+        // //// Object request
+        // value *newTrueBoolOP(value *);
 
-        struct value *newFalseBoolOP(struct value *);
+        // value *newFalseBoolOP(value *);
 
-        struct value *getNoneOP(struct value *);
+        // value *getNoneOP(value *);
 
-        //// Loop setup and operation
-        struct value *setupForLoopOP(struct context *c, instruction instruct, struct value *);
+        // //// Loop setup and operation
+        // value *setupForLoopOP(context *c, instruction instruct, value *);
 
-        struct value *loadForLoopArguments(struct context *c, struct value *);
+        // value *loadForLoopArguments(context *c, value *);
 
-        //struct value *unpackForArguments(struct context *c, loopSettings *LoopSettings, result Value, struct value *);
+        // // FixMe:
+        // // value *unpackForArguments(context *c, loopSettings *LoopSettings, result Value, value *);
 
-        struct value *unpackForLoopOP(struct context *c, bytecode *bc, struct value *);
+        // value *unpackForLoopOP(context *c, bytecode *bc, value *);
 
-        //// Try blocks
-        struct value *setupTryOP(struct context *c, bytecode *bc, instruction instruct);
+        // //// Try blocks
+        // value *setupTryOP(context *c, bytecode *bc, instruction instruct);
 
-        struct value *popTryOP(struct context *c);
+        // value *popTryOP(context *c);
 
-        struct value *exceptOP(struct context *c, bytecode *bc, instruction instruct);
+        // value *exceptOP(context *c, bytecode *bc, instruction instruct);
 
-        struct value *tryJumpOP(struct context *c, bytecode *bc);
+        // value *tryJumpOP(context *c, bytecode *bc);
 
-        struct value *raiseOP(struct context *c, struct value *);
+        // value *raiseOP(context *c, value *);
 
-        //// Conditions (if, unless and switch)
-        struct value *caseOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // //// Conditions (if, unless and switch)
+        // value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        struct value *ifJumpOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *ifJumpOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        struct value *unlessJumpOP(struct context *c, bytecode *bc, instruction instruct, struct value *);
+        // value *unlessJumpOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        //// Binary, unary and parentheses operations
-        struct value *newParenthesesOP(struct context *c, struct value *);
+        // //// Binary, unary and parentheses operations
+        // value *newParenthesesOP(context *c, value *);
 
-        struct value *leftBinaryExpressionFuncCall(struct context *c, std::string, struct value *);
+        // value *leftBinaryExpressionFuncCall(context *c, std::string, value *);
 
-        struct value *
-        rightBinaryExpressionFuncCall(struct context *c, struct value *, struct value *, std::string, struct value *,
-                                      struct value *);
+        // value *
+        // rightBinaryExpressionFuncCall(context *c, value *, value *, std::string, value *,
+//                                       value *);
 
-        //// Function calls
-        struct value *loadFunctionArgumentsOP(struct context *c, instruction instruct, struct value *);
+        // //// Function calls
+        // value *loadFunctionArgumentsOP(context *c, instruction instruct, value *);
 
-        struct value *noArgsGetAndCall(struct context *c, std::string, struct value *);
+        // value *noArgsGetAndCall(context *c, std::string, value *);
 
-        struct value *methodInvocationOP(struct context *c, instruction instruct, struct value *, struct value *);
+        // value *methodInvocationOP(context *c, instruction instruct, value *, value *);
 
-        //// Symbol assign and request
-        struct value *selectNameFromObjectOP(struct context *c, instruction instruct, struct value *, struct value *);
+        // //// Symbol assign and request
+        // value *selectNameFromObjectOP(context *c, instruction instruct, value *, value *);
 
-        struct value *getIdentifierOP(struct context *c, instruction instruct, struct value *, struct value *);
+        // value *getIdentifierOP(context *c, instruction instruct, value *, value *);
 
-        struct value *assignIdentifierOP(struct context *c, instruction instruct, struct value *);
+        // value *assignIdentifierOP(context *c, instruction instruct, value *);
 
-        struct value *assignSelectorOP(struct context *c, instruction instruct, struct value *);
+        // value *assignSelectorOP(context *c, instruction instruct, value *);
 
-        //// Index assign and request
-        struct value *assignIndexOP(struct context *c, struct value *);
+        // //// Index assign and request
+        // value *assignIndexOP(context *c, value *);
 
-        struct value *indexOP(struct context *c, struct value *, struct value *);
+        // value *indexOP(context *c, value *, value *);
 
-        //// Function  return
-        struct value *returnOP(struct context *c, instruction instruct, struct value *);
+        // //// Function  return
+        // value *returnOP(context *c, instruction instruct, value *);
 
-        //// other control flow related
-        struct value *jumpOP(bytecode *bc, instruction instruct, struct value *);
+        // //// other control flow related
+        // value *jumpOP(bytecode *bc, instruction instruct, value *);
     };
 
     struct key_value {
@@ -601,6 +587,8 @@ namespace plasma::vm {
         // Function Related (used only when typeId is equal to Function)
         callable callable_;
         value *self = nullptr; // Also used as root by functions defined in classes and interfaces
+        // Iterator Related
+        value *source; // Also used as root by iterators
         //
         bool isBuiltIn = false;
         int64_t id = 0;

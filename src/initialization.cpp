@@ -1,7 +1,7 @@
 #include "vm/virtual_machine.h"
 
 
-void plasma::vm::virtual_machine::load_builtin_object(const std::string &symbol, const object_loader& loader) {
+void plasma::vm::virtual_machine::load_builtin_object(const std::string &symbol, const object_loader &loader) {
     this->masterContext->peek_symbol_table()->set(symbol, loader(this->masterContext, this));
 }
 
