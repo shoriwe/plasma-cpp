@@ -35,7 +35,7 @@ namespace plasma::reader {
 
     void string_reader_new(string_reader *s_reader, std::string string);
 
-    bool string_reader_new_from_file(string_reader *s_reader, std::ifstream file);
+    bool string_reader_new_from_file(string_reader *s_reader, const std::string &filePath);
 }
 
 #endif //PLASMA_READER_H

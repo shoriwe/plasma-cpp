@@ -15,6 +15,93 @@
 #include "memory.h"
 
 namespace plasma::vm {
+    // OP Codes
+    enum {
+        NewStringOP,
+        NewBytesOP,
+        NewIntegerOP,
+        NewFloatOP,
+        GetTrueOP,
+        GetFalseOP,
+        NewParenthesesOP,
+        NewLambdaFunctionOP,
+        GetNoneOP,
+
+        // Composite creation
+        NewTupleOP,
+        NewArrayOP,
+        NewHashOP,
+
+        // Unary Expressions
+        NegateBitsOP,
+        BoolNegateOP,
+        NegativeOP,
+
+        // Binary Expressions
+        AddOP,
+        SubOP,
+        MulOP,
+        DivOP,
+        FloorDivOP,
+        ModOP,
+        PowOP,
+        BitXorOP,
+        BitAndOP,
+        BitOrOP,
+        BitLeftOP,
+        BitRightOP,
+        AndOP,
+        OrOP,
+        XorOP,
+        EqualsOP,
+        NotEqualsOP,
+        GreaterThanOP,
+        LessThanOP,
+        GreaterThanOrEqualOP,
+        LessThanOrEqualOP,
+        ContainsOP,
+        // Other expressions
+        GetIdentifierOP,
+        IndexOP,
+        SelectNameFromObjectOP,
+        MethodInvocationOP,
+
+        // Assign Statement
+        AssignIdentifierOP,
+        AssignSelectorOP,
+        AssignIndexOP,
+        IfJumpOP,
+        LoadForReloadOP,
+        UnlessJumpOP,
+        SetupLoopOP,
+        PopLoopOP,
+        UnpackForLoopOP,
+        BreakOP,
+        RedoOP,
+        ContinueOP,
+
+        ReturnOP,
+
+        // Special Instructions
+        LoadFunctionArgumentsOP,
+        NewFunctionOP,
+        JumpOP,
+        PushOP,
+        PopOP,
+        NOP,
+        NewIteratorOP,
+
+        SetupTryOP,
+        PopTryOP,
+        ExceptOP,
+
+        NewModuleOP,
+        NewClassOP,
+        NewClassFunctionOP,
+
+        RaiseOP,
+        CaseOP,
+    };
     typedef std::function<struct value *()> on_demand_loader;
     // typedef struct value *(*on_demand_loader)();
 
@@ -336,7 +423,7 @@ namespace plasma::vm {
                              const std::vector<struct value *> &initArgument);
 
         // Code execution
-        value *Execute(struct context *c, bytecode *bc, bool *success);
+        value *execute(struct context *c, bytecode *bc, bool *success);
 
         // Tools
         //// Content (Arrays and Tuples) related
@@ -424,31 +511,31 @@ namespace plasma::vm {
 
         // Operations callbacks
         //// Object creation
-        // value *newTupleOP(context *c, instruction instruct, value *);
+        value *newTupleOP(context *c, instruction instruct, value **receiver);
 
-        // value *newArrayOP(context *c, instruction instruct, value *);
+        value *newArrayOP(context *c, instruction instruct, value **receiver);
 
-        // value *newHashOP(context *c, instruction instruct, value *);
+        value *newHashOP(context *c, instruction instruct, value **receiver);
 
-        // value *newStringOP(context *c, instruction instruct, value *);
+        value *newStringOP(context *c, const std::string &string, value **receiver);
 
-        // value *newBytesOP(context *c, instruction instruct, value *);
+        value *newBytesOP(context *c, const std::vector<uint8_t> &bytes, value **receiver);
 
-        // value *newIntegerOP(context *c, instruction instruct, value *);
+        value *newIntegerOP(context *c, int64_t integer, value **receiver);
 
-        // value *newFloatOP(context *c, instruction instruct, value *);
+        value *newFloatOP(context *c, long double floating, value **receiver);
 
-        // value *newFunctionOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *newFunctionOP(context *c, bytecode *bc, instruction instruct, value **receiver);
 
-        // value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *, value *);
+        value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *, value **receiver);
 
-        // value *newModuleOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *newModuleOP(context *c, bytecode *bc, instruction instruct, value **receiver);
 
-        // value *newClassOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *newClassOP(context *c, bytecode *bc, instruction instruct, value **receiver);
 
-        // value *newClassFunctionOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *newClassFunctionOP(context *c, bytecode *bc, instruction instruct, value **receiver);
 
-        // value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct, value **receiver);
 
         // //// Object request
         // value *newTrueBoolOP(value *);

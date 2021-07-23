@@ -3,7 +3,7 @@
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 #include "reader.h"
-#include "error.h"
+#include "plasma_error.h"
 #include "print.h"
 #include "test_parser.h"
 

@@ -3,6 +3,7 @@
 #include "print.h"
 #include "test_lexer.h"
 #include "test_parser.h"
+#include "test_vm.h"
 
 
 int main() {
@@ -13,6 +14,8 @@ int main() {
     test_lexer(&number_of_tests, &success);
     LOG("Parser");
     test_parser(&number_of_tests, &success);
+    LOG("VM");
+    test_vm(&number_of_tests, &success);
 
     LOG("Results");
     TEST_FINISH("Resume", number_of_tests, success);

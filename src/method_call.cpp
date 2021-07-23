@@ -36,7 +36,7 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
             c->push_value(arguments[i]);
         }
         bytecode bc = bytecode(callFunction->callable_.code);
-        result = this->Execute(c, &bc, success);
+        result = this->execute(c, &bc, success);
     }
     c->pop_symbol_table();
     return result;

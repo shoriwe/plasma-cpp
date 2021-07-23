@@ -1,5 +1,5 @@
-#ifndef PLASMA_ERROR_H
-#define PLASMA_ERROR_H
+#ifndef PLASMA_PLASMA_ERROR_H
+#define PLASMA_PLASMA_ERROR_H
 
 #include <string>
 #include <iostream>
@@ -39,4 +39,4 @@ namespace plasma::error {
 }
 
 
-#endif //PLASMA_ERROR_H
+#endif //PLASMA_PLASMA_ERROR_H

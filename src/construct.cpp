@@ -46,7 +46,7 @@ plasma::vm::value *plasma::vm::constructor::construct(context *c, virtual_machin
     c->push_value(self);
     bool success = false;
     bytecode bc = bytecode(this->code);
-    value *result = vm->Execute(c, &bc, &success);
+    value *result = vm->execute(c, &bc, &success);
     c->pop_symbol_table();
     if (success) {
         return nullptr;

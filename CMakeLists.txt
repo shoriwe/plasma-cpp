@@ -9,7 +9,7 @@ set(SOURCE_FILES
         src/parser.cpp
         src/lexer.cpp
         src/reader.cpp
-        src/error.cpp
+        src/plasma_error.cpp
         src/symbols.cpp
         src/value.cpp
         src/bytecode.cpp
@@ -18,7 +18,7 @@ set(SOURCE_FILES
         src/force.cpp
         src/hashing.cpp
         src/construct.cpp
-        src/tools.cpp
+        src/vm_tools.cpp
         src/initialization.cpp
         src/caching.cpp
         src/object_creators.cpp
@@ -37,12 +37,16 @@ set(SOURCE_FILES
         src/bytes.cpp
         src/string.cpp
         src/hash_table.cpp
+        src/execute.cpp
+        src/bytecode_compiler.cpp
+        src/tools.cpp
         )
 
 set(TEST_SOURCE_FILES
         test/src/test_lexer.cpp
         test/src/test_parser.cpp
         test/src/print.cpp
+        test/src/test_vm.cpp
         )
 
 add_executable(plasma

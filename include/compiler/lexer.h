@@ -5,7 +5,7 @@
 #include <regex>
 
 #include "reader.h"
-#include "error.h"
+#include "plasma_error.h"
 
 namespace plasma::lexer {
     const std::regex identifierCheck("^[a-zA-Z_]+[a-zA-Z0-9_]*$");

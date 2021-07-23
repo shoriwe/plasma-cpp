@@ -4,7 +4,7 @@
 #include <string>
 #include <any>
 
-#include "error.h"
+#include "plasma_error.h"
 #include "compiler/ast.h"
 #include "compiler/lexer.h"
 
