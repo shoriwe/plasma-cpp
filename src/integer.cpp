@@ -1118,6 +1118,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+
                                         (*success) = true;
                                         return this->new_string(c, false, std::to_string(self->integer));
                                     }

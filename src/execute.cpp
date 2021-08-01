@@ -69,7 +69,7 @@ plasma::vm::value *plasma::vm::virtual_machine::newIntegerOP(context *c, int64_t
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newFloatOP(context *c, long double floating) {
+plasma::vm::value *plasma::vm::virtual_machine::newFloatOP(context *c, double floating) {
     c->lastObject = this->new_float(c, false, floating);
     return nullptr;
 }
@@ -110,7 +110,7 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t instruction) {
-    std::cout << std::to_string(instruction) << std::endl;
+
     std::string leftHandSideFunction, rightHandSideFunction;
     switch (instruction) {
         case AddOP:
@@ -203,7 +203,7 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
             break;
         default:
             // Fixme
-            std::cout << "NO FUNCTION FOUND\n";
+
             break;
     }
     auto leftHandSide = c->pop_value();
@@ -272,7 +272,7 @@ plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, size_t numberOfArguments) {
-    std::cout << "CALLING METHOD\n";
+
     value *function = c->pop_value();
     std::vector<value *> arguments;
     arguments.reserve(numberOfArguments);
@@ -292,7 +292,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
     value *executionError = nullptr;
     while (bc->has_next()) {
         instruction instruct = bc->next();
-        std::cout << std::to_string(instruct.op_code) + " " << std::endl;
+
         switch (instruct.op_code) {
             case NewStringOP:
                 executionError = this->newStringOP(c, std::any_cast<std::string>(instruct.value));

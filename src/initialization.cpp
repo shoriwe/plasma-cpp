@@ -51,32 +51,36 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                     new_builtin_callable(
                             1,
                             [=](value *self, const std::vector<value *> &arguments, bool *success) {
-                                std::cout << arguments[0]->typeName << std::endl;
-                                bool found = false;
-                                value *resultToString = arguments[0]->get(c, this, ToString,
-                                                                          &found);
-                                if (!found) {
-                                    (*success) = false;
-                                    return this->NewObjectWithNameNotFoundError(c, arguments[0],
-                                                                                ToString);
+                                value *resultAsString;
+                                auto target = arguments[0];
+
+                                if (target->typeId == String) {
+                                    resultAsString = target;
+                                } else {
+                                    bool found = false;
+                                    value *resultToString = target->get(c, this, ToString, &found);
+                                    if (!found) {
+                                        (*success) = false;
+                                        return this->NewObjectWithNameNotFoundError(c, target, ToString);
+                                    }
+                                    bool callSuccess = false;
+
+                                    resultAsString = this->call_function(c, resultToString,
+                                                                         std::vector<value *>(), &callSuccess);
+
+                                    if (!callSuccess) {
+                                        (*success) = false;
+                                        return resultAsString;
+                                    }
+
+                                    if (resultAsString->typeId != String) {
+                                        (*success) = false;
+                                        return this->NewInvalidTypeError(c,
+                                                                         resultAsString->get_type(c, this),
+                                                                         std::vector<std::string>{StringName});
+                                    }
                                 }
-                                found = false;
-                                std::cout << "PRINTLN -1\n";
-                                value *resultAsString = this->call_function(c, resultToString,
-                                                                            std::vector<value *>(), &found);
-                                std::cout << "PRINTLN 0\n";
-                                if (!found) {
-                                    (*success) = false;
-                                    return resultAsString;
-                                }
-                                std::cout << "PRINTLN 1\n";
-                                if (resultAsString->typeId != String) {
-                                    (*success) = false;
-                                    return this->NewInvalidTypeError(c,
-                                                                     resultAsString->get_type(c, this),
-                                                                     std::vector<std::string>{StringName});
-                                }
-                                std::cout << resultAsString->string << std::endl;
+
                                 (*this->stdout_file) << resultAsString->string << std::endl;
                                 (*success) = true;
                                 return this->get_none(c);

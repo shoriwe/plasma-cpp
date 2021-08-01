@@ -423,6 +423,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+
                                         (*success) = true;
                                         return this->bytes_to_string(c, self);
                                     }

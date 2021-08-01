@@ -56,7 +56,7 @@ plasma::bytecode_compiler::compiler::compiler(plasma::parser::parser *p) {
 
 static bool compile_node(std::any node, std::vector<plasma::vm::instruction> *result,
                          plasma::error::error *compilationError) {
-    std::cout << "Type: " << node.type().name() << std::endl;
+
     if (plasma::ast::isExpression(&node)) {
         return compile_expression(node, false, result, compilationError);
     }
@@ -67,7 +67,7 @@ static bool compile_body(const std::vector<std::any> &body,
                          std::vector<plasma::vm::instruction> *result,
                          plasma::error::error *compilationError) {
     for (size_t index = 0; index < body.size(); index++) {
-        std::cout << "Type: " << body[index].type().name() << std::endl;
+
         if (!compile_node(body[index], result, compilationError)) {
             return false;
         }
@@ -188,16 +188,13 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
 static bool compile_tuple(const plasma::ast::TupleExpression &tupleExpression,
                           std::vector<plasma::vm::instruction> *result,
                           plasma::error::error *compilationError) {
-    for (size_t index = tupleExpression.Values.size() - 1; index > -1; index--) {
-        auto node = tupleExpression.Values[index];
-        if (!compile_expression(node, true, result, compilationError)) {
+    for (auto argument = tupleExpression.Values.rbegin();
+         argument != tupleExpression.Values.rend();
+         argument++) {
+
+        if (!compile_expression((*argument), true, result, compilationError)) {
             return false;
         }
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::PushOP
-                }
-        );
     }
     result->push_back(
             plasma::vm::instruction{
@@ -211,16 +208,13 @@ static bool compile_tuple(const plasma::ast::TupleExpression &tupleExpression,
 static bool compile_array(const plasma::ast::ArrayExpression &arrayExpression,
                           std::vector<plasma::vm::instruction> *result,
                           plasma::error::error *compilationError) {
-    for (size_t index = arrayExpression.Values.size() - 1; index > -1; index--) {
-        std::any node = arrayExpression.Values[index];
-        if (!compile_expression(node, true, result, compilationError)) {
+    for (auto argument = arrayExpression.Values.rbegin();
+         argument != arrayExpression.Values.rend();
+         argument++) {
+
+        if (!compile_expression((*argument), true, result, compilationError)) {
             return false;
         }
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::PushOP
-                }
-        );
     }
     result->push_back(
             plasma::vm::instruction{
@@ -440,7 +434,7 @@ static bool compile_method_invocation(
     for (auto argument = methodInvocationExpression.Arguments.rbegin();
          argument != methodInvocationExpression.Arguments.rend();
          argument++) {
-        std::cout << "Argument Type: " << (*argument).type().name() << std::endl;
+
         if (!compile_expression((*argument), true, result, compilationError)) {
             return false;
         }
@@ -618,7 +612,7 @@ static bool compile_expression(std::any node, bool push, std::vector<plasma::vm:
         success = compile_generator_expression(std::any_cast<plasma::ast::GeneratorExpression>(node), result,
                                                compilationError);
     }*/ else {
-        std::cout << "None math\n";
+
     }
     if (!success) {
         return false;

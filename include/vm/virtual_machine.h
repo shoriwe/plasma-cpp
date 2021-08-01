@@ -358,7 +358,7 @@ namespace plasma::vm {
         std::vector<value *> content;
         std::unordered_map<int64_t, std::vector<key_value>> keyValues;
         bool boolean = false;
-        long double floating = 0;
+        double floating = 0;
         int64_t integer = 0;
         // Symbols
         symbol_table *symbols;
@@ -482,7 +482,7 @@ namespace plasma::vm {
                  const std::vector<struct value *> &inheritedTypes,
                  const struct constructor &constructor);
 
-        value *new_float(context *c, bool isBuiltIn, long double value_);
+        value *new_float(context *c, bool isBuiltIn, double value_);
 
         value *new_module(context *c, bool isBuiltIn);
 
@@ -490,7 +490,7 @@ namespace plasma::vm {
 
         value *new_integer(context *c, bool isBuiltIn, int64_t value_);
 
-        value *new_string(context *c, bool isBuiltIn, const std::string& value_);
+        value *new_string(context *c, bool isBuiltIn, const std::string &value_);
 
         // Error Creators
         value *NewFloatParsingError(context *c);
@@ -676,7 +676,7 @@ namespace plasma::vm {
 
         value *newIntegerOP(context *c, int64_t integer);
 
-        value *newFloatOP(context *c, long double floating);
+        value *newFloatOP(context *c, double floating);
 
         value *newFunctionOP(context *c, bytecode *bc, instruction instruct);
 

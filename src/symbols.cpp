@@ -2,7 +2,7 @@
 
 
 void plasma::vm::symbol_table::set(const std::string &s, value *v) {
-    this->symbols.insert(std::pair<std::string, value *>(s, v));
+    this->symbols[s] = v;
 }
 
 plasma::vm::value *plasma::vm::symbol_table::get_self(const std::string &symbol) {

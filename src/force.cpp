@@ -16,7 +16,7 @@ plasma::vm::value *plasma::vm::virtual_machine::force_any_from_master(context *c
     if (result == nullptr) {
         return this->get_none(c);
     }
-    std::cout << "FOUND\n";
+
     return result;
 }
 

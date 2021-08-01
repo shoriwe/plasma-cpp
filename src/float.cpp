@@ -1,5 +1,7 @@
 #include <cmath>
-
+#include <string>
+#include <sstream>
+#include <iomanip>
 #include "vm/virtual_machine.h"
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bool isBuiltIn) {
@@ -387,7 +389,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                                     1,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
-                                        std::cout << "EQUALS\n";
+
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -809,8 +811,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+                                        std::stringstream stringBuilder;
+                                        stringBuilder << std::fixed << std::setprecision(20) << self->floating;
                                         (*success) = true;
-                                        return this->new_string(c, false, std::to_string(self->floating));
+                                        return this->new_string(c, false, stringBuilder.str());
                                     }
                             )
                     );

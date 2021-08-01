@@ -35,6 +35,9 @@ std::string plasma::general_tooling::replace_escaped(const std::string &string) 
     uint8_t hexChar;
     uint16_t unicodeChar;
     for (size_t index = 0; index < string.length(); index++) {
+        if (index == 0 || index == string.length() - 1) {
+            continue;
+        }
         char character = string[index];
         if (escaped) {
             switch (character) {

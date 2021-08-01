@@ -381,6 +381,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+
                                         return this->content_to_string(c, self, success);
                                     }
                             )

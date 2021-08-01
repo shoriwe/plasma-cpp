@@ -2,7 +2,7 @@
 
 
 void plasma::vm::value::set_on_demand_symbol(const std::string &s, const on_demand_loader &loader) {
-    this->onDemandSymbols.insert(std::pair<std::string, on_demand_loader>(s, loader));
+    this->onDemandSymbols[s] = loader;
 }
 
 void plasma::vm::value::set(const std::string &s, value *v) const {
@@ -13,9 +13,11 @@ plasma::vm::value *
 plasma::vm::value::get(context *c, virtual_machine *vm, const std::string &symbol, bool *success) {
     value *result = this->symbols->get_self(symbol);
     if (result == nullptr) {
+
         auto onDemandResult = this->onDemandSymbols.find(symbol);
         // Try to get the value from the onDemand map
         if (onDemandResult != this->onDemandSymbols.end()) {
+
             result = onDemandResult->second();
             this->set(symbol, result);
             (*success) = true;

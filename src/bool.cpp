@@ -2,6 +2,7 @@
 
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(bool isBuiltIn) {
+
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Equals,
@@ -183,7 +184,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
-                                        std::cout << "BOOL PRINT\n";
+
                                         (*success) = true;
                                         if (self->boolean) {
                                             return this->new_string(c, false, True);

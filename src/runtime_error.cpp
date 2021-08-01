@@ -41,6 +41,7 @@ plasma::vm::value *plasma::vm::virtual_machine::RuntimeErrorInitialize(context *
                                 0,
                                 [this, c](value *self, const std::vector<value *> &arguments,
                                           bool *success) -> value * {
+
                                     (*success) = true;
                                     return this->new_string(
                                             c,
