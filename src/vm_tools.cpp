@@ -27,7 +27,7 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
             (*success) = false;
             return this->NewInvalidTypeError(
                     c,
-                    start->get_type(this),
+                    start->get_type(c, this),
                     std::vector<std::string>{IntegerName}
             );
         }
@@ -35,7 +35,7 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
             (*success) = false;
             return this->NewInvalidTypeError(
                     c,
-                    end->get_type(this),
+                    end->get_type(c, this),
                     std::vector<std::string>{IntegerName}
             );
         }
@@ -68,7 +68,7 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
     (*success) = false;
     return this->NewInvalidTypeError(
             c,
-            index->get_type(this),
+            index->get_type(c, this),
             std::vector<std::string>{IntegerName, TupleName}
     );
 }
@@ -77,7 +77,7 @@ plasma::vm::value *
 plasma::vm::virtual_machine::content_assign(context *c, value *container, value *index, value *object, bool *success) {
     if (index->typeId != Integer) {
         (*success) = false;
-        return this->NewInvalidTypeError(c, index->get_type(this), std::vector<std::string>{
+        return this->NewInvalidTypeError(c, index->get_type(c, this), std::vector<std::string>{
                                                  IntegerName
                                          }
         );
@@ -90,7 +90,7 @@ plasma::vm::virtual_machine::content_assign(context *c, value *container, value 
     }
     container->content[realIndex] = object;
     (*success) = true;
-    return this->get_none();
+    return this->get_none(c);
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::content_to_string(context *c, value *container, bool *success) {
@@ -113,7 +113,8 @@ plasma::vm::value *plasma::vm::virtual_machine::content_to_string(context *c, va
         }
         if (objectAsString->typeId != String) {
             (*success) = false;
-            return this->NewInvalidTypeError(c, objectAsString->get_type(this), std::vector<std::string>{StringName});
+            return this->NewInvalidTypeError(c, objectAsString->get_type(c, this),
+                                             std::vector<std::string>{StringName});
         }
         if (first) {
             first = false;
@@ -144,7 +145,7 @@ plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, val
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
                                       (*success) = true;
-                                      return this->get_boolean(self->integer < iterator->source->content.size());
+                                      return this->get_boolean(c, self->integer < iterator->source->content.size());
                                   }
                           )
                   )
@@ -278,7 +279,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
             (*success) = false;
             return this->NewInvalidTypeError(
                     c,
-                    start->get_type(this),
+                    start->get_type(c, this),
                     std::vector<std::string>{IntegerName}
             );
         }
@@ -286,7 +287,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
             (*success) = false;
             return this->NewInvalidTypeError(
                     c,
-                    end->get_type(this),
+                    end->get_type(c, this),
                     std::vector<std::string>{IntegerName}
             );
         }
@@ -312,7 +313,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
     (*success) = false;
     return this->NewInvalidTypeError(
             c,
-            index->get_type(this),
+            index->get_type(c, this),
             std::vector<std::string>{IntegerName, TupleName}
     );
 }
@@ -350,7 +351,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
                                       (*success) = true;
-                                      return this->get_boolean(self->integer < iterator->source->bytes.size());
+                                      return this->get_boolean(c, self->integer < iterator->source->bytes.size());
                                   }
                           )
                   )
@@ -391,7 +392,7 @@ plasma::vm::virtual_machine::bytes_equals(value *leftHandSide, value *rightHandS
 plasma::vm::value *
 plasma::vm::virtual_machine::bytes_contains(context *c, value *bytes, value *subBytes, bool *result) {
     if (subBytes->typeId != Bytes) {
-        return this->NewInvalidTypeError(c, subBytes->get_type(this), std::vector<std::string>{Bytes});
+        return this->NewInvalidTypeError(c, subBytes->get_type(c, this), std::vector<std::string>{Bytes});
     }
     if (subBytes->bytes.size() == 1) {
         (*result) = std::find(bytes->bytes.begin(), bytes->bytes.end(), subBytes->bytes[0]) != bytes->bytes.end();
@@ -442,7 +443,7 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
             (*success) = false;
             return this->NewInvalidTypeError(
                     c,
-                    start->get_type(this),
+                    start->get_type(c, this),
                     std::vector<std::string>{IntegerName}
             );
         }
@@ -450,7 +451,7 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
             (*success) = false;
             return this->NewInvalidTypeError(
                     c,
-                    end->get_type(this),
+                    end->get_type(c, this),
                     std::vector<std::string>{IntegerName}
             );
         }
@@ -476,7 +477,7 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
     (*success) = false;
     return this->NewInvalidTypeError(
             c,
-            index->get_type(this),
+            index->get_type(c, this),
             std::vector<std::string>{IntegerName, TupleName}
     );
 }
@@ -505,7 +506,7 @@ plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, valu
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
                                       (*success) = true;
-                                      return this->get_boolean(self->integer < iterator->source->string.size());
+                                      return this->get_boolean(c, self->integer < iterator->source->string.size());
                                   }
                           )
                   )
@@ -606,7 +607,7 @@ plasma::vm::virtual_machine::hashtable_assign(context *c, value *source, value *
                 }
         };
         (*success) = true;
-        return this->get_none();
+        return this->get_none(c);
     }
     bool comparison;
     value *comparisonError;
@@ -620,7 +621,7 @@ plasma::vm::virtual_machine::hashtable_assign(context *c, value *source, value *
         if (comparison) {
             source->keyValues[hashKey][index].value = object;
             (*success) = true;
-            return this->get_none();
+            return this->get_none(c);
         }
     }
     source->keyValues[hashKey].push_back(
@@ -630,7 +631,7 @@ plasma::vm::virtual_machine::hashtable_assign(context *c, value *source, value *
             }
     );
     (*success) = true;
-    return this->get_none();
+    return this->get_none(c);
 }
 
 
@@ -654,7 +655,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, v
                             [=](value *self, const std::vector<value *> &arguments,
                                 bool *success) -> value * {
                                 (*success) = true;
-                                return this->get_boolean(self->integer < content.size());
+                                return this->get_boolean(c, self->integer < content.size());
                             }
                     )
             )
@@ -703,7 +704,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_to_string(context *c, 
             }
             if (objectAsString->typeId != String) {
                 (*success) = false;
-                return this->NewInvalidTypeError(c, objectAsString->get_type(this),
+                return this->NewInvalidTypeError(c, objectAsString->get_type(c, this),
                                                  std::vector<std::string>{StringName}
                 );
             }
@@ -718,7 +719,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_to_string(context *c, 
             }
             if (objectAsString->typeId != String) {
                 (*success) = false;
-                return this->NewInvalidTypeError(c, objectAsString->get_type(this),
+                return this->NewInvalidTypeError(c, objectAsString->get_type(c, this),
                                                  std::vector<std::string>{StringName}
                 );
             }
@@ -868,7 +869,7 @@ plasma::vm::virtual_machine::calculate_hash(plasma::vm::context *c, plasma::vm::
         return hashValue;
     }
     if (hashValue->typeId != Integer) {
-        return this->NewInvalidTypeError(c, hashValue->get_type(this), std::vector<std::string>{IntegerName});
+        return this->NewInvalidTypeError(c, hashValue->get_type(c, this), std::vector<std::string>{IntegerName});
     }
     (*hash_) = hashValue->integer;
     return nullptr;
@@ -892,7 +893,7 @@ plasma::vm::virtual_machine::interpret_as_boolean(context *c, plasma::vm::value 
         return toBoolResult;
     }
     if (toBoolResult->typeId != Boolean) {
-        return this->NewInvalidTypeError(c, toBoolResult->get_type(this), std::vector<std::string>{BoolName,});
+        return this->NewInvalidTypeError(c, toBoolResult->get_type(c, this), std::vector<std::string>{BoolName,});
     }
     (*result) = toBoolResult->boolean;
     return nullptr;

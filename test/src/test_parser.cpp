@@ -157,6 +157,31 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("do\n\tprint(\"Hello\")\nwhile a > b");
     tests.emplace_back(
             "def fib(n)\n\tif n == 0\n\t\treturn 0\n\tend\n\tif n == 1\n\t\treturn 1\n\tend\n\treturn fib(n - 1) + fib(n - 2)\nend\nprintln(fib(35))");
+    tests.emplace_back(
+            "println((1 + 2 / 3) == 1.6666666666666665)\n"
+            "println(25 ** (1 / 2) == 5)\n"
+            "println(\"Hello \" * 5 == \"Hello Hello Hello Hello Hello \")\n"
+            "println((1, 2, 4 + 5 / 6 ** 2, 10, \"hello * 5 \" * 0) == (1, 2, 4 + 5 / 6 ** 2, 10, \"\"))\n"
+            "println(1 and (1, 2, 3, 4))\n"
+            "println(1 or (1, 2, 3, 4))\n"
+            "println(1 xor (1, 2, 3, 4) == False)\n"
+            "println(1 in (1, 2, 3, 4))\n"
+            "println(1 // 2 == 0)\n"
+            "println((1, 2, 3, \"Hello\") * 2 == (1, 2, 3, \"Hello\", 1, 2, 3, \"Hello\"))\n"
+            "println(1 in [1, 2, 3, 4, 5])\n"
+            "println(1 in (1, 2, 3, 4, 5))\n"
+            "println(1 in {1: 2, 2: 3, 3: 4, 4: 5, 5: 6})\n"
+            "println(((1 + 2) / 3) == 1)\n"
+            "class A\n"
+            "\tdef Equals(other)\n"
+            "\t\treturn self.Class() == other.Class()\n"
+            "\tend\n"
+            "end\n"
+            "println((A(), A(), A(), A()) * 2 == (A(), A(), A(), A(), A(), A(), A(), A()))\n"
+            "println(1 / 2 == 0.5)\n"
+            "println(1 / 2 ** 2 + 5 * 1 - 3 == 2.25)\n"
+            "println(1 / 2 == 0.5)"
+    );
     return tests;
 }
 

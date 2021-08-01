@@ -138,9 +138,10 @@ plasma::vm::value *plasma::vm::virtual_machine::new_integer(context *c, bool isB
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_string(context *c, bool isBuiltIn, const std::string &value_) {
+plasma::vm::value *plasma::vm::virtual_machine::new_string(context *c, bool isBuiltIn, const std::string& value_) {
     value *result = this->new_object(c, isBuiltIn, StringName, nullptr);
     result->typeId = String;
+    std::cout << "Creating String: "<< value_ << std::endl;
     result->string = value_;
     this->StringInitialize(isBuiltIn)(c, result);
     result->set(Self, result);

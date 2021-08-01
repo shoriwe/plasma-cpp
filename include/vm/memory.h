@@ -1,101 +1,114 @@
 #ifndef PLASMA_MEMORY_H
 #define PLASMA_MEMORY_H
 
-// #include <vector>
+#include <iostream>
 #include <stack>
 #include <unordered_map>
 
-namespace plasma::memory {
+namespace memory {
+
     template<typename T>
-    struct memory {
-        struct page {
-            size_t allocatedElements = 0;
-            size_t length = 0;
-            T *content = nullptr;
+    struct page {
+        size_t allocatedElements = 0;
+        size_t length = 0;
+        T *content = nullptr;
 
-            explicit page(size_t len) {
-                this->length = len;
-                this->content = new T[len];
-            }
+        explicit page(size_t len) {
+            this->length = len;
+            this->content = new T[len];
+        }
 
-            page() = default;
+        page() = default;
 
-            ~page() {
+        ~page() {
+            if (this->content != nullptr) {
                 delete this->content;
             }
-        };
+        }
+    };
 
-        struct available_chunk {
-            size_t pageIndex;
-            T *chunk;
-        };
+    template<typename T>
+    struct chunk {
+        size_t page_index;
+        T *object;
+    };
 
-        size_t nextIndex = 0;
-        std::unordered_map<size_t, page> pages;
-        std::stack<available_chunk> availableChunks;
+    template<typename T>
+    struct memory {
+        size_t currentIndex = 0;
+        std::unordered_map<size_t, page<T> *> pages;
+        std::stack<chunk<T>> availableChunks;
 
         memory() {
             this->new_page(250);
         }
 
         ~memory() {
-            pages.clear();
+            for (const auto &keyValue : this->pages) {
+                delete keyValue.second;
+            }
+            this->pages.clear();
+        }
+
+        void clear() {
+            for (const auto &keyValue : this->pages) {
+                delete keyValue.second;
+            }
+            this->pages.clear();
         }
 
         size_t next_index() {
-            auto result = this->nextIndex;
-            this->nextIndex++;
-            return result;
+            return this->currentIndex++;
         }
 
         size_t max_page_length() {
             size_t result = 0;
-            for (const auto &keyValue : this->pages) {
-                if (keyValue.first > result) {
-                    result = keyValue.first;
+            for (const auto &keyValue: this->pages) {
+                if (keyValue.second->length > result) {
+                    result = keyValue.second->length;
                 }
             }
             return result;
         }
 
         void new_page(size_t length) {
-            page newPage(length);
             size_t pageIndex = this->next_index();
-            for (size_t index = 0; index < length; index++) {
+            this->pages[pageIndex] = new page<T>(length);
+            for (size_t memoryIndex = 0; memoryIndex < length; memoryIndex++) {
                 this->availableChunks.push(
-                        available_chunk{
-                                .pageIndex = pageIndex,
-                                .chunk = newPage.content + index
+                        chunk{
+                                .page_index=pageIndex,
+                                .object=this->pages[pageIndex]->content + memoryIndex,
                         }
                 );
             }
-            this->pages[pageIndex] = newPage;
         }
 
         void remove_page(size_t pageIndex) {
-            this->pages.erase(this->pages.find(pageIndex));
+            this->pages.erase(this->pages.begin() + pageIndex);
         }
 
         [[nodiscard]] bool empty() const {
             return this->availableChunks.empty();
         }
 
-        available_chunk allocate() {
-            available_chunk result = this->availableChunks.top();
+        chunk<T> allocate() {
+            chunk result = this->availableChunks.top();
             this->availableChunks.pop();
-            this->pages[result.pageIndex].allocatedElements++;
+            this->pages[result.page_index]->allocatedElements++;
             return result;
         }
 
-        void deallocate(size_t pageIndex, T *chunk) {
-            this->pages[pageIndex].allocatedElements--;
+        void deallocate(size_t pageIndex, T *o) {
+            this->pages[pageIndex]->allocatedElements--;
             this->availableChunks.push(
-                    available_chunk{
-                            .pageIndex = pageIndex,
-                            .chunk = chunk
+                    chunk<T>{
+                            .page_index = pageIndex,
+                            .object = o
                     }
             );
         }
     };
 }
+
 #endif //PLASMA_MEMORY_H

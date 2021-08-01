@@ -1748,7 +1748,8 @@ bool plasma::parser::parser::parseOperand(std::any *result, error::error *result
             break;
     }
     // FixMe: Why is this a step behind?
-    std::cout << this->currentToken.string << std::endl;
+    std::cout << "Token: " << this->currentToken.string << " Kind: " << std::to_string(this->currentToken.kind)
+              << " Direct Value: " << std::to_string(this->currentToken.directValue) << std::endl;
     (*result_error) = error::error(error::LexingError, "Unknown Token", this->currentLine());
     return false;
 }

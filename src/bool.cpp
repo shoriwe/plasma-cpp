@@ -2,23 +2,24 @@
 
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(bool isBuiltIn) {
-    return [=](context *c, value *object) -> value * {
+    return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Equals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         (*success) = true;
                                         if (right->typeId != Boolean) {
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
-                                        return this->get_boolean(self->boolean == right->boolean);
+                                        return this->get_boolean(c, self->boolean == right->boolean);
                                     }
                             )
                     );
@@ -26,20 +27,21 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 RightEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         (*success) = true;
                                         if (left->typeId != Boolean) {
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
-                                        return this->get_boolean(left->boolean == self->boolean);
+                                        return this->get_boolean(c, left->boolean == self->boolean);
                                     }
                             )
                     );
@@ -47,20 +49,21 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 NotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         (*success) = true;
                                         if (right->typeId != Boolean) {
-                                            return this->get_true();
+                                            return this->get_true(c);
                                         }
-                                        return this->get_boolean(self->boolean != right->boolean);
+                                        return this->get_boolean(c, self->boolean != right->boolean);
                                     }
                             )
                     );
@@ -68,20 +71,21 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 RightNotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         (*success) = true;
                                         if (left->typeId != Boolean) {
-                                            return this->get_true();
+                                            return this->get_true(c);
                                         }
-                                        return this->get_boolean(left->boolean != self->boolean);
+                                        return this->get_boolean(c, left->boolean != self->boolean);
                                     }
                             )
                     );
@@ -89,16 +93,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 Copy,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(self->boolean);
+                                        return this->get_boolean(c, self->boolean);
                                     }
                             )
                     );
@@ -106,14 +111,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 Hash,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         if (self->boolean) {
                                             return this->new_integer(c, false, 1);
@@ -126,14 +132,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 ToInteger,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         if (self->boolean) {
                                             return this->new_integer(c, false, 1);
@@ -146,14 +153,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 ToFloat,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         if (self->boolean) {
                                             return this->new_float(c, false, 1);
@@ -166,14 +174,16 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 ToString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
+                                        std::cout << "BOOL PRINT\n";
                                         (*success) = true;
                                         if (self->boolean) {
                                             return this->new_string(c, false, True);
@@ -186,16 +196,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BoolInitialize(boo
         );
         object->set_on_demand_symbol(
                 ToBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(self->boolean);
+                                        return this->get_boolean(c, self->boolean);
                                     }
                             )
                     );

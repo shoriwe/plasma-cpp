@@ -6,16 +6,17 @@ plasma::vm::value *plasma::vm::virtual_machine::force_get_from_source(context *c
     bool success = false;
     plasma::vm::value *result = source->get(c, this, symbol, &success);
     if (!success) {
-        return this->get_none();
+        return this->get_none(c);
     }
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::force_any_from_master(const std::string &symbol) {
-    value *result = this->masterContext->peek_symbol_table()->get_self(symbol);
+plasma::vm::value *plasma::vm::virtual_machine::force_any_from_master(context *c, const std::string &symbol) {
+    value *result = c->master->get_self(symbol);
     if (result == nullptr) {
-        return this->get_none();
+        return this->get_none(c);
     }
+    std::cout << "FOUND\n";
     return result;
 }
 
@@ -23,7 +24,7 @@ plasma::vm::value *plasma::vm::virtual_machine::force_construction(context *c, p
     bool success;
     value *result = this->construct_object(c, type_, &success);
     if (!success) {
-        return this->get_none();
+        return this->get_none(c);
     }
     return result;
 }

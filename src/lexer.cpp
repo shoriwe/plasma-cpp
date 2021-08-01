@@ -661,12 +661,12 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             break;
         case StarChar:
             success = tokenizeRepeatableOperator(currentChar, Star, Operator, PowerOf, Operator,
-                                                 StarAssign, PowerOfAssign, Assignment,
+                                                 StarAssign, Assignment, PowerOfAssign,
                                                  Assignment, &content, &kind, &directValue, result_error);
             break;
         case DivChar:
             success = this->tokenizeRepeatableOperator(currentChar, Div, Operator, FloorDiv, Operator,
-                                                       DivAssign, FloorDivAssign, Assignment,
+                                                       DivAssign, Assignment, FloorDivAssign,
                                                        Assignment, &content, &kind, &directValue, result_error);
             break;
         case LessThanChar:

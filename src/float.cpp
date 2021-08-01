@@ -3,16 +3,17 @@
 #include "vm/virtual_machine.h"
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bool isBuiltIn) {
-    return [=](context *c, value *object) -> value * {
+    return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Negative,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_float(c, false, -self->floating);
                                     }
@@ -22,13 +23,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Add,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -50,13 +52,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightAdd,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
@@ -78,13 +81,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Sub,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -106,13 +110,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightSub,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
@@ -134,13 +139,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Mul,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -162,13 +168,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightMul,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
@@ -190,13 +197,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Div,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -219,13 +227,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightDiv,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
@@ -248,13 +257,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 FloorDiv,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -277,13 +287,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightFloorDiv,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
@@ -306,13 +317,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Pow,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
@@ -336,13 +348,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightPow,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
@@ -366,21 +379,23 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Equals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
+                                        std::cout << "EQUALS\n";
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating == right->integer);
+                                                return this->get_boolean(c, self->floating == right->integer);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating == right->floating);
+                                                return this->get_boolean(c, self->floating == right->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, right->type,
@@ -394,21 +409,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(left->integer == self->floating);
+                                                return this->get_boolean(c, left->integer == self->floating);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(left->floating == self->floating);
+                                                return this->get_boolean(c, left->floating == self->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, left->type,
@@ -422,21 +438,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 NotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating != right->integer);
+                                                return this->get_boolean(c, self->floating != right->integer);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating != right->floating);
+                                                return this->get_boolean(c, self->floating != right->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, right->type,
@@ -450,21 +467,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightNotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(left->integer != self->floating);
+                                                return this->get_boolean(c, left->integer != self->floating);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(left->floating != self->floating);
+                                                return this->get_boolean(c, left->floating != self->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, left->type,
@@ -478,21 +496,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 GreaterThan,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating > right->integer);
+                                                return this->get_boolean(c, self->floating > right->integer);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating > right->floating);
+                                                return this->get_boolean(c, self->floating > right->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, right->type,
@@ -506,21 +525,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightGreaterThan,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(left->integer > self->floating);
+                                                return this->get_boolean(c, left->integer > self->floating);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(left->floating > self->floating);
+                                                return this->get_boolean(c, left->floating > self->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, left->type,
@@ -534,21 +554,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 LessThan,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating < right->integer);
+                                                return this->get_boolean(c, self->floating < right->integer);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating < right->floating);
+                                                return this->get_boolean(c, self->floating < right->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, right->type,
@@ -562,21 +583,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightLessThan,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(left->integer < self->floating);
+                                                return this->get_boolean(c, left->integer < self->floating);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(left->floating < self->floating);
+                                                return this->get_boolean(c, left->floating < self->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, left->type,
@@ -590,21 +612,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 GreaterThanOrEqual,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating >= right->integer);
+                                                return this->get_boolean(c, self->floating >= right->integer);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating >= right->floating);
+                                                return this->get_boolean(c, self->floating >= right->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, right->type,
@@ -618,21 +641,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightGreaterThanOrEqual,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(left->integer >= self->floating);
+                                                return this->get_boolean(c, left->integer >= self->floating);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(left->floating >= self->floating);
+                                                return this->get_boolean(c, left->floating >= self->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, left->type,
@@ -646,21 +670,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 LessThanOrEqual,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating <= right->integer);
+                                                return this->get_boolean(c, self->floating <= right->integer);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(self->floating <= right->floating);
+                                                return this->get_boolean(c, self->floating <= right->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, right->type,
@@ -674,21 +699,22 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightLessThanOrEqual,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         switch (left->typeId) {
                                             case Integer:
                                                 (*success) = true;
-                                                return this->get_boolean(left->integer <= self->floating);
+                                                return this->get_boolean(c, left->integer <= self->floating);
                                             case Float:
                                                 (*success) = true;
-                                                return this->get_boolean(left->floating <= self->floating);
+                                                return this->get_boolean(c, left->floating <= self->floating);
                                             default:
                                                 (*success) = false;
                                                 return this->NewInvalidTypeError(c, left->type,
@@ -702,13 +728,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Hash,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         if (self->hash == 0) {
                                             self->hash = this->hash_string(
                                                     std::string(FloatName) + "-" + std::to_string(self->floating)
@@ -723,13 +750,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 Copy,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_float(c, false, self->floating);
                                     }
@@ -739,13 +767,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToInteger,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_integer(c, false, self->floating);
                                     }
@@ -755,13 +784,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToFloat,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_float(c, false, self->floating);
                                     }
@@ -771,13 +801,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_string(c, false, std::to_string(self->floating));
                                     }
@@ -787,15 +818,16 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::FloatInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(self->floating != 0);
+                                        return this->get_boolean(c, self->floating != 0);
                                     }
                             )
                     );

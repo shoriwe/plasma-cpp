@@ -1,23 +1,24 @@
 #include "vm/virtual_machine.h"
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bool isBuiltIn) {
-    return [=](context *c, value *object) -> value * {
+    return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Add,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         if (right->typeId != Bytes) {
                                             (*success) = false;
                                             return this->NewInvalidTypeError(
                                                     c,
-                                                    right->get_type(this),
+                                                    right->get_type(c, this),
                                                     std::vector<std::string>{BytesName}
                                             );
                                         }
@@ -35,20 +36,21 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightAdd,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         if (left->typeId != Bytes) {
                                             (*success) = false;
                                             return this->NewInvalidTypeError(
                                                     c,
-                                                    left->get_type(this),
+                                                    left->get_type(c, this),
                                                     std::vector<std::string>{BytesName}
                                             );
                                         }
@@ -66,20 +68,21 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Mul,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         if (right->typeId != Integer) {
                                             (*success) = false;
                                             return this->NewInvalidTypeError(
                                                     c,
-                                                    right->get_type(this),
+                                                    right->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
                                             );
                                         }
@@ -105,20 +108,21 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightMul,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         if (left->typeId != Integer) {
                                             (*success) = false;
                                             return this->NewInvalidTypeError(
                                                     c,
-                                                    left->get_type(this),
+                                                    left->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
                                             );
                                         }
@@ -144,18 +148,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Equals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         if (right->typeId != Bytes) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool comparison = false;
                                         value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
@@ -168,7 +173,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return comparisonError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(comparison);
+                                        return this->get_boolean(c, comparison);
                                     }
                             )
                     );
@@ -176,18 +181,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         if (left->typeId != Bytes) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool comparison = false;
                                         value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
@@ -200,7 +206,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return comparisonError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(comparison);
+                                        return this->get_boolean(c, comparison);
                                     }
                             )
                     );
@@ -208,18 +214,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 NotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         if (right->typeId != Bytes) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool comparison = false;
                                         value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
@@ -232,7 +239,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return comparisonError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(!comparison);
+                                        return this->get_boolean(c, !comparison);
                                     }
                             )
                     );
@@ -240,18 +247,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightNotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         if (left->typeId != Bytes) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool comparison = false;
                                         value *comparisonError = plasma::vm::virtual_machine::bytes_equals(
@@ -264,7 +272,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return comparisonError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(!comparison);
+                                        return this->get_boolean(c, !comparison);
                                     }
                             )
                     );
@@ -272,14 +280,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Contains,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *element = arguments[0];
                                         bool contains = false;
                                         value *containsError = this->bytes_contains(
@@ -293,7 +302,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return containsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(contains);
+                                        return this->get_boolean(c, contains);
                                     }
                             )
                     );
@@ -301,14 +310,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 RightContains,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *source = arguments[0];
                                         bool contains = false;
                                         value *containsError = this->bytes_contains(
@@ -322,7 +332,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                             return containsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(contains);
+                                        return this->get_boolean(c, contains);
                                     }
                             )
                     );
@@ -330,14 +340,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Hash,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         if (self->hash == 0) {
                                             self->hash = this->hash_bytes(self->bytes);
                                         }
@@ -350,14 +361,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Copy,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_bytes(c, false, self->bytes);
                                     }
@@ -367,14 +379,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Index,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         return this->bytes_index(c, self, arguments[0], success);
                                     }
                             )
@@ -383,14 +396,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 Iter,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->bytes_iterator(c, self);
                                     }
@@ -400,14 +414,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->bytes_to_string(c, self);
                                     }
@@ -417,15 +432,16 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->get_boolean(!self->bytes.empty());
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
+                                        return this->get_boolean(c, !self->bytes.empty());
                                     }
                             )
                     );
@@ -433,14 +449,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToArray,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_array(c, false, this->bytes_to_integer_content(c, self));
                                     }
@@ -450,14 +467,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
         );
         object->set_on_demand_symbol(
                 ToTuple,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_tuple(c, false, this->bytes_to_integer_content(c, self));
                                     }

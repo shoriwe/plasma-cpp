@@ -2,12 +2,7 @@
 
 #include "vm/virtual_machine.h"
 
-
-plasma::vm::bytecode::bytecode(std::vector<instruction> instructs) {
-    this->instructions = std::move(instructs);
-}
-
-size_t plasma::vm::bytecode::length() {
+size_t plasma::vm::bytecode::length() const {
     return this->instructions.size();
 }
 

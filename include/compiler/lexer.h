@@ -82,7 +82,7 @@ namespace plasma::lexer {
     const char RaiseString[] = "raise";
     const char AsString[] = "as";
     enum {
-        NotSet,
+        NotSet, // 0
         Unknown,
         PendingEscape,
         Comment,
@@ -92,7 +92,7 @@ namespace plasma::lexer {
         IdentifierKind,
         JunkKind,
         Separator,
-        Punctuation,
+        Punctuation, // 10
         Assignment,
         Comparator,
         Operator,
@@ -102,7 +102,7 @@ namespace plasma::lexer {
         HexadecimalInteger,
         BinaryInteger,
         OctalInteger,
-        Float,
+        Float, // 20
         AwaitKeyboard,
         ScientificFloat,
         CommandOutput,

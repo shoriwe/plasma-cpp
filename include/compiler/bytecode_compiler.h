@@ -11,15 +11,7 @@ namespace plasma::bytecode_compiler {
 
         explicit compiler(plasma::parser::parser *p);
 
-        bool compile(vm::bytecode *result, error::error *compilationError);
-
-        bool compile_to_array(std::vector<vm::instruction> *result, error::error *compilationError);
-
-        bool compile_body(const std::vector<std::any> &body, std::vector<vm::instruction> *result,
-                          error::error *compilationError);
-
-        static bool compile_node(std::any *node, std::vector<vm::instruction> *result,
-                          error::error *compilationError);
+        bool compile(vm::bytecode *result, error::error *compilationError) const;
     };
 }
 

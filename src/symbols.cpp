@@ -2,30 +2,31 @@
 
 
 void plasma::vm::symbol_table::set(const std::string &s, value *v) {
-    this->symbols[s] = v;
+    this->symbols.insert(std::pair<std::string, value *>(s, v));
 }
 
 plasma::vm::value *plasma::vm::symbol_table::get_self(const std::string &symbol) {
-    if (this->symbols.contains(symbol)) {
-        return this->symbols[symbol];
+    auto entry = this->symbols.find(symbol);
+    if (entry != this->symbols.end()) {
+        return entry->second;
     }
     return nullptr;
 }
 
 plasma::vm::value *plasma::vm::symbol_table::get_any(const std::string &symbol) {
-    if (this->symbols.contains(symbol)) {
-        return this->symbols[symbol];
+    auto entry = this->symbols.find(symbol);
+    if (entry != this->symbols.end()) {
+        return entry->second;
     }
-    value *result = nullptr;
     symbol_table *current = this->parent;
     while (current != nullptr) {
-        result = current->get_any(symbol);
-        if (result != nullptr) {
-            return result;
+        entry = current->symbols.find(symbol);
+        if (entry != current->symbols.end()) {
+            return entry->second;
         }
         current = current->parent;
     }
-    return result;
+    return nullptr;
 }
 
 plasma::vm::symbol_table::symbol_table(symbol_table *parent) {

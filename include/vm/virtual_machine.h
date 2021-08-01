@@ -10,6 +10,8 @@
 #include <vector>
 #include <unordered_map>
 #include <fstream>
+#include <stack>
+#include <iostream>
 
 #include "error.h"
 #include "memory.h"
@@ -17,20 +19,19 @@
 namespace plasma::vm {
     // OP Codes
     enum {
-        NewStringOP,
+        NewStringOP, // 0
         NewBytesOP,
         NewIntegerOP,
         NewFloatOP,
         GetTrueOP,
         GetFalseOP,
-        NewParenthesesOP,
         NewLambdaFunctionOP,
         GetNoneOP,
 
         // Composite creation
         NewTupleOP,
         NewArrayOP,
-        NewHashOP,
+        NewHashOP, // 10
 
         // Unary Expressions
         NegateBitsOP,
@@ -44,7 +45,7 @@ namespace plasma::vm {
         DivOP,
         FloorDivOP,
         ModOP,
-        PowOP,
+        PowOP, // 20
         BitXorOP,
         BitAndOP,
         BitOrOP,
@@ -54,16 +55,18 @@ namespace plasma::vm {
         OrOP,
         XorOP,
         EqualsOP,
-        NotEqualsOP,
+        NotEqualsOP, // 30
         GreaterThanOP,
         LessThanOP,
         GreaterThanOrEqualOP,
         LessThanOrEqualOP,
         ContainsOP,
+        UnaryOP,
+        BinaryOP,
         // Other expressions
         GetIdentifierOP,
         IndexOP,
-        SelectNameFromObjectOP,
+        SelectNameFromObjectOP, // 40
         MethodInvocationOP,
 
         // Assign Statement
@@ -75,7 +78,7 @@ namespace plasma::vm {
         UnlessJumpOP,
         SetupLoopOP,
         PopLoopOP,
-        UnpackForLoopOP,
+        UnpackForLoopOP, // 50
         BreakOP,
         RedoOP,
         ContinueOP,
@@ -88,7 +91,7 @@ namespace plasma::vm {
         JumpOP,
         PushOP,
         PopOP,
-        NOP,
+        NOP, // 60
         NewIteratorOP,
 
         SetupTryOP,
@@ -106,10 +109,10 @@ namespace plasma::vm {
     // typedef struct value *(*on_demand_loader)();
 
     typedef std::function<struct value *(struct context *, struct virtual_machine *)> object_loader;
-    // typedef struct value *(*object_loader)(struct context *c, struct virtual_machine *);
+    // typedef struct value *(*object_loader)(context *c, struct virtual_machine *);
 
     typedef std::function<struct value *(struct context *, value *)> constructor_callback;
-    // typedef struct value *(*constructor_callback)(struct context *c, struct value *);
+    // typedef struct value *(*constructor_callback)(context *c, struct value *);
 
     /*
      * - Returns the result when success
@@ -262,9 +265,7 @@ namespace plasma::vm {
         std::vector<instruction> instructions;
         size_t index = 0;
 
-        explicit bytecode(std::vector<instruction> instructs);
-
-        size_t length();
+        size_t length() const;
 
         [[nodiscard]] bool has_next() const;
 
@@ -277,113 +278,263 @@ namespace plasma::vm {
         void jump(size_t offset);
     };
 
+    struct symbol_table {
+        // Garbage collector
+        size_t pageIndex = SIZE_MAX;
+        uint64_t count = 0;
+        //
+        symbol_table *parent = nullptr;
+        std::unordered_map<std::string, value *> symbols;
+
+        void set(const std::string &symbol, value *v);
+
+        value *get_self(const std::string &symbol);
+
+        value *get_any(const std::string &symbol);
+
+        explicit symbol_table(symbol_table *parentSymbolTable);
+
+        symbol_table();
+
+        ~symbol_table();
+    };
+
+    struct key_value {
+        value *key;
+        value *value;
+    };
+
+    struct callable {
+        bool isBuiltIn; // When is built-in the callback should be executed, if not, the code will be pushed to be executed
+        size_t numberOfArguments;
+        std::vector<instruction> code;
+        function_callback callback;
+    };
+
+    callable new_builtin_callable(size_t number_of_arguments, function_callback callback);
+
+    callable new_plasma_callable(size_t number_of_arguments, instruction code[]);
+
+
+    struct constructor {
+        bool isBuiltIn;
+        constructor_callback callback;
+        std::vector<instruction> code;
+
+        /*
+         * Construct the object approaching it's initializer
+         * - Returns nullptr on success
+         * - Returns an error object when fails
+         */
+        value *construct(context *c, virtual_machine *vm, value *self) const;
+    };
+
+    struct value {
+        // Garbage collector
+        size_t pageIndex;
+        bool marked = false;
+        bool isSet = false; // Used to  distinguish between values initialized
+        //
+        // Type Identifier
+        uint8_t typeId = Object;
+        // Type Related (used only when typeId is equal to Type)
+        constructor constructor_;
+        std::string name; // This is the name of the identifier that initially own this type
+        // Function Related (used only when typeId is equal to Function)
+        callable callable_;
+        value *self = nullptr; // Also used as root by functions defined in classes and interfaces
+        // Iterator Related
+        value *source; // Also used as root by iterators
+        //
+        bool isBuiltIn = false;
+        int64_t id = 0;
+        std::string typeName;
+        value *type;
+        std::vector<value *> subTypes;
+        int64_t hash = 0; // Used by strings, integers and floats to cache the hash
+        // Values
+        std::string string;
+        std::vector<uint8_t> bytes;
+        std::vector<value *> content;
+        std::unordered_map<int64_t, std::vector<key_value>> keyValues;
+        bool boolean = false;
+        long double floating = 0;
+        int64_t integer = 0;
+        // Symbols
+        symbol_table *symbols;
+        std::unordered_map<std::string, on_demand_loader> onDemandSymbols;
+
+        //
+        void set_on_demand_symbol(const std::string &symbol, const on_demand_loader &loader);
+
+        void set(const std::string &symbol, value *v) const;
+
+        /*
+         * - Returns the requested object when success is true
+         * - Returns an error object when the success is false
+         */
+        value *get(context *c, virtual_machine *vm, const std::string &symbol, bool *success);
+
+        value *get_type(context *c, virtual_machine *vm) const;
+
+        bool implements(context *c, virtual_machine *vm, value *type_);
+
+        std::unordered_map<std::string, uint8_t> dir();
+
+        /*
+         * - Returns nullptr on success
+         * - Return an error object when fails
+         */
+        value *add_key_value(context *c, virtual_machine *vm, value *key, value *v);
+    };
+
+
+    struct context {
+        bool isMaster = false;
+        value *lastObject = nullptr;
+        memory::memory<symbol_table> symbol_table_heap;
+        memory::memory<value> value_heap;
+        std::vector<value *> value_stack;
+        std::vector<symbol_table *> symbol_table_stack;
+        symbol_table *master;
+        // LoopStack   *LoopStack // ToDo:
+        // TryStack    *TryStack // ToDo:
+
+        ~context();
+
+        value *allocate_value();
+
+        symbol_table *allocate_symbol_table(symbol_table *parentSymbolTable);
+
+        void collect_values();
+
+        void collect_symbol_tables();
+
+        void push_value(value *v);
+
+        value *peek_value();
+
+        value *pop_value();
+
+        void push_symbol_table(symbol_table *s);
+
+        symbol_table *pop_symbol_table();
+
+        symbol_table *peek_symbol_table();
+    };
+
     struct virtual_machine {
         // Attributes
         uint64_t seed;
-        uint64_t currentId;
-        context *masterContext;
-        std::basic_ifstream<unsigned char> stdin_file;
-        std::basic_ifstream<unsigned char> stdout_file;
-        std::basic_ifstream<unsigned char> stderr_file;
-        struct symbol_table *builtInSymbolTable;
+        uint64_t currentId = 1;
+        std::istream *stdin_file;
+        std::ostream *stdout_file;
+        std::ostream *stderr_file;
+
+        virtual_machine(std::istream *stdinFile,
+                        std::ostream *stdoutFile,
+                        std::ostream *stderrFile);
 
         // Initialization
 
-        void load_builtin_object(const std::string &symbol, const object_loader &loader);
+        void load_builtin_object(context *c, const std::string &symbol, const object_loader &loader);
 
-        void load_builtin_symbols(const std::unordered_map<std::string, object_loader> &symbols);
+        void load_builtin_symbols(context *c, const std::unordered_map<std::string, object_loader> &symbols);
 
-        void initialize_context(struct context *c);
+        void initialize_context(context *c);
 
-        void initialize_builtin_symbols();
+        void initialize_builtin_symbols(context *c);
 
         uint64_t next_id();
 
         // Object creation tools
-        value *construct_subtype(struct context *c, value *subType, value *self);
+        value *construct_subtype(context *c, value *subType, value *self);
 
-        value *construct_object(struct context *c, struct value *type, bool *success);
+        value *construct_object(context *c, struct value *type, bool *success);
 
         // Function calls
         /*
          * - Returns the result on success
          * - Returns an error object when fails
          */
-        struct value *call_function(struct context *c, struct value *function,
+        struct value *call_function(context *c, struct value *function,
                                     const std::vector<struct value *> &arguments, bool *success);
 
         // Object Creators
-        struct value *new_object(struct context *c, bool isBuiltIn, const std::string &typeName, value *type);
+        struct value *new_object(context *c, bool isBuiltIn, const std::string &typeName, value *type);
 
-        struct value *new_hash_table(struct context *c, bool isBuiltIn);
+        struct value *new_hash_table(context *c, bool isBuiltIn);
 
-        struct value *new_array(struct context *c, bool isBuiltIn, const std::vector<struct value *> &content);
+        struct value *new_array(context *c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *new_function(struct context *c, bool isBuiltIn, value *self, const struct callable &callable_);
+        struct value *new_function(context *c, bool isBuiltIn, value *self, const struct callable &callable_);
 
-        struct value *new_bytes(struct context *c, bool isBuiltIn, const std::vector<uint8_t> &bytes);
+        struct value *new_bytes(context *c, bool isBuiltIn, const std::vector<uint8_t> &bytes);
 
-        struct value *new_iterator(struct context *c, bool isBuiltIn);
+        struct value *new_iterator(context *c, bool isBuiltIn);
 
-        struct value *new_tuple(struct context *c, bool isBuiltIn, const std::vector<struct value *> &content);
+        struct value *new_tuple(context *c, bool isBuiltIn, const std::vector<struct value *> &content);
 
-        struct value *new_none(struct context *c, bool isBuiltIn);
+        struct value *new_none(context *c, bool isBuiltIn);
 
         struct value *
-        new_type(struct context *c, bool isBuiltIn, const std::string &name,
+        new_type(context *c, bool isBuiltIn, const std::string &name,
                  const std::vector<struct value *> &inheritedTypes,
                  const struct constructor &constructor);
 
-        value *new_float(struct context *c, bool isBuiltIn, long double value_);
+        value *new_float(context *c, bool isBuiltIn, long double value_);
 
-        value *new_module(struct context *c, bool isBuiltIn);
+        value *new_module(context *c, bool isBuiltIn);
 
-        value *new_bool(struct context *c, bool isBuiltIn, bool value_);
+        value *new_bool(context *c, bool isBuiltIn, bool value_);
 
-        value *new_integer(struct context *c, bool isBuiltIn, int64_t value_);
+        value *new_integer(context *c, bool isBuiltIn, int64_t value_);
 
-        value *new_string(struct context *c, bool isBuiltIn, const std::string &value_);
+        value *new_string(context *c, bool isBuiltIn, const std::string& value_);
 
         // Error Creators
-        value *NewFloatParsingError(struct context *c);
+        value *NewFloatParsingError(context *c);
 
-        value *NewIntegerParsingError(struct context *c);
+        value *NewIntegerParsingError(context *c);
 
-        value *NewKeyNotFoundError(struct context *c, struct value *key);
+        value *NewKeyNotFoundError(context *c, struct value *key);
 
-        value *NewIndexOutOfRange(struct context *c, size_t length, size_t requestedIndex);
+        value *NewIndexOutOfRange(context *c, size_t length, size_t requestedIndex);
 
-        value *NewUnhashableTypeError(struct context *c, struct value *objectType);
+        value *NewUnhashableTypeError(context *c, struct value *objectType);
 
-        value *NewNotImplementedCallableError(struct context *c, std::string symbol);
+        value *NewNotImplementedCallableError(context *c, std::string symbol);
 
-        value *NewInvalidNumberOfArgumentsError(struct context *c, size_t expected, size_t received);
-
-        value *
-        NewObjectWithNameNotFoundError(struct context *c, struct value *source, const std::string &symbol);
+        value *NewInvalidNumberOfArgumentsError(context *c, size_t expected, size_t received);
 
         value *
-        NewInvalidTypeError(struct context *c, struct value *receivedType,
+        NewObjectWithNameNotFoundError(context *c, struct value *source, const std::string &symbol);
+
+        value *
+        NewObjectWithNameNotFoundError(context *c, const std::string &symbol);
+
+        value *
+        NewInvalidTypeError(context *c, struct value *receivedType,
                             const std::vector<std::string> &expectedTypes);
 
-        value *NewObjectConstructionError(struct context *c, value *type, const std::string &errorMessage);
+        value *NewObjectConstructionError(context *c, value *type, const std::string &errorMessage);
 
         value *
-        NewBuiltInSymbolProtectionError(struct context *c, struct value *source, const std::string &symbol);
+        NewBuiltInSymbolProtectionError(context *c, struct value *source, const std::string &symbol);
 
-        struct value *NewObjectNotCallableError(struct context *c, struct value *objectType);
+        struct value *NewObjectNotCallableError(context *c, struct value *objectType);
 
         // Basic object caching
-        struct value *get_none();
+        struct value *get_none(context *c);
 
-        struct value *get_false();
+        struct value *get_false(context *c);
 
-        struct value *get_true();
+        struct value *get_true(context *c);
 
-        struct value *get_boolean(bool condition);
+        struct value *get_boolean(context *c, bool condition);
 
         // Object Initializers
-        struct value *RuntimeErrorInitialize(struct context *c, struct value *errorObject);
+        struct value *RuntimeErrorInitialize(context *c, struct value *errorObject);
 
         constructor_callback CallableInitialize(bool isBuiltIn);
 
@@ -412,18 +563,20 @@ namespace plasma::vm {
         constructor_callback NoneInitialize(bool isBuiltIn);
 
         // Force Operation
-        struct value *force_get_from_source(struct context *c, const std::string &symbol, struct value *source);
+        struct value *force_get_from_source(context *c, const std::string &symbol, struct value *source);
 
-        struct value *force_any_from_master(const std::string &symbol);
+        struct value *force_any_from_master(context *c, const std::string &symbol);
 
-        struct value *force_construction(struct context *c, struct value *type_);
+        struct value *force_construction(context *c, struct value *type_);
 
         void
         force_initialization(plasma::vm::context *c, struct value *object,
                              const std::vector<struct value *> &initArgument);
 
         // Code execution
-        value *execute(struct context *c, bytecode *bc, bool *success);
+        value *execute(bytecode *bc, bool *success);
+
+        value *execute(context *c, bytecode *bc, bool *success);
 
         // Tools
         //// Content (Arrays and Tuples) related
@@ -441,7 +594,7 @@ namespace plasma::vm {
         value *content_contains(context *c, value *container, value *object, bool *result);
 
         value *
-        content_repeat(struct context *c, const std::vector<struct value *> &content, size_t times,
+        content_repeat(context *c, const std::vector<struct value *> &content, size_t times,
                        std::vector<struct value *> *result);
 
         //// Bytes
@@ -503,251 +656,97 @@ namespace plasma::vm {
         //// Any
         static size_t calculate_index(int64_t index, size_t length, bool *fail);
 
-        value *equals(struct context *c, struct value *leftHandSide, struct value *rightHandSide, bool *result);
+        value *equals(context *c, struct value *leftHandSide, struct value *rightHandSide, bool *result);
 
-        value *calculate_hash(struct context *c, struct value *v, int64_t *hash_);
+        value *calculate_hash(context *c, struct value *v, int64_t *hash_);
 
-        value *interpret_as_boolean(struct context *c, struct value *v, bool *result);
+        value *interpret_as_boolean(context *c, struct value *v, bool *result);
 
         // Operations callbacks
         //// Object creation
-        value *newTupleOP(context *c, instruction instruct, value **receiver);
+        value *newTupleOP(context *c, size_t numberOfElements);
 
-        value *newArrayOP(context *c, instruction instruct, value **receiver);
+        value *newArrayOP(context *c, size_t numberOfElements);
 
-        value *newHashOP(context *c, instruction instruct, value **receiver);
+        value *newHashOP(context *c, size_t numberOfElements);
 
-        value *newStringOP(context *c, const std::string &string, value **receiver);
+        value *newStringOP(context *c, const std::string &string);
 
-        value *newBytesOP(context *c, const std::vector<uint8_t> &bytes, value **receiver);
+        value *newBytesOP(context *c, const std::string &bytes);
 
-        value *newIntegerOP(context *c, int64_t integer, value **receiver);
+        value *newIntegerOP(context *c, int64_t integer);
 
-        value *newFloatOP(context *c, long double floating, value **receiver);
+        value *newFloatOP(context *c, long double floating);
 
-        value *newFunctionOP(context *c, bytecode *bc, instruction instruct, value **receiver);
+        value *newFunctionOP(context *c, bytecode *bc, instruction instruct);
 
-        value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *, value **receiver);
+        value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        value *newModuleOP(context *c, bytecode *bc, instruction instruct, value **receiver);
+        value *newModuleOP(context *c, bytecode *bc, instruction instruct);
 
-        value *newClassOP(context *c, bytecode *bc, instruction instruct, value **receiver);
+        value *newClassOP(context *c, bytecode *bc, instruction instruct);
 
-        value *newClassFunctionOP(context *c, bytecode *bc, instruction instruct, value **receiver);
+        value *newClassFunctionOP(context *c, bytecode *bc, instruction instruct);
 
-        value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct, value **receiver);
+        value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct);
 
-        // //// Object request
-        // value *newTrueBoolOP(value *);
+        //// Loop setup and operation
+        value *setupForLoopOP(context *c, instruction instruct, value *);
 
-        // value *newFalseBoolOP(value *);
+        value *loadForLoopArguments(context *c, value *);
 
-        // value *getNoneOP(value *);
+        // FixMe:
+        // value *unpackForArguments(context *c, loopSettings *LoopSettings, result Value, value *);
 
-        // //// Loop setup and operation
-        // value *setupForLoopOP(context *c, instruction instruct, value *);
+        value *unpackForLoopOP(context *c, bytecode *bc, value *);
 
-        // value *loadForLoopArguments(context *c, value *);
+        //// Try blocks
+        value *setupTryOP(context *c, bytecode *bc, instruction instruct);
 
-        // // FixMe:
-        // // value *unpackForArguments(context *c, loopSettings *LoopSettings, result Value, value *);
+        value *popTryOP(context *c);
 
-        // value *unpackForLoopOP(context *c, bytecode *bc, value *);
+        value *exceptOP(context *c, bytecode *bc, instruction instruct);
 
-        // //// Try blocks
-        // value *setupTryOP(context *c, bytecode *bc, instruction instruct);
+        value *tryJumpOP(context *c, bytecode *bc);
 
-        // value *popTryOP(context *c);
+        value *raiseOP(context *c, value *);
 
-        // value *exceptOP(context *c, bytecode *bc, instruction instruct);
+        //// Conditions (if, unless and switch)
+        value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        // value *tryJumpOP(context *c, bytecode *bc);
+        value *ifJumpOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        // value *raiseOP(context *c, value *);
+        value *unlessJumpOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        // //// Conditions (if, unless and switch)
-        // value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *unaryOP(context *c, uint8_t instruction);
 
-        // value *ifJumpOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *binaryOP(context *c, uint8_t instruction);
 
-        // value *unlessJumpOP(context *c, bytecode *bc, instruction instruct, value *);
+        //// Function calls
+        value *loadFunctionArgumentsOP(context *c, instruction instruct, value *);
 
-        // //// Binary, unary and parentheses operations
-        // value *newParenthesesOP(context *c, value *);
+        value *noArgsGetAndCall(context *c, std::string, value *);
 
-        // value *leftBinaryExpressionFuncCall(context *c, std::string, value *);
+        value *methodInvocationOP(context *c, size_t numberOfArguments);
 
-        // value *
-        // rightBinaryExpressionFuncCall(context *c, value *, value *, std::string, value *,
-//                                       value *);
+        //// Symbol assign and request
+        value *selectNameFromObjectOP(context *c, const std::string &identifier);
 
-        // //// Function calls
-        // value *loadFunctionArgumentsOP(context *c, instruction instruct, value *);
+        value *getIdentifierOP(context *c, const std::string &identifier);
 
-        // value *noArgsGetAndCall(context *c, std::string, value *);
+        value *assignIdentifierOP(context *c, instruction instruct, value *);
 
-        // value *methodInvocationOP(context *c, instruction instruct, value *, value *);
+        value *assignSelectorOP(context *c, instruction instruct, value *);
 
-        // //// Symbol assign and request
-        // value *selectNameFromObjectOP(context *c, instruction instruct, value *, value *);
+        //// Index assign and request
+        value *assignIndexOP(context *c, value *);
 
-        // value *getIdentifierOP(context *c, instruction instruct, value *, value *);
+        value *indexOP(context *c);
 
-        // value *assignIdentifierOP(context *c, instruction instruct, value *);
-
-        // value *assignSelectorOP(context *c, instruction instruct, value *);
-
-        // //// Index assign and request
-        // value *assignIndexOP(context *c, value *);
-
-        // value *indexOP(context *c, value *, value *);
-
-        // //// Function  return
-        // value *returnOP(context *c, instruction instruct, value *);
-
-        // //// other control flow related
-        // value *jumpOP(bytecode *bc, instruction instruct, value *);
+        //// Function  return
+        value *returnOP(context *c, instruction instruct, value *);
     };
 
-    struct key_value {
-        value *key;
-        value *value;
-    };
-
-    struct callable {
-        bool isBuiltIn; // When is built-in the callback should be executed, if not, the code will be pushed to be executed
-        size_t numberOfArguments;
-        std::vector<instruction> code;
-        function_callback callback;
-    };
-
-    callable new_builtin_callable(size_t number_of_arguments, function_callback callback);
-
-    callable new_plasma_callable(size_t number_of_arguments, instruction code[]);
-
-
-    struct constructor {
-        bool isBuiltIn;
-        constructor_callback callback;
-        std::vector<instruction> code;
-
-        /*
-         * Construct the object approaching it's initializer
-         * - Returns nullptr on success
-         * - Returns an error object when fails
-         */
-        value *construct(struct context *c, virtual_machine *vm, value *self) const;
-    };
-
-    struct symbol_table {
-        // Garbage collector
-        size_t pageIndex = SIZE_MAX;
-        uint64_t count = 0;
-        //
-        symbol_table *parent = nullptr;
-        std::unordered_map<std::string, value *> symbols;
-
-        void set(const std::string &symbol, value *v);
-
-        value *get_self(const std::string &symbol);
-
-        value *get_any(const std::string &symbol);
-
-        explicit symbol_table(symbol_table *parentSymbolTable);
-
-        symbol_table();
-
-        ~symbol_table();
-    };
-
-    struct value {
-        // Garbage collector
-        size_t pageIndex;
-        bool marked = false;
-        bool isSet = false; // Used to  distinguish between values initialized
-        //
-        // Type Identifier
-        uint8_t typeId = Object;
-        // Type Related (used only when typeId is equal to Type)
-        constructor constructor_;
-        std::string name; // This is the name of the identifier that initially own this type
-        // Function Related (used only when typeId is equal to Function)
-        callable callable_;
-        value *self = nullptr; // Also used as root by functions defined in classes and interfaces
-        // Iterator Related
-        value *source; // Also used as root by iterators
-        //
-        bool isBuiltIn = false;
-        int64_t id = 0;
-        std::string typeName;
-        value *type;
-        std::vector<value *> subTypes;
-        int64_t hash = 0; // Used by strings, integers and floats to cache the hash
-        // Values
-        std::string string;
-        std::vector<uint8_t> bytes;
-        std::vector<value *> content;
-        std::unordered_map<int64_t, std::vector<key_value>> keyValues;
-        bool boolean = false;
-        long double floating = 0;
-        int64_t integer = 0;
-        // Symbols
-        symbol_table *symbols;
-        std::unordered_map<std::string, on_demand_loader> onDemandSymbols;
-
-        //
-        void set_on_demand_symbol(const std::string &symbol, on_demand_loader loader);
-
-        void set(const std::string &symbol, value *v) const;
-
-        /*
-         * - Returns the requested object when success is true
-         * - Returns an error object when the success is false
-         */
-        value *get(struct context *c, virtual_machine *vm, const std::string &symbol, bool *success);
-
-        value *get_type(virtual_machine *vm) const;
-
-        bool implements(virtual_machine *vm, value *type_);
-
-        std::unordered_map<std::string, uint8_t> dir();
-
-        /*
-         * - Returns nullptr on success
-         * - Return an error object when fails
-         */
-        value *add_key_value(struct context *c, virtual_machine *vm, value *key, value *v);
-    };
-
-    struct context {
-        memory::memory<symbol_table> symbol_table_heap;
-        memory::memory<value> value_heap;
-        std::vector<value *> value_stack;
-        std::vector<symbol_table *> symbol_table_stack;
-        // LoopStack   *LoopStack // ToDo:
-        // TryStack    *TryStack // ToDo:
-
-        value *allocate_value();
-
-        symbol_table *allocate_symbol_table(symbol_table *parentSymbolTable);
-
-        void collect_values();
-
-        void collect_symbol_tables();
-
-        void push_value(value *v);
-
-        value *peek_value();
-
-        value *pop_value();
-
-        void push_symbol_table(symbol_table *s);
-
-        symbol_table *pop_symbol_table();
-
-        symbol_table *peek_symbol_table();
-
-    };
 }
 
 #endif //PLASMA_VIRTUAL_MACHINE_H

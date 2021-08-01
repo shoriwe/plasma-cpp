@@ -1,21 +1,22 @@
 #include "vm/virtual_machine.h"
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitialize(bool isBuiltIn) {
-    return [=](context *c, value *object) -> value * {
+    return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Equals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             false,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         if (right->typeId != HashTable) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool result;
                                         value *equalsError = this->hashtable_equals(
@@ -29,7 +30,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return equalsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(result);
+                                        return this->get_boolean(c, result);
                                     }
                             )
                     );
@@ -37,18 +38,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 RightEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             false,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         if (left->typeId != HashTable) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool result;
                                         value *equalsError = this->hashtable_equals(
@@ -62,7 +64,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return equalsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(result);
+                                        return this->get_boolean(c, result);
                                     }
                             )
                     );
@@ -70,18 +72,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 NotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             false,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *right = arguments[0];
                                         if (right->typeId == HashTable) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool result;
                                         value *equalsError = this->hashtable_equals(
@@ -95,7 +98,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return equalsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(!result);
+                                        return this->get_boolean(c, !result);
                                     }
                             )
                     );
@@ -103,18 +106,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 RightNotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             false,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *left = arguments[0];
                                         if (left->typeId == HashTable) {
                                             (*success) = true;
-                                            return this->get_false();
+                                            return this->get_false(c);
                                         }
                                         bool result;
                                         value *equalsError = this->hashtable_equals(c, left, self,
@@ -124,7 +128,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return equalsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(!result);
+                                        return this->get_boolean(c, !result);
                                     }
                             )
                     );
@@ -132,14 +136,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 Contains,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *element = arguments[0];
                                         bool contains = false;
                                         value *containsError = this->hashtable_contains(c, self, element,
@@ -149,7 +154,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return containsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(contains);
+                                        return this->get_boolean(c, contains);
                                     }
                             )
                     );
@@ -157,14 +162,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 RightContains,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *source = arguments[0];
                                         bool contains = false;
                                         value *containsError = this->hashtable_contains(c, source, self,
@@ -174,7 +180,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                             return containsError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(contains);
+                                        return this->get_boolean(c, contains);
                                     }
                             )
                     );
@@ -182,16 +188,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 Hash,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = false;
-                                        return this->NewUnhashableTypeError(c, self->get_type(this));
+                                        return this->NewUnhashableTypeError(c, self->get_type(c, this));
                                     }
                             )
                     );
@@ -199,14 +206,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 Copy,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         return this->hashtable_copy(c, self, success);
                                     }
                             )
@@ -215,14 +223,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 Index,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         return this->hashtable_index(c, self, arguments[0], success);
                                     }
                             )
@@ -231,14 +240,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 Assign,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         return this->hashtable_assign(c, self, arguments[0], arguments[1], success);
                                     }
                             )
@@ -247,14 +257,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 Iter,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->hashtable_iterator(c, self);
                                     }
@@ -264,14 +275,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 ToString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         return this->hashtable_to_string(c, self, success);
                                     }
                             )
@@ -280,15 +292,16 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 ToBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
-                                        return this->get_boolean(!self->keyValues.empty());
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
+                                        return this->get_boolean(c, !self->keyValues.empty());
                                     }
                             )
                     );
@@ -296,14 +309,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 ToArray,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_array(c, false, hashtable_to_content(self));
                                     }
@@ -313,14 +327,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
         );
         object->set_on_demand_symbol(
                 ToTuple,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_tuple(c, false, hashtable_to_content(self));
                                     }

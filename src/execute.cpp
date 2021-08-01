@@ -1,35 +1,370 @@
+#include "compiler/lexer.h"
 #include "vm/virtual_machine.h"
 
+plasma::vm::value *plasma::vm::virtual_machine::newTupleOP(context *c, size_t numberOfElements) {
+    std::vector<value *> elements;
+    elements.reserve(numberOfElements);
+    for (size_t index = 0; index < numberOfElements; index++) {
+        if (c->value_stack.empty()) {
+            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
+        }
+        elements.push_back(c->pop_value());
+    }
+    c->lastObject = this->new_tuple(c, false, elements);
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newArrayOP(context *c, size_t numberOfElements) {
+    std::vector<value *> elements;
+    elements.reserve(numberOfElements);
+    for (size_t index = 0; index < numberOfElements; index++) {
+        if (c->value_stack.empty()) {
+            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
+        }
+        elements.push_back(c->pop_value());
+    }
+    c->lastObject = this->new_array(c, false, elements);
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t numberOfElements) {
+    std::unordered_map<value *, value *> elements;
+    elements.reserve(numberOfElements);
+    for (size_t index = 0; index < numberOfElements; index++) {
+        if (c->value_stack.empty()) {
+            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
+        }
+        value *key = c->pop_value();
+        if (c->value_stack.empty()) {
+            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
+        }
+        value *v = c->pop_value();
+        elements[key] = v;
+    }
+    c->lastObject = this->new_hash_table(c, false);
+    for (const auto &kValue : elements) {
+        value *addError = c->lastObject->add_key_value(c, this, kValue.first, kValue.second);
+        if (addError != nullptr) {
+            return addError;
+        }
+    }
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newStringOP(context *c, const std::string &string) {
+    c->lastObject = this->new_string(c, false, string);
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newBytesOP(context *c, const std::string &bytes) {
+    std::vector<uint8_t> bytesVector;
+    bytesVector.reserve(bytes.size());
+    bytesVector.insert(bytesVector.end(), bytes.begin(), bytes.end());
+    c->lastObject = this->new_bytes(c, false, bytesVector);
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newIntegerOP(context *c, int64_t integer) {
+    c->lastObject = this->new_integer(c, false, integer);
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newFloatOP(context *c, long double floating) {
+    c->lastObject = this->new_float(c, false, floating);
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t instruction) {
+    std::string operationName;
+    switch (instruction) {
+        case plasma::lexer::NegateBits:
+            operationName = plasma::vm::NegBits;
+            break;
+        case plasma::lexer::Not:
+        case plasma::lexer::SignNot:
+            operationName = plasma::vm::Negate;
+            break;
+        case plasma::lexer::Sub:
+            operationName = plasma::vm::Negative;
+            break;
+            //case plasma::lexer::Add: // Fixme: Complete this
+            //    operationName = plasma::vm::Positive;
+            //    break;
+        default:
+            // Fixme:
+            break;
+    }
+    bool found = false;
+    value *target = c->pop_value();
+    value *operation = target->get(c, this, operationName, &found);
+    if (!found) {
+        return this->NewObjectWithNameNotFoundError(c, target, operationName);
+    }
+    bool success = false;
+    value *result = this->call_function(c, operation, std::vector<value *>(), &success);
+    if (success) {
+        c->lastObject = result;
+        return nullptr;
+    }
+    return result;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t instruction) {
+    std::cout << std::to_string(instruction) << std::endl;
+    std::string leftHandSideFunction, rightHandSideFunction;
+    switch (instruction) {
+        case AddOP:
+            leftHandSideFunction = Add;
+            rightHandSideFunction = RightAdd;
+            break;
+        case SubOP:
+            leftHandSideFunction = Sub;
+            rightHandSideFunction = RightSub;
+            break;
+        case MulOP:
+            leftHandSideFunction = Mul;
+            rightHandSideFunction = RightMul;
+            break;
+        case DivOP:
+            leftHandSideFunction = Div;
+            rightHandSideFunction = RightDiv;
+            break;
+        case FloorDivOP:
+            leftHandSideFunction = FloorDiv;
+            rightHandSideFunction = RightFloorDiv;
+            break;
+        case ModOP:
+            leftHandSideFunction = Mod;
+            rightHandSideFunction = RightMod;
+            break;
+        case PowOP:
+            leftHandSideFunction = Pow;
+            rightHandSideFunction = RightPow;
+            break;
+        case BitXorOP:
+            leftHandSideFunction = BitXor;
+            rightHandSideFunction = RightBitXor;
+            break;
+        case BitAndOP:
+            leftHandSideFunction = BitAnd;
+            rightHandSideFunction = RightBitAnd;
+            break;
+        case BitOrOP:
+            leftHandSideFunction = BitOr;
+            rightHandSideFunction = RightBitOr;
+            break;
+        case BitLeftOP:
+            leftHandSideFunction = BitLeft;
+            rightHandSideFunction = RightBitLeft;
+            break;
+        case BitRightOP:
+            leftHandSideFunction = BitRight;
+            rightHandSideFunction = RightBitRight;
+            break;
+        case AndOP:
+            leftHandSideFunction = And;
+            rightHandSideFunction = RightAnd;
+            break;
+        case OrOP:
+            leftHandSideFunction = Or;
+            rightHandSideFunction = RightOr;
+            break;
+        case XorOP:
+            leftHandSideFunction = Xor;
+            rightHandSideFunction = RightXor;
+            break;
+        case EqualsOP:
+            leftHandSideFunction = Equals;
+            rightHandSideFunction = RightEquals;
+            break;
+        case NotEqualsOP:
+            leftHandSideFunction = NotEquals;
+            rightHandSideFunction = RightNotEquals;
+            break;
+        case GreaterThanOP:
+            leftHandSideFunction = GreaterThan;
+            rightHandSideFunction = RightGreaterThan;
+            break;
+        case LessThanOP:
+            leftHandSideFunction = LessThan;
+            rightHandSideFunction = RightLessThan;
+            break;
+        case GreaterThanOrEqualOP:
+            leftHandSideFunction = GreaterThanOrEqual;
+            rightHandSideFunction = RightGreaterThanOrEqual;
+            break;
+        case LessThanOrEqualOP:
+            leftHandSideFunction = LessThanOrEqual;
+            rightHandSideFunction = RightLessThanOrEqual;
+            break;
+        case ContainsOP:
+            leftHandSideFunction = RightContains;
+            rightHandSideFunction = Contains;
+            break;
+        default:
+            // Fixme
+            std::cout << "NO FUNCTION FOUND\n";
+            break;
+    }
+    auto leftHandSide = c->pop_value();
+    auto rightHandSide = c->pop_value();
+    bool found = false;
+    bool success = false;
+    value *result;
+    value *operation = leftHandSide->get(c, this, leftHandSideFunction, &found);
+    if (found) {
+        result = this->call_function(c, operation, std::vector<value *>{rightHandSide}, &success);
+        if (success) {
+            c->lastObject = result;
+            return nullptr;
+        }
+    }
+    // Try the right hand side
+    found = false;
+    success = false;
+    operation = rightHandSide->get(c, this, rightHandSideFunction, &found);
+    if (!found) {
+        return this->NewObjectWithNameNotFoundError(c, rightHandSide, rightHandSideFunction);
+    }
+    result = this->call_function(c, operation, std::vector<value *>{rightHandSide}, &success);
+    if (success) {
+        c->lastObject = result;
+        return nullptr;
+    }
+    return result;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *c, const std::string &identifier) {
+    value *object = c->pop_value();
+    bool found = false;
+    value *result = object->get(c, this, identifier, &found);
+    if (!found) {
+        return result;
+    }
+    c->lastObject = result;
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::getIdentifierOP(context *c, const std::string &identifier) {
+    value *result = c->peek_symbol_table()->get_any(identifier);
+    if (result == nullptr) {
+        return this->NewObjectWithNameNotFoundError(c, identifier);
+    }
+    c->lastObject = result;
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
+    value *index = c->pop_value();
+    value *source = c->pop_value();
+    bool success = false;
+    value *indexFunc = source->get(c, this, Index, &success);
+    if (!success) {
+        return indexFunc;
+    }
+    success = false;
+    value *result = this->call_function(c, indexFunc, std::vector<value *>{index}, &success);
+    if (!success) {
+        return result;
+    }
+    c->lastObject = result;
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, size_t numberOfArguments) {
+    std::cout << "CALLING METHOD\n";
+    value *function = c->pop_value();
+    std::vector<value *> arguments;
+    arguments.reserve(numberOfArguments);
+    for (size_t argument = 0; argument < numberOfArguments; argument++) {
+        arguments.push_back(c->pop_value());
+    }
+    bool success = false;
+    value *result = this->call_function(c, function, arguments, &success);
+    if (!success) {
+        return result;
+    }
+    c->lastObject = result;
+    return nullptr;
+}
 
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
-    value *lastObject = nullptr;
     while (bc->has_next()) {
         instruction instruct = bc->next();
+        std::cout << std::to_string(instruct.op_code) + " " << std::endl;
         switch (instruct.op_code) {
             case NewStringOP:
-                executionError = this->newStringOP(c, std::any_cast<std::string>(instruct.value), &lastObject);
+                executionError = this->newStringOP(c, std::any_cast<std::string>(instruct.value));
                 break;
             case NewFloatOP:
-                executionError = this->newFloatOP(c, std::any_cast<long double>(instruct.value), &lastObject);
+                executionError = this->newFloatOP(c, std::any_cast<double>(instruct.value));
                 break;
             case NewIntegerOP:
-                executionError = this->newIntegerOP(c, std::any_cast<int64_t>(instruct.value), &lastObject);
+                executionError = this->newIntegerOP(c, std::any_cast<int64_t>(instruct.value));
                 break;
             case NewBytesOP:
-                executionError = this->newBytesOP(c, std::any_cast<std::vector<uint8_t>>(instruct.value), &lastObject);
+                executionError = this->newBytesOP(c, std::any_cast<std::string>(instruct.value));
                 break;
             case GetTrueOP:
-                lastObject = this->new_bool(c, false, true);
+                c->lastObject = this->get_true(c);
                 break;
             case GetFalseOP:
-                lastObject = this->new_bool(c, false, false);
+                c->lastObject = this->get_false(c);
                 break;
-
+            case GetNoneOP:
+                c->lastObject = this->get_none(c);
+                break;
+            case NewTupleOP:
+                executionError = this->newTupleOP(c, std::any_cast<size_t>(instruct.value));
+                break;
+            case NewArrayOP:
+                executionError = this->newArrayOP(c, std::any_cast<size_t>(instruct.value));
+                break;
+            case NewHashOP:
+                executionError = this->newHashOP(c, std::any_cast<size_t>(instruct.value));
+                break;
+            case UnaryOP:
+                executionError = this->unaryOP(c, std::any_cast<uint8_t>(instruct.value));
+                break;
+            case BinaryOP:
+                executionError = this->binaryOP(c, std::any_cast<uint8_t>(instruct.value));
+                break;
+            case GetIdentifierOP:
+                executionError = this->getIdentifierOP(c, std::any_cast<std::string>(instruct.value));
+                break;
+            case SelectNameFromObjectOP:
+                executionError = this->selectNameFromObjectOP(c, std::any_cast<std::string>(instruct.value));
+                break;
+            case IndexOP:
+                executionError = this->indexOP(c);
+                break;
+            case MethodInvocationOP:
+                executionError = this->methodInvocationOP(c, std::any_cast<size_t>(instruct.value));
+                break;
+            case JumpOP:
+                bc->jump(std::any_cast<size_t>(instruct.value));
+                break;
+            case PushOP:
+                if (c->lastObject != nullptr) {
+                    c->push_value(c->lastObject);
+                }
+                break;
+            default:
+                // FixMe: Do something when
+                break;
         }
         if (executionError != nullptr) {
-            //  Handle the error
+            // Handle the error
+            // Return the error
+            (*success) = false;
+            return executionError;
         }
     }
 }
 
+plasma::vm::value *plasma::vm::virtual_machine::execute(plasma::vm::bytecode *bc, bool *success) {
+    context c;
+    this->initialize_context(&c);
+    return execute(&c, bc, success);
+}

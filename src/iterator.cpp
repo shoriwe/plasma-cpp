@@ -2,18 +2,19 @@
 
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::IteratorInitialize(bool isBuiltIn) {
-    return [=](context *c, value *object) -> value * {
+    return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 HasNext,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_false();
+                                        return this->get_false(c);
                                     }
                             )
                     );
@@ -21,15 +22,16 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IteratorInitialize
         );
         object->set_on_demand_symbol(
                 Next,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -37,13 +39,14 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IteratorInitialize
         );
         object->set_on_demand_symbol(
                 Iter,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return self;
                                     }

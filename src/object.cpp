@@ -6,16 +6,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
     return [=](context *c, value *object) {
         object->set_on_demand_symbol(
                 Initialize,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -23,14 +24,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 Negate,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         bool result = false;
                                         value *boolError = this->interpret_as_boolean(c, self, &result);
                                         if (boolError != nullptr) {
@@ -38,7 +40,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(!result);
+                                        return this->get_boolean(c, !result);
                                     }
                             )
                     );
@@ -46,14 +48,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 And,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *boolError;
                                         bool left;
                                         boolError = this->interpret_as_boolean(c, self, &left);
@@ -68,7 +71,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(left && right);
+                                        return this->get_boolean(c, left && right);
                                     }
                             )
                     );
@@ -76,14 +79,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 RightAnd,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *boolError;
                                         bool left;
                                         boolError = this->interpret_as_boolean(c, arguments[0], &left);
@@ -98,7 +102,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(left && right);
+                                        return this->get_boolean(c, left && right);
                                     }
                             )
                     );
@@ -106,14 +110,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 Or,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *boolError;
                                         bool left;
                                         boolError = this->interpret_as_boolean(c, self, &left);
@@ -128,7 +133,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(left || right);
+                                        return this->get_boolean(c, left || right);
                                     }
                             )
                     );
@@ -136,14 +141,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 RightOr,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *boolError;
                                         bool left;
                                         boolError = this->interpret_as_boolean(c, arguments[0], &left);
@@ -158,7 +164,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(left || right);
+                                        return this->get_boolean(c, left || right);
                                     }
                             )
                     );
@@ -166,14 +172,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 Xor,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *boolError;
                                         bool left;
                                         boolError = this->interpret_as_boolean(c, self, &left);
@@ -188,7 +195,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(left != right);
+                                        return this->get_boolean(c, left != right);
                                     }
                             )
                     );
@@ -196,14 +203,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 RightXor,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *boolError;
                                         bool left;
                                         boolError = this->interpret_as_boolean(c, arguments[0], &left);
@@ -218,7 +226,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                             return boolError;
                                         }
                                         (*success) = true;
-                                        return this->get_boolean(left != right);
+                                        return this->get_boolean(c, left != right);
                                     }
                             )
                     );
@@ -226,16 +234,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 Equals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(self->id == arguments[0]->id);
+                                        return this->get_boolean(c, self->id == arguments[0]->id);
                                     }
                             )
                     );
@@ -243,16 +252,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 RightEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(arguments[0]->id == self->id);
+                                        return this->get_boolean(c, arguments[0]->id == self->id);
                                     }
                             )
                     );
@@ -260,16 +270,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 NotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(self->id != arguments[0]->id);
+                                        return this->get_boolean(c, self->id != arguments[0]->id);
                                     }
                             )
                     );
@@ -277,16 +288,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 RightNotEquals,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_boolean(arguments[0]->id != self->id);
+                                        return this->get_boolean(c, arguments[0]->id != self->id);
                                     }
                             )
                     );
@@ -294,17 +306,18 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 Hash,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         if (self->hash == 0) {
                                             size_t objectHash = this->hash_string(
-                                                    self->get_type(this)->name + "@" + std::to_string(self->id));
+                                                    self->get_type(c, this)->name + "@" + std::to_string(self->id));
                                             self->hash = objectHash;
                                         }
                                         (*success) = true;
@@ -316,16 +329,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 Class,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return self->get_type(this);
+                                        return self->get_type(c, this);
                                     }
                             )
                     );
@@ -333,17 +347,18 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SubClasses,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         std::unordered_map<size_t, value *> classesMap;
                                         std::stack<value *> pendingTypes;
-                                        pendingTypes.push(self->get_type(this));
+                                        pendingTypes.push(self->get_type(c, this));
                                         value *currentProcessingType;
                                         while (!pendingTypes.empty()) {
                                             currentProcessingType = pendingTypes.top();
@@ -373,16 +388,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 ToString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->new_string(c, false, self->get_type(this)->name + "{" +
+                                        return this->new_string(c, false, self->get_type(c, this)->name + "{" +
                                                                           std::to_string(self->id) + "}");
                                     }
                             )
@@ -391,16 +407,17 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 ToBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
-                                        return this->get_true();
+                                        return this->get_true(c);
                                     }
                             )
                     );
@@ -408,14 +425,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetInteger,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_integer(c, false, self->integer);
                                     }
@@ -425,14 +443,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetFloat,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_float(c, false, self->floating);
                                     }
@@ -442,14 +461,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_string(c, false, self->string);
                                     }
@@ -459,14 +479,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_integer(c, false, self->boolean);
                                     }
@@ -476,14 +497,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetBytes,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_bytes(c, false, self->bytes);
                                     }
@@ -493,14 +515,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetContent,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         return this->new_array(c, false, self->content);
                                     }
@@ -510,14 +533,15 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 GetKeyValues,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         (*success) = true;
                                         value *result = this->new_hash_table(c, false);
                                         result->keyValues = self->keyValues;
@@ -529,24 +553,25 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetInteger,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{IntegerName});
 
                                         }
                                         self->integer = argument->integer;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -554,24 +579,25 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetFloat,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != Float) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{FloatName});
 
                                         }
                                         self->floating = argument->floating;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -579,24 +605,25 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetString,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != String) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{StringName});
 
                                         }
                                         self->string = argument->string;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -604,24 +631,25 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetBool,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != Boolean) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{BoolName});
 
                                         }
                                         self->boolean = argument->boolean;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -629,24 +657,25 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetBytes,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != Bytes) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{BytesName});
 
                                         }
                                         self->bytes = argument->bytes;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -654,25 +683,26 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetContent,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != Array && argument->typeId != Tuple) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{ArrayName,
                                                                                                       TupleName});
 
                                         }
                                         self->content = argument->content;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
@@ -680,24 +710,25 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
         );
         object->set_on_demand_symbol(
                 SetKeyValues,
-                [=]() -> value * {
+                [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
                             c,
                             isBuiltIn,
                             object,
                             new_builtin_callable(
                                     1,
-                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
                                         value *argument = arguments[0];
                                         if (argument->typeId != HashTable) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(this),
+                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
                                                                              std::vector<std::string>{HashTableName});
 
                                         }
                                         self->keyValues = argument->keyValues;
                                         (*success) = true;
-                                        return this->get_none();
+                                        return this->get_none(c);
                                     }
                             )
                     );
