@@ -203,6 +203,7 @@ plasma::vm::virtual_machine::content_contains(context *c, value *container, valu
         return nullptr;
     }
     for (const auto &contentObject : container->content) {
+
         value *comparisonError = this->equals(c, object, contentObject, result);
         if (comparisonError != nullptr) {
             (*result) = false;
@@ -211,6 +212,7 @@ plasma::vm::virtual_machine::content_contains(context *c, value *container, valu
         if (*result) {
             return nullptr;
         }
+
     }
     (*result) = false;
     return nullptr;
@@ -240,6 +242,7 @@ plasma::vm::virtual_machine::content_repeat(context *c, const std::vector<plasma
         }
         copyFunctions.push_back(copyFunction);
     }
+
     value *copyFunctionResult;
     bool copySuccess;
     for (size_t time = 0; time < times; time++) {
@@ -253,6 +256,7 @@ plasma::vm::virtual_machine::content_repeat(context *c, const std::vector<plasma
             result->push_back(copyFunctionResult);
         }
     }
+
     return nullptr;
 }
 
@@ -683,6 +687,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, v
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::hashtable_to_string(context *c, value *hashtableObject, bool *success) {
+
     std::string result;
     bool first = true;
     value *objectToString;
@@ -785,9 +790,9 @@ plasma::vm::virtual_machine::hashtable_equals(context *c, value *leftHandSide, v
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::hashtable_contains(context *c, value *hashTable, value *key, bool *result) {
-    value *indexedObject = this->hashtable_index(c, hashTable, key, result);
-    if (!(*result)) {
+plasma::vm::virtual_machine::hashtable_contains(context *c, value *hashTable, value *key, bool *success) {
+    value *indexedObject = this->hashtable_index(c, hashTable, key, success);
+    if (!(*success)) {
         return indexedObject;
     }
     return nullptr;
@@ -842,14 +847,14 @@ plasma::vm::virtual_machine::equals(context *c, value *leftHandSide, value *righ
             return equalsFunction;
         }
         success = false;
-        resultValue = this->call_function(c, equalsFunction, std::vector<value *>{leftHandSide,}, &success);
+        resultValue = this->call_function(c, equalsFunction, std::vector<value *>{leftHandSide}, &success);
         if (!success) {
             return resultValue;
         }
         return this->interpret_as_boolean(c, resultValue, result);
     }
     success = false;
-    resultValue = this->call_function(c, equalsFunction, std::vector<value *>{rightHandSide,}, &success);
+    resultValue = this->call_function(c, equalsFunction, std::vector<value *>{rightHandSide}, &success);
     if (!success) {
         return resultValue;
     }

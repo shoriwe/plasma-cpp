@@ -41,6 +41,7 @@ plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t num
         value *v = c->pop_value();
         elements[key] = v;
     }
+
     c->lastObject = this->new_hash_table(c, false);
     for (const auto &kValue : elements) {
         value *addError = c->lastObject->add_key_value(c, this, kValue.first, kValue.second);
@@ -110,7 +111,6 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t instruction) {
-
     std::string leftHandSideFunction, rightHandSideFunction;
     switch (instruction) {
         case AddOP:
@@ -203,7 +203,6 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
             break;
         default:
             // Fixme
-
             break;
     }
     auto leftHandSide = c->pop_value();
@@ -226,7 +225,7 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     if (!found) {
         return this->NewObjectWithNameNotFoundError(c, rightHandSide, rightHandSideFunction);
     }
-    result = this->call_function(c, operation, std::vector<value *>{rightHandSide}, &success);
+    result = this->call_function(c, operation, std::vector<value *>{leftHandSide}, &success);
     if (success) {
         c->lastObject = result;
         return nullptr;
@@ -276,14 +275,18 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
     value *function = c->pop_value();
     std::vector<value *> arguments;
     arguments.reserve(numberOfArguments);
+
     for (size_t argument = 0; argument < numberOfArguments; argument++) {
         arguments.push_back(c->pop_value());
     }
     bool success = false;
+
     value *result = this->call_function(c, function, arguments, &success);
     if (!success) {
+
         return result;
     }
+
     c->lastObject = result;
     return nullptr;
 }
@@ -328,7 +331,9 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->unaryOP(c, std::any_cast<uint8_t>(instruct.value));
                 break;
             case BinaryOP:
+
                 executionError = this->binaryOP(c, std::any_cast<uint8_t>(instruct.value));
+
                 break;
             case GetIdentifierOP:
                 executionError = this->getIdentifierOP(c, std::any_cast<std::string>(instruct.value));
@@ -346,7 +351,9 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 bc->jump(std::any_cast<size_t>(instruct.value));
                 break;
             case PushOP:
+
                 if (c->lastObject != nullptr) {
+
                     c->push_value(c->lastObject);
                 }
                 break;

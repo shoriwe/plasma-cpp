@@ -76,6 +76,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_tuple(context *c, bool isBui
                                                           const std::vector<plasma::vm::value *> &content) {
     value *result = this->new_object(c, isBuiltIn, TupleName, nullptr);
     result->typeId = Tuple;
+    result->content = content;
     this->TupleInitialize(isBuiltIn)(c, result);
     result->set(Self, result);
     return result;

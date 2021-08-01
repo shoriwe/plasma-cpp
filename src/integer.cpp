@@ -702,6 +702,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                     1,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+
                                         value *right = arguments[0];
                                         switch (right->typeId) {
                                             case Integer:

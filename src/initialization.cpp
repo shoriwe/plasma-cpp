@@ -51,6 +51,7 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                     new_builtin_callable(
                             1,
                             [=](value *self, const std::vector<value *> &arguments, bool *success) {
+
                                 value *resultAsString;
                                 auto target = arguments[0];
 
@@ -67,19 +68,20 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
 
                                     resultAsString = this->call_function(c, resultToString,
                                                                          std::vector<value *>(), &callSuccess);
-
                                     if (!callSuccess) {
+
                                         (*success) = false;
                                         return resultAsString;
                                     }
-
                                     if (resultAsString->typeId != String) {
                                         (*success) = false;
                                         return this->NewInvalidTypeError(c,
                                                                          resultAsString->get_type(c, this),
                                                                          std::vector<std::string>{StringName});
                                     }
+
                                 }
+
 
                                 (*this->stdout_file) << resultAsString->string << std::endl;
                                 (*success) = true;

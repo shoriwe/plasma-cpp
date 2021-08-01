@@ -243,6 +243,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     1,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+
                                         (*success) = true;
                                         return this->get_boolean(c, self->id == arguments[0]->id);
                                     }
@@ -397,7 +398,6 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
-
                                         (*success) = true;
                                         return this->new_string(c, false, self->get_type(c, this)->name + "{" +
                                                                           std::to_string(self->id) + "}");

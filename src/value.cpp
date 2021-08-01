@@ -81,7 +81,8 @@ plasma::vm::value *plasma::vm::value::add_key_value(context *c, virtual_machine 
     if (hashingError != nullptr) {
         return hashingError;
     }
-    if (!this->keyValues.contains(hash_)) {
+    auto kValues = this->keyValues.find(hash_);
+    if (kValues == this->keyValues.end()) {
         this->keyValues[hash_] = std::vector(1,
                                              key_value{
                                                      .key = key,
@@ -90,18 +91,19 @@ plasma::vm::value *plasma::vm::value::add_key_value(context *c, virtual_machine 
         );
         return nullptr;
     }
-    for (size_t index = 0; index < this->keyValues[hash_].size(); index++) {
+    for (auto & kValueEntry : kValues->second) {
         bool equals = false;
-        value *equalsError = vm->equals(c, key, this->keyValues[hash_][index].key, &equals);
+        value *equalsError = vm->equals(c, key, kValueEntry.key, &equals);
         if (equalsError != nullptr) {
             return equalsError;
         }
         if (equals) {
-            this->keyValues[hash_][index].value = v;
+            kValueEntry.key = key;
+            kValueEntry.value = v;
             return nullptr;
         }
     }
-    this->keyValues[hash_].push_back(
+    kValues->second.push_back(
             key_value{
                     .key = key,
                     .value = v,

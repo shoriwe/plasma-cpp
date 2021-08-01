@@ -36,6 +36,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                             std::reverse(repeatedContent.begin(), repeatedContent.end());
                                         }
                                         (*success) = true;
+
                                         return this->new_tuple(c, false, repeatedContent);
                                     }
                             )
@@ -91,11 +92,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                     1,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+
                                         value *right = arguments[0];
                                         if (right->typeId != Tuple) {
                                             (*success) = true;
                                             return this->get_false(c);
                                         }
+
                                         bool comparison = false;
                                         value *comparisonError = this->content_equals(
                                                 c,
@@ -108,6 +111,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                             return comparisonError;
                                         }
                                         (*success) = true;
+
                                         return this->get_boolean(c, comparison);
                                     }
                             )
@@ -227,42 +231,13 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                     1,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
-                                        value *right = arguments[0];
+
+                                        value *target = arguments[0];
                                         bool contains = false;
                                         value *containsError = this->content_contains(
                                                 c,
                                                 self,
-                                                right,
-                                                &contains
-                                        );
-                                        if (containsError != nullptr) {
-                                            (*success) = false;
-                                            return containsError;
-                                        }
-                                        (*success) = true;
-                                        return this->get_boolean(c, contains);
-                                    }
-                            )
-                    );
-                }
-        );
-        object->set_on_demand_symbol(
-                RightContains,
-                [this, isBuiltIn, c, object]() -> value * {
-                    return this->new_function(
-                            c,
-                            isBuiltIn,
-                            object,
-                            new_builtin_callable(
-                                    1,
-                                    [this, c](value *self, const std::vector<value *> &arguments,
-                                              bool *success) -> value * {
-                                        value *left = arguments[0];
-                                        bool contains = false;
-                                        value *containsError = this->content_contains(
-                                                c,
-                                                left,
-                                                self,
+                                                target,
                                                 &contains
                                         );
                                         if (containsError != nullptr) {
@@ -399,6 +374,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+                                        (*success) = true;
                                         return this->get_boolean(c, !self->content.empty());
                                     }
                             )

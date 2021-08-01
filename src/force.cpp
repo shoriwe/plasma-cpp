@@ -12,11 +12,11 @@ plasma::vm::value *plasma::vm::virtual_machine::force_get_from_source(context *c
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::force_any_from_master(context *c, const std::string &symbol) {
+
     value *result = c->master->get_self(symbol);
     if (result == nullptr) {
         return this->get_none(c);
     }
-
     return result;
 }
 

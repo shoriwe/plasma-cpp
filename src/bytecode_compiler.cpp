@@ -188,11 +188,10 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
 static bool compile_tuple(const plasma::ast::TupleExpression &tupleExpression,
                           std::vector<plasma::vm::instruction> *result,
                           plasma::error::error *compilationError) {
-    for (auto argument = tupleExpression.Values.rbegin();
-         argument != tupleExpression.Values.rend();
-         argument++) {
-
-        if (!compile_expression((*argument), true, result, compilationError)) {
+    for (auto tupleValue = tupleExpression.Values.rbegin();
+         tupleValue != tupleExpression.Values.rend();
+         tupleValue++) {
+        if (!compile_expression((*tupleValue), true, result, compilationError)) {
             return false;
         }
     }
@@ -237,15 +236,10 @@ static bool compile_hash(const plasma::ast::HashExpression &hashExpression,
         if (!compile_expression(key, true, result, compilationError)) {
             return false;
         }
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::PushOP
-                }
-        );
     }
     result->push_back(
             plasma::vm::instruction{
-                    .op_code = plasma::vm::NewTupleOP,
+                    .op_code = plasma::vm::NewHashOP,
                     .value = hashExpression.Values.size()
             }
     );

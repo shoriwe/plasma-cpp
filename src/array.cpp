@@ -286,31 +286,6 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                 }
         );
         object->set_on_demand_symbol(
-                RightContains,
-                [this, isBuiltIn, c, object]() -> value * {
-                    return this->new_function(
-                            c,
-                            isBuiltIn,
-                            object,
-                            new_builtin_callable(
-                                    1,
-                                    [this, c](value *self, const std::vector<value *> &arguments,
-                                              bool *success) -> value * {
-                                        value *left = arguments[0];
-                                        bool contains = false;
-                                        value *containsError = this->content_contains(c, left, self, &contains);
-                                        if (containsError != nullptr) {
-                                            (*success) = false;
-                                            return containsError;
-                                        }
-                                        (*success) = true;
-                                        return this->get_boolean(c, contains);
-                                    }
-                            )
-                    );
-                }
-        );
-        object->set_on_demand_symbol(
                 Hash,
                 [this, isBuiltIn, c, object]() -> value * {
                     return this->new_function(
@@ -433,6 +408,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
+                                        (*success) = true;
                                         return this->get_boolean(c, !self->content.empty());
                                     }
                             )

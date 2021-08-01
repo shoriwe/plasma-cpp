@@ -12,6 +12,7 @@ void test_success_expression(int *number_of_tests, int *success) {
     int vmSuccess = 0;
     for (const auto &expressionDirectory : std::filesystem::directory_iterator("tests-samples/success/expressions")) {
         for (const auto &script : std::filesystem::directory_iterator(expressionDirectory.path())) {
+            std::cout << "[?] Testing: " << script.path().string() << std::endl;
             vmTests++;
             plasma::reader::string_reader scriptReader;
             if (!plasma::reader::string_reader_new_from_file(&scriptReader, script.path())) {
@@ -26,12 +27,22 @@ void test_success_expression(int *number_of_tests, int *success) {
                 FAIL(compilationError.string() + ": " + script.path().string());
                 continue;
             }
+            std::stringstream stdinFile;
+            std::stringstream stdoutFile;
+            std::stringstream stderrFile;
             plasma::vm::virtual_machine plasmaVM(&std::cin, &std::cout, &std::cerr);
             bool executionSuccess = false;
             plasma::vm::value *result = plasmaVM.execute(&sourceCode, &executionSuccess);
             if (!executionSuccess) {
                 FAIL(result->typeName + ": " + result->string);
+                continue;
             }
+            auto output = stdoutFile.str();
+            if (output.find("False\n") != std::string::npos) {
+                FAIL(script.path().string() + "\n" + output);
+                continue;
+            }
+            SUCCESS(script.path().string());
         }
     }
     (*number_of_tests) += vmTests;

@@ -91,6 +91,7 @@ static void mark(plasma::vm::value *v) {
 }
 
 void plasma::vm::context::collect_values() {
+
     /*
      * Roots:
      * - Last Object
@@ -127,21 +128,16 @@ void plasma::vm::context::collect_values() {
 }
 
 void plasma::vm::context::collect_symbol_tables() {
-    bool collected;
-    do {
-        collected = false;
-        for (const auto &keyValue : this->symbol_table_heap.pages) {
-            for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
-                symbol_table *symbolTable = keyValue.second->content + pageIndex;
-                if (symbolTable->count == 0) {
-                    if (!collected) {
-                        collected = true;
-                    }
-                    this->symbol_table_heap.deallocate(symbolTable->pageIndex, symbolTable);
-                }
+
+
+    for (const auto &keyValue : this->symbol_table_heap.pages) {
+        for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
+            symbol_table *symbolTable = keyValue.second->content + pageIndex;
+            if (symbolTable->count == 0) {
+                this->symbol_table_heap.deallocate(symbolTable->pageIndex, symbolTable);
             }
         }
-    } while (collected);
+    }
 }
 
 void plasma::vm::context::push_value(value *v) {

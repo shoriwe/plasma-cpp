@@ -641,7 +641,7 @@ namespace plasma::vm {
 
         value *hashtable_equals(context *c, value *leftHandSide, value *rightHandSide, bool *result);
 
-        value *hashtable_contains(context *c, value *hashTable, value *object, bool *result);
+        value *hashtable_contains(context *c, value *hashTable, value *object, bool *success);
 
         value *hashtable_copy(context *c, value *hashTable, bool *success);
 
