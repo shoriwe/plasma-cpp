@@ -2,8 +2,16 @@
 
 #include "vm/virtual_machine.h"
 
+plasma::vm::callable plasma::vm::new_plasma_callable(size_t number_of_arguments, std::vector<instruction> code) {
+    return callable{
+            .isBuiltIn = false,
+            .numberOfArguments = number_of_arguments,
+            .code = code
+    };
+}
+
 plasma::vm::callable plasma::vm::new_builtin_callable(size_t number_of_arguments, function_callback callback) {
-    return plasma::vm::callable{
+    return callable{
             .isBuiltIn = true,
             .numberOfArguments = number_of_arguments,
             .callback = std::move(callback),

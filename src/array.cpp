@@ -4,6 +4,7 @@
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
+
         object->set_on_demand_symbol(
                 Add,
                 [this, isBuiltIn, c, object]() -> value * {

@@ -3,6 +3,9 @@
 plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value *function,
                                                               const std::vector<value *> &arguments,
                                                               bool *success) {
+    if (function == this->force_any_from_master(c, "println")) {
+
+    }
 
     bool isType = function->typeId == Type;
     value *constructedObject;
@@ -16,7 +19,10 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
         }
         (*success) = false;
         callFunction = constructedObject->get(c, this, Initialize, success);
-    } else {
+        if (!(*success)) {
+            return callFunction;
+        }
+    } else { // Request get Call Function of the object
         callFunction = function->get(c, this, Call, success);
         if (!(*success)) {
             return callFunction;
@@ -48,18 +54,23 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
         result = callFunction->callable_.callback(self, arguments, success);
 
     } else {
-        for (size_t i = arguments.size() - 1; i > -1; i--) {
-            c->push_value(arguments[i]);
+        for (auto argument = arguments.rbegin();
+             argument != arguments.rend();
+             argument++) {
+
+            c->push_value(*argument);
         }
         // Fixme
-        // bytecode bc = bytecode(callFunction->callable_.code);
-        // result = this->execute(c, &bc, success);
+        bytecode bc = bytecode{
+                .instructions = callFunction->callable_.code,
+                .index = 0
+        };
+        result = this->execute(c, &bc, success);
     }
 
     c->pop_symbol_table();
 
     if (isType) {
-
         return constructedObject;
     }
 

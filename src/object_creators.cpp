@@ -28,7 +28,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_hash_table(context *c, bool 
     value *result = this->new_object(c, isBuiltIn, HashTableName, nullptr);
     result->typeId = HashTable;
     this->HashTableInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -38,7 +38,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_array(context *c, bool isBui
     result->typeId = Array;
     result->content = content;
     this->ArrayInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -49,8 +49,9 @@ plasma::vm::virtual_machine::new_function(context *c, bool isBuiltIn,
     value *result = this->new_object(c, isBuiltIn, FunctionName, nullptr);
     result->self = self;
     result->typeId = Function;
+
     result->callable_ = callable_;
-    result->set(Self, result);
+
     return result;
 }
 
@@ -60,7 +61,7 @@ plasma::vm::virtual_machine::new_bytes(context *c, bool isBuiltIn, const std::ve
     result->typeId = Bytes;
     result->bytes = bytes;
     this->BytesInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -68,7 +69,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_iterator(context *c, bool is
     value *result = this->new_object(c, isBuiltIn, IteratorName, nullptr);
     result->typeId = Iterator;
     this->IteratorInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -78,7 +79,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_tuple(context *c, bool isBui
     result->typeId = Tuple;
     result->content = content;
     this->TupleInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 
 }
@@ -87,7 +88,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_none(context *c, bool isBuil
     value *result = this->new_object(c, isBuiltIn, NoneName, nullptr);
     result->typeId = NoneType;
     this->NoneInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -101,7 +102,7 @@ plasma::vm::virtual_machine::new_type(context *c, bool isBuiltIn, const std::str
     result->constructor_ = constructor;
     result->name = name;
     this->TypeInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -110,14 +111,14 @@ plasma::vm::value *plasma::vm::virtual_machine::new_float(context *c, bool isBui
     result->typeId = Float;
     result->floating = value_;
     this->FloatInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_module(context *c, bool isBuiltIn) {
     value *result = this->new_object(c, isBuiltIn, ModuleName, nullptr);
     result->typeId = Module;
-    result->set(Self, result);
+
     return result;
 }
 
@@ -126,7 +127,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_bool(context *c, bool isBuil
     result->typeId = Boolean;
     result->boolean = value_;
     this->BoolInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -135,7 +136,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_integer(context *c, bool isB
     result->typeId = Integer;
     result->integer = value_;
     this->IntegerInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 
@@ -145,7 +146,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_string(context *c, bool isBu
 
     result->string = value_;
     this->StringInitialize(isBuiltIn)(c, result);
-    result->set(Self, result);
+
     return result;
 }
 

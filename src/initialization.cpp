@@ -50,7 +50,7 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                     nullptr,
                     new_builtin_callable(
                             1,
-                            [=](value *self, const std::vector<value *> &arguments, bool *success) {
+                            [this, c](value *self, const std::vector<value *> &arguments, bool *success) {
 
                                 value *resultAsString;
                                 auto target = arguments[0];

@@ -6,7 +6,9 @@ void plasma::vm::value::set_on_demand_symbol(const std::string &s, const on_dema
 }
 
 void plasma::vm::value::set(const std::string &s, value *v) const {
+
     this->symbols->set(s, v);
+
 }
 
 plasma::vm::value *
@@ -16,12 +18,15 @@ plasma::vm::value::get(context *c, virtual_machine *vm, const std::string &symbo
 
         auto onDemandResult = this->onDemandSymbols.find(symbol);
         // Try to get the value from the onDemand map
+
         if (onDemandResult != this->onDemandSymbols.end()) {
 
             result = onDemandResult->second();
             this->set(symbol, result);
             (*success) = true;
+
         } else {
+
             (*success) = false;
             result = vm->NewObjectWithNameNotFoundError(c, this, symbol);
         }
@@ -91,7 +96,7 @@ plasma::vm::value *plasma::vm::value::add_key_value(context *c, virtual_machine 
         );
         return nullptr;
     }
-    for (auto & kValueEntry : kValues->second) {
+    for (auto &kValueEntry : kValues->second) {
         bool equals = false;
         value *equalsError = vm->equals(c, key, kValueEntry.key, &equals);
         if (equalsError != nullptr) {

@@ -63,12 +63,33 @@ static bool compile_node(std::any node, std::vector<plasma::vm::instruction> *re
     return compile_statement(node, result, compilationError);
 }
 
+static bool
+compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
+                                  std::vector<plasma::vm::instruction> *result,
+                                  plasma::error::error *compilationError);
+
+static bool compile_class_body(const std::vector<std::any> &body,
+                               std::vector<plasma::vm::instruction> *result,
+                               plasma::error::error *compilationError) {
+    for (const auto &node : body) {
+        if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
+            // Do something to compile interfaces and class functions
+            if (!compile_class_function_definition(
+                    std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result, compilationError)) {
+                return false;
+            }
+        } else if (!compile_node(node, result, compilationError)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool compile_body(const std::vector<std::any> &body,
                          std::vector<plasma::vm::instruction> *result,
                          plasma::error::error *compilationError) {
-    for (size_t index = 0; index < body.size(); index++) {
-
-        if (!compile_node(body[index], result, compilationError)) {
+    for (const auto &node : body) {
+        if (!compile_node(node, result, compilationError)) {
             return false;
         }
     }
@@ -217,7 +238,7 @@ static bool compile_array(const plasma::ast::ArrayExpression &arrayExpression,
     }
     result->push_back(
             plasma::vm::instruction{
-                    .op_code = plasma::vm::NewTupleOP,
+                    .op_code = plasma::vm::NewArrayOP,
                     .value = arrayExpression.Values.size()
             }
     );
@@ -452,13 +473,74 @@ static bool compile_parentheses_expression(
     return compile_expression(parenthesesExpression.X, false, result, compilationError);
 }
 
+static bool compile_expression(std::any node, bool push, std::vector<plasma::vm::instruction> *result,
+                               plasma::error::error *compilationError) {
+    bool success = false;
+    if (node.type() == typeid(plasma::ast::BasicLiteralExpression)) {
+        success = compile_basic_literal(std::any_cast<plasma::ast::BasicLiteralExpression>(node), result,
+                                        compilationError);
+    } else if (node.type() == typeid(plasma::ast::TupleExpression)) {
+        success = compile_tuple(std::any_cast<plasma::ast::TupleExpression>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::ArrayExpression)) {
+        success = compile_array(std::any_cast<plasma::ast::ArrayExpression>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::HashExpression)) {
+        success = compile_hash(std::any_cast<plasma::ast::HashExpression>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::UnaryExpression)) {
+        success = compile_unary_expression(std::any_cast<plasma::ast::UnaryExpression>(node), result,
+                                           compilationError);
+    } else if (node.type() == typeid(plasma::ast::BinaryExpression)) {
+        success = compile_binary_expression(std::any_cast<plasma::ast::BinaryExpression>(node), result,
+                                            compilationError);
+    } else if (node.type() == typeid(plasma::ast::ParenthesesExpression)) {
+        success = compile_parentheses_expression(std::any_cast<plasma::ast::ParenthesesExpression>(node),
+                                                 result, compilationError);
+    }/* else if (node.type() == typeid(plasma::ast::IfOneLinerExpression)) {
+        success = compile_if_one_linear_expression(std::any_cast<plasma::ast::IfOneLinerExpression>(node), result,
+                                                   compilationError);
+    } else if (node.type() == typeid(plasma::ast::UnlessOneLinerExpression)) {
+        success = compile_unless_one_linear_expression(std::any_cast<plasma::ast::UnlessOneLinerExpression>(node),
+                                                       result, compilationError);
+    } */else if (node.type() == typeid(plasma::ast::IndexExpression)) {
+        success = compile_index_expression(std::any_cast<plasma::ast::IndexExpression>(node), result,
+                                           compilationError);
+    } else if (node.type() == typeid(plasma::ast::SelectorExpression)) {
+        success = compile_selector_expression(std::any_cast<plasma::ast::SelectorExpression>(node), result,
+                                              compilationError);
+    } else if (node.type() == typeid(plasma::ast::MethodInvocationExpression)) {
+        success = compile_method_invocation(
+                std::any_cast<plasma::ast::MethodInvocationExpression>(node), result, compilationError
+        );
+    } else if (node.type() == typeid(plasma::ast::Identifier)) {
+        success = compile_identifier_expression(std::any_cast<plasma::ast::Identifier>(node), result);
+    }/* else if (node.type() == typeid(plasma::ast::LambdaExpression)) {
+        success = compile_lambda_expression(std::any_cast<plasma::ast::LambdaExpression>(node), result,
+                                            compilationError);
+    } else if (node.type() == typeid(plasma::ast::GeneratorExpression)) {
+        success = compile_generator_expression(std::any_cast<plasma::ast::GeneratorExpression>(node), result,
+                                               compilationError);
+    }*/ else {
+        // FIXME
+    }
+    if (!success) {
+        return false;
+    }
+    if (push) {
+        result->push_back(
+                plasma::vm::instruction{
+                        .op_code = plasma::vm::PushOP,
+                }
+        );
+    }
+    return true;
+}
+
 // Statements
 
 static bool compile_assignment(const plasma::ast::AssignStatement &assignStatement,
                                std::vector<plasma::vm::instruction> *result,
                                plasma::error::error *compilationError) {
     // Pre-assignment
-    if (assignStatement.AssignOperator.directValue == plasma::lexer::Assign) {
+    if (assignStatement.AssignOperator.directValue == plasma::lexer::Assign) { // Basic Assign
         if (!compile_expression(assignStatement.RightHandSide, true, result, compilationError)) {
             return false;
         }
@@ -560,109 +642,140 @@ static bool compile_assignment(const plasma::ast::AssignStatement &assignStateme
     return true;
 }
 
-static bool compile_expression(std::any node, bool push, std::vector<plasma::vm::instruction> *result,
-                               plasma::error::error *compilationError) {
-    bool success = false;
-    if (node.type() == typeid(plasma::ast::BasicLiteralExpression)) {
-        success = compile_basic_literal(std::any_cast<plasma::ast::BasicLiteralExpression>(node), result,
-                                        compilationError);
-    } else if (node.type() == typeid(plasma::ast::TupleExpression)) {
-        success = compile_tuple(std::any_cast<plasma::ast::TupleExpression>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::ArrayExpression)) {
-        success = compile_array(std::any_cast<plasma::ast::ArrayExpression>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::HashExpression)) {
-        success = compile_hash(std::any_cast<plasma::ast::HashExpression>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::UnaryExpression)) {
-        success = compile_unary_expression(std::any_cast<plasma::ast::UnaryExpression>(node), result,
-                                           compilationError);
-    } else if (node.type() == typeid(plasma::ast::BinaryExpression)) {
-        success = compile_binary_expression(std::any_cast<plasma::ast::BinaryExpression>(node), result,
-                                            compilationError);
-    } else if (node.type() == typeid(plasma::ast::ParenthesesExpression)) {
-        success = compile_parentheses_expression(std::any_cast<plasma::ast::ParenthesesExpression>(node),
-                                                 result, compilationError);
-    }/* else if (node.type() == typeid(plasma::ast::IfOneLinerExpression)) {
-        success = compile_if_one_linear_expression(std::any_cast<plasma::ast::IfOneLinerExpression>(node), result,
-                                                   compilationError);
-    } else if (node.type() == typeid(plasma::ast::UnlessOneLinerExpression)) {
-        success = compile_unless_one_linear_expression(std::any_cast<plasma::ast::UnlessOneLinerExpression>(node),
-                                                       result, compilationError);
-    } */else if (node.type() == typeid(plasma::ast::IndexExpression)) {
-        success = compile_index_expression(std::any_cast<plasma::ast::IndexExpression>(node), result,
-                                           compilationError);
-    } else if (node.type() == typeid(plasma::ast::SelectorExpression)) {
-        success = compile_selector_expression(std::any_cast<plasma::ast::SelectorExpression>(node), result,
-                                              compilationError);
-    } else if (node.type() == typeid(plasma::ast::MethodInvocationExpression)) {
-        success = compile_method_invocation(
-                std::any_cast<plasma::ast::MethodInvocationExpression>(node), result, compilationError
-        );
-    } else if (node.type() == typeid(plasma::ast::Identifier)) {
-        success = compile_identifier_expression(std::any_cast<plasma::ast::Identifier>(node), result);
-    }/* else if (node.type() == typeid(plasma::ast::LambdaExpression)) {
-        success = compile_lambda_expression(std::any_cast<plasma::ast::LambdaExpression>(node), result,
-                                            compilationError);
-    } else if (node.type() == typeid(plasma::ast::GeneratorExpression)) {
-        success = compile_generator_expression(std::any_cast<plasma::ast::GeneratorExpression>(node), result,
-                                               compilationError);
-    }*/ else {
-
+static bool
+compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
+                                  std::vector<plasma::vm::instruction> *result,
+                                  plasma::error::error *compilationError) {
+    // ImplementMe:
+    std::vector<std::string> arguments;
+    for (const auto &argument : functionDefinitionStatement.Arguments) {
+        arguments.push_back(argument.Token.string);
     }
-    if (!success) {
+
+    std::vector<plasma::vm::instruction> body;
+
+    body.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::LoadFunctionArgumentsOP,
+                    .value = arguments
+            }
+    );
+
+    if (!compile_body(functionDefinitionStatement.Body, &body, compilationError)) {
         return false;
     }
-    if (push) {
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::PushOP,
-                }
-        );
+    for (const auto &instruction : body) {
+
     }
+
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::NewClassFunctionOP,
+                    .value = plasma::vm::FunctionInformation{
+                            .name = functionDefinitionStatement.Name.Token.string,
+                            .bodyLength = body.size(),
+                            .numberOfArguments = arguments.size()
+                    }
+            }
+    );
+
+    result->insert(result->end(), body.begin(), body.end());
+
+    return true;
+}
+
+static bool
+compile_class_statement(const plasma::ast::ClassStatement &classStatement, std::vector<plasma::vm::instruction> *result,
+                        plasma::error::error *compilationError) {
+    for (const auto &base : classStatement.Bases) {
+        if (!compile_expression(base, true, result, compilationError)) {
+            return false;
+        }
+    }
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_class_body(classStatement.Body, &body, compilationError)) {
+        return false;
+    }
+
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::NewClassOP,
+                    .value = plasma::vm::ClassInformation{
+                            .name = classStatement.Name.Token.string,
+                            .bodyLength = body.size(),
+                            .numberOfBases = classStatement.Bases.size()
+                    }
+            }
+    );
+
+    result->insert(result->end(), body.begin(), body.end());
+
+    return true;
+}
+
+static bool
+compileReturnStatement(const plasma::ast::ReturnStatement &returnStatement,
+                       std::vector<plasma::vm::instruction> *result,
+                       plasma::error::error *compilationError) {
+    for (auto returnValue = returnStatement.Results.rbegin();
+         returnValue != returnStatement.Results.rend();
+         returnValue++) {
+        if (!compile_expression((*returnValue), true, result, compilationError)) {
+            return false;
+        }
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = returnStatement.Results.size()
+            }
+    );
     return true;
 }
 
 static bool compile_statement(std::any node, std::vector<plasma::vm::instruction> *result,
                               plasma::error::error *compilationError) {
-//     if (node.type() == typeid(plasma::ast::AssignStatement)) {
-//         return compile_assignment(std::any_cast<plasma::ast::AssignStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
-//         return compileFunctionDefinition(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result,
-//                                          compilationError);
-//     } else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
-//         return compileReturnStatement(std::any_cast<plasma::ast::ReturnStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::IfStatement)) {
-//         return compileIfStatement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
-//         return compileUnlessStatement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
-//         return compileDoWhileStatement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
-//         return compileRedoStatement()
-//     } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
-//         return compileBreakStatement()
-//     } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
-//         return compileContinueStatement()
-//     } else if (node.type() == typeid(plasma::ast::PassStatement)) {
-//         return compilePassStatement()
-//     } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
-//         return compileWhileLoopStatement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
-//         return compileUntilLoopStatement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::ForStatement)) {
-//         return compileForLoopStatement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::TryStatement)) {
-//         return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
-//         return compileModuleStatement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
-//         return compileRaiseStatement(std::any_cast<plasma::ast::RaiseStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::ClassStatement)) {
-//         return compileClassStatement(std::any_cast<plasma::ast::ClassStatement>(node), result, compilationError);
-//     } else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
-//         return compileInterfaceStatement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
-//                                          compilationError);
-//     } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
-//         return compileSwitchStatement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
-//     }
+    if (node.type() == typeid(plasma::ast::AssignStatement)) {
+        return compile_assignment(std::any_cast<plasma::ast::AssignStatement>(node), result, compilationError);
+    } /*else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
+        return compileFunctionDefinition(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result,
+                                         compilationError);
+    } */else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
+        return compileReturnStatement(std::any_cast<plasma::ast::ReturnStatement>(node), result, compilationError);
+    } /*else if (node.type() == typeid(plasma::ast::IfStatement)) {
+        return compileIfStatement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
+        return compileUnlessStatement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
+        return compileDoWhileStatement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
+        return compileRedoStatement()
+    } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
+        return compileBreakStatement()
+    } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
+        return compileContinueStatement()
+    } else if (node.type() == typeid(plasma::ast::PassStatement)) {
+        return compilePassStatement()
+    } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
+        return compileWhileLoopStatement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
+        return compileUntilLoopStatement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::ForStatement)) {
+        return compileForLoopStatement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::TryStatement)) {
+        return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
+        return compileModuleStatement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
+        return compileRaiseStatement(std::any_cast<plasma::ast::RaiseStatement>(node), result, compilationError);
+    }*/else if (node.type() == typeid(plasma::ast::ClassStatement)) {
+        return compile_class_statement(std::any_cast<plasma::ast::ClassStatement>(node), result, compilationError);
+    }/* else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
+        return compileInterfaceStatement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
+                                         compilationError);
+    } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
+        return compileSwitchStatement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
+    }
+    */
     return true;
 }

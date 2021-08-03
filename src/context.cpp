@@ -42,7 +42,11 @@ plasma::vm::symbol_table *plasma::vm::context::allocate_symbol_table(vm::symbol_
     // Reset the object
     if (parentSymbolTable == nullptr) {
         if (this->symbol_table_stack.empty()) {
-            (*result) = symbol_table(nullptr);
+            if (this->master == nullptr) {
+                (*result) = symbol_table(nullptr);
+            } else {
+                (*result) = symbol_table(this->master);
+            }
         } else {
             (*result) = symbol_table(this->peek_symbol_table());
         }
@@ -128,8 +132,6 @@ void plasma::vm::context::collect_values() {
 }
 
 void plasma::vm::context::collect_symbol_tables() {
-
-
     for (const auto &keyValue : this->symbol_table_heap.pages) {
         for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
             symbol_table *symbolTable = keyValue.second->content + pageIndex;

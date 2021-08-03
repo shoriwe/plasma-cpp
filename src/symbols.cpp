@@ -20,6 +20,7 @@ plasma::vm::value *plasma::vm::symbol_table::get_any(const std::string &symbol) 
     }
     symbol_table *current = this->parent;
     while (current != nullptr) {
+
         entry = current->symbols.find(symbol);
         if (entry != current->symbols.end()) {
             return entry->second;

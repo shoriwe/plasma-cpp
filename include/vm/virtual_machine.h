@@ -255,6 +255,17 @@ namespace plasma::vm {
         Type
     };
 
+    struct FunctionInformation {
+        std::string name;
+        size_t bodyLength;
+        size_t numberOfArguments;
+    };
+    struct ClassInformation {
+        std::string name;
+        size_t bodyLength;
+        size_t numberOfBases;
+    };
+
     struct instruction {
         uint8_t op_code;
         std::any value;
@@ -313,7 +324,7 @@ namespace plasma::vm {
 
     callable new_builtin_callable(size_t number_of_arguments, function_callback callback);
 
-    callable new_plasma_callable(size_t number_of_arguments, instruction code[]);
+    callable new_plasma_callable(size_t number_of_arguments, std::vector<instruction> code);
 
 
     struct constructor {
@@ -328,6 +339,8 @@ namespace plasma::vm {
          */
         value *construct(context *c, virtual_machine *vm, value *self) const;
     };
+
+    constructor new_plasma_constructor(const std::vector<instruction> &code);
 
     struct value {
         // Garbage collector
@@ -684,9 +697,9 @@ namespace plasma::vm {
 
         value *newModuleOP(context *c, bytecode *bc, instruction instruct);
 
-        value *newClassOP(context *c, bytecode *bc, instruction instruct);
+        value *newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation);
 
-        value *newClassFunctionOP(context *c, bytecode *bc, instruction instruct);
+        value *newClassFunctionOP(context *c, bytecode *bc, const FunctionInformation &functionInformation);
 
         value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct);
 
@@ -723,7 +736,7 @@ namespace plasma::vm {
         value *binaryOP(context *c, uint8_t instruction);
 
         //// Function calls
-        value *loadFunctionArgumentsOP(context *c, instruction instruct, value *);
+        static value *loadFunctionArgumentsOP(context *c, const std::vector<std::string> &arguments);
 
         value *noArgsGetAndCall(context *c, std::string, value *);
 
@@ -734,17 +747,17 @@ namespace plasma::vm {
 
         value *getIdentifierOP(context *c, const std::string &identifier);
 
-        value *assignIdentifierOP(context *c, instruction instruct, value *);
+        static value *assignIdentifierOP(context *c, const std::string &symbol);
 
-        value *assignSelectorOP(context *c, instruction instruct, value *);
+        static value *assignSelectorOP(context *c, const std::string &symbol);
 
         //// Index assign and request
-        value *assignIndexOP(context *c, value *);
+        value *assignIndexOP(context *c);
 
         value *indexOP(context *c);
 
         //// Function  return
-        value *returnOP(context *c, instruction instruct, value *);
+        value *returnOP(context *c, size_t numberOfReturnValues);
     };
 
 }

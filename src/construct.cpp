@@ -26,7 +26,7 @@ plasma::vm::virtual_machine::construct_object(plasma::vm::context *c, plasma::vm
             return subTypeInitializationError;
         }
     }
-    result->symbols->parent = type->symbols;
+    result->symbols->parent = type->symbols->parent;
     result->type = type;
     // Initialize the object type
     value *initializationError = type->constructor_.construct(c, this, result);
@@ -45,9 +45,13 @@ plasma::vm::value *plasma::vm::constructor::construct(context *c, virtual_machin
     c->push_symbol_table(self->symbols);
     c->push_value(self);
     bool success = false;
-    bytecode bc = bytecode(this->code);
+    bytecode bc = bytecode{
+            .instructions = this->code,
+            .index = 0
+    };
     value *result = vm->execute(c, &bc, &success);
     c->pop_symbol_table();
+    c->pop_value();
     if (success) {
         return nullptr;
     }

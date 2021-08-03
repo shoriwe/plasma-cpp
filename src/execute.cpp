@@ -234,6 +234,7 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *c, const std::string &identifier) {
+
     value *object = c->pop_value();
     bool found = false;
     value *result = object->get(c, this, identifier, &found);
@@ -245,6 +246,7 @@ plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::getIdentifierOP(context *c, const std::string &identifier) {
+
     value *result = c->peek_symbol_table()->get_any(identifier);
     if (result == nullptr) {
         return this->NewObjectWithNameNotFoundError(c, identifier);
@@ -270,6 +272,37 @@ plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
     return nullptr;
 }
 
+plasma::vm::value *plasma::vm::virtual_machine::assignIdentifierOP(context *c, const std::string &symbol) {
+    c->peek_symbol_table()->set(symbol, c->pop_value());
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::assignSelectorOP(context *c, const std::string &symbol) {
+    auto receiver = c->pop_value();
+    receiver->set(symbol, c->pop_value());
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
+
+    auto index = c->pop_value();
+    auto receiver = c->pop_value();
+    auto element = c->pop_value();
+    bool found = false;
+
+    auto assignFunc = receiver->get(c, this, Assign, &found);
+    if (!found) {
+        return assignFunc;
+    }
+    bool success = false;
+    auto result = this->call_function(c, assignFunc, std::vector<value *>{index, element}, &success);
+    if (!success) {
+        return result;
+    }
+    return nullptr;
+
+}
+
 plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, size_t numberOfArguments) {
 
     value *function = c->pop_value();
@@ -289,6 +322,71 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
 
     c->lastObject = result;
     return nullptr;
+}
+
+plasma::vm::value *
+plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation) {
+    std::vector<value *> bases;
+    for (size_t baseIndex = 0; baseIndex < classInformation.numberOfBases; baseIndex++) {
+        bases.push_back(c->pop_value());
+    }
+    auto classCode = bc->nextN(classInformation.bodyLength);
+    c->peek_symbol_table()->set(classInformation.name, this->new_type(c, false, classInformation.name, bases,
+                                                                      constructor{
+                                                                              .isBuiltIn = false,
+                                                                              .code = classCode
+                                                                      }
+    ));
+    return nullptr;
+}
+
+plasma::vm::value *
+plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
+                                                const FunctionInformation &functionInformation) {
+
+    auto self = c->peek_value();
+    auto functionInstructions = bc->nextN(functionInformation.bodyLength);
+    for (const auto &instruction : functionInstructions) {
+
+    }
+    self->set(
+            functionInformation.name,
+            this->new_function(
+                    c,
+                    false,
+                    self,
+                    new_plasma_callable(
+                            functionInformation.numberOfArguments,
+                            functionInstructions
+                    )
+            )
+    );
+
+    return nullptr;
+}
+
+plasma::vm::value *
+plasma::vm::virtual_machine::loadFunctionArgumentsOP(context *c, const std::vector<std::string> &arguments) {
+
+    for (const auto &argument : arguments) {
+
+        c->peek_symbol_table()->set(argument, c->pop_value());
+    }
+
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numberOfReturnValues) {
+    if (numberOfReturnValues == 0) {
+        return this->get_none(c);
+    } else if (numberOfReturnValues == 1) {
+        return c->pop_value();
+    }
+    std::vector<value *> content;
+    for (size_t index = 0; index < numberOfReturnValues; index++) {
+        content.push_back(c->pop_value());
+    }
+    return this->new_tuple(c, false, content);
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
@@ -331,9 +429,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->unaryOP(c, std::any_cast<uint8_t>(instruct.value));
                 break;
             case BinaryOP:
-
                 executionError = this->binaryOP(c, std::any_cast<uint8_t>(instruct.value));
-
                 break;
             case GetIdentifierOP:
                 executionError = this->getIdentifierOP(c, std::any_cast<std::string>(instruct.value));
@@ -350,13 +446,33 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case JumpOP:
                 bc->jump(std::any_cast<size_t>(instruct.value));
                 break;
+            case AssignIdentifierOP:
+                executionError = this->assignIdentifierOP(c, std::any_cast<std::string>(instruct.value));
+                break;
+            case AssignSelectorOP:
+                executionError = this->assignSelectorOP(c, std::any_cast<std::string>(instruct.value));
+                break;
+            case AssignIndexOP:
+                executionError = this->assignIndexOP(c);
+                break;
+            case NewClassOP:
+                executionError = this->newClassOP(c, bc, std::any_cast<ClassInformation>(instruct.value));
+                break;
+            case NewClassFunctionOP:
+                executionError = this->newClassFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                break;
+            case LoadFunctionArgumentsOP:
+                executionError = this->loadFunctionArgumentsOP(c,
+                                                               std::any_cast<std::vector<std::string>>(instruct.value));
+                break;
             case PushOP:
-
                 if (c->lastObject != nullptr) {
-
                     c->push_value(c->lastObject);
                 }
                 break;
+            case ReturnOP:
+                (*success) = true;
+                return this->returnOP(c, std::any_cast<size_t>(instruct.value));
             default:
                 // FixMe: Do something when
                 break;
@@ -368,6 +484,8 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             return executionError;
         }
     }
+    (*success) = true;
+    return this->get_none(c);
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::execute(plasma::vm::bytecode *bc, bool *success) {

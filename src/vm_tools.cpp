@@ -88,7 +88,9 @@ plasma::vm::virtual_machine::content_assign(context *c, value *container, value 
         (*success) = false;
         return this->NewIndexOutOfRange(c, container->content.size(), index->integer);
     }
+
     container->content[realIndex] = object;
+
     (*success) = true;
     return this->get_none(c);
 }
@@ -183,16 +185,19 @@ plasma::vm::value *plasma::vm::virtual_machine::content_equals(context *c, value
         return nullptr;
     }
     for (size_t index = 0; index < leftHandSide->content.size(); index++) {
-        value *comparisonError = this->equals(c, leftHandSide->content[index], rightHandSide->content[index], result);
+        bool objectsComparison = false;
+        value *comparisonError = this->equals(c, leftHandSide->content[index], rightHandSide->content[index],
+                                              &objectsComparison);
         if (comparisonError != nullptr) {
             (*result) = false;
             return comparisonError;
         }
-        if (*result) {
+        if (!objectsComparison) {
+            (*result) = false;
             return nullptr;
         }
     }
-    (*result) = false;
+    (*result) = true;
     return nullptr;
 }
 
