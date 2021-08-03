@@ -3,10 +3,6 @@
 plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value *function,
                                                               const std::vector<value *> &arguments,
                                                               bool *success) {
-    if (function == this->force_any_from_master(c, "println")) {
-
-    }
-
     bool isType = function->typeId == Type;
     value *constructedObject;
     value *callFunction;
