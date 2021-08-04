@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <regex>
 
 #include "tools.h"
 
@@ -96,7 +97,57 @@ std::string plasma::general_tooling::replace_escaped(const std::string &string) 
     return result;
 }
 
+std::string plasma::general_tooling::remove_integer_definition(std::string string) {
+    string.erase(0, 2);
+    return string;
+}
+
 std::string plasma::general_tooling::remove_floor(std::string string) {
     string.erase(std::remove(string.begin(), string.end(), '_'), string.end());
     return string;
+}
+
+bool isBase10(const std::string &string) {
+    return std::regex_search(string, std::regex("^[0-9]+[0-9_]*$"));
+}
+
+bool isBase16(const std::string &string) {
+    return std::regex_search(string, std::regex("^0[xX][0-9a-fA-F]+[0-9a-fA-F_]*$"));
+}
+
+bool isBase2(const std::string &string) {
+    return std::regex_search(string, std::regex("^0[bB][01]+[01_]*$"));
+}
+
+bool isBase8(const std::string &string) {
+    return std::regex_search(string, std::regex("^0[oO][0-7]+[0-7_]*$"));
+}
+
+int64_t plasma::general_tooling::parse_integer(const std::string &string, bool *success) {
+    (*success) = true;
+    if (isBase10(string)) {
+        return (int64_t) std::stoll(
+                plasma::general_tooling::remove_floor(string), nullptr,
+                10);
+    } else if (isBase16(string)) {
+        return (int64_t) std::stoll(
+                plasma::general_tooling::remove_integer_definition(
+                        plasma::general_tooling::remove_floor(string)),
+                nullptr,
+                16);
+    } else if (isBase2(string)) {
+        return (int64_t) std::stoll(
+                plasma::general_tooling::remove_integer_definition(
+                        plasma::general_tooling::remove_floor(string)),
+                nullptr,
+                2);
+    } else if (isBase8(string)) {
+        return (int64_t) std::stoll(
+                plasma::general_tooling::remove_integer_definition(
+                        plasma::general_tooling::remove_floor(string)),
+                nullptr,
+                8);
+    }
+    (*success) = false;
+    return 0;
 }

@@ -130,6 +130,8 @@ bool plasma::bytecode_compiler::compiler::compile(vm::bytecode *result, error::e
 static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &basicLiteralExpression,
                                   std::vector<plasma::vm::instruction> *result,
                                   plasma::error::error *compilationError) {
+    int64_t integerValue;
+    bool integerParsingSuccess;
     switch (basicLiteralExpression.DirectValue) {
         case plasma::lexer::SingleQuoteString:
         case plasma::lexer::DoubleQuoteString:
@@ -154,12 +156,16 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
         case plasma::lexer::HexadecimalInteger:
         case plasma::lexer::BinaryInteger:
         case plasma::lexer::OctalInteger:
+            integerValue = plasma::general_tooling::parse_integer(basicLiteralExpression.Token.string,
+                                                                  &integerParsingSuccess);
+            if (!integerParsingSuccess) {
+                plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
+                return false;
+            }
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::NewIntegerOP,
-                            .value = (int64_t) std::stoll(
-                                    plasma::general_tooling::remove_floor(basicLiteralExpression.Token.string), nullptr,
-                                    0),
+                            .value = integerValue,
                             .line = static_cast<size_t>(basicLiteralExpression.Token.line),
                     }
             );
