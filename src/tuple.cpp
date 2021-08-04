@@ -262,8 +262,19 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                     0,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
-                                        (*success) = false;
-                                        return this->NewUnhashableTypeError(c, self->get_type(c, this));
+                                        std::vector<int64_t> hashes;
+                                        hashes.reserve(self->content.size());
+                                        for (const auto &element : self->content) {
+                                            int64_t elementHash;
+                                            auto calculationError = calculate_hash(c, element, &elementHash);
+                                            if (calculationError != nullptr) {
+                                                (*success) = false;
+                                                return calculationError;
+                                            }
+                                            hashes.push_back(elementHash);
+                                        }
+                                        (*success) = true;
+                                        return this->new_integer(c, false, hash_array(hashes));
                                     }
                             )
                     );
@@ -304,7 +315,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                     1,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
-                                        return this->content_index(c, self, arguments[0], success);
+                                        return this->content_index(c, arguments[0], self, success);
                                     }
                             )
                     );

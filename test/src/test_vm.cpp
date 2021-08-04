@@ -41,12 +41,13 @@ void test_success_expression(int *number_of_tests, int *success) {
                 continue;
             }
             auto output = stdoutFile.str();
-            std::cout << output << std::endl;
+            std::cout << output;
             if (output.find("False") != std::string::npos) {
                 FAIL(script.path().string() + "\n" + output);
                 continue;
             }
             SUCCESS(script.path().string());
+            vmSuccess++;
         }
     }
     (*number_of_tests) += vmTests;

@@ -270,8 +270,7 @@ static bool compile_hash(const plasma::ast::HashExpression &hashExpression,
 static bool compile_unary_expression(const plasma::ast::UnaryExpression &unaryExpression,
                                      std::vector<plasma::vm::instruction> *result,
                                      plasma::error::error *compilationError) {
-    auto expression = unaryExpression.X;
-    if (!compile_expression(expression, true, result, compilationError)) {
+    if (!compile_expression(unaryExpression.X, true, result, compilationError)) {
         return false;
     }
     uint8_t instruction;

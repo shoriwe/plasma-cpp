@@ -78,17 +78,16 @@ plasma::vm::value *plasma::vm::virtual_machine::newFloatOP(context *c, double fl
 plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t instruction) {
     std::string operationName;
     switch (instruction) {
-        case plasma::lexer::NegateBits:
-            operationName = plasma::vm::NegBits;
+        case NegateBitsOP:
+            operationName = NegBits;
             break;
-        case plasma::lexer::Not:
-        case plasma::lexer::SignNot:
-            operationName = plasma::vm::Negate;
+        case BoolNegateOP:
+            operationName = Negate;
             break;
-        case plasma::lexer::Sub:
-            operationName = plasma::vm::Negative;
+        case NegativeOP:
+            operationName = Negative;
             break;
-            //case plasma::lexer::Add: // Fixme: Complete this
+            //case PositiveOP: // Fixme: Complete this
             //    operationName = plasma::vm::Positive;
             //    break;
         default:

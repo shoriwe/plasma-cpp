@@ -823,11 +823,11 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_copy(context *c, value
 // Any
 
 size_t plasma::vm::virtual_machine::calculate_index(int64_t index, size_t length, bool *fail) {
-    if (index >= length) {
+    if (((int64_t) length) <= index) {
         (*fail) = true;
         return 0;
     } else if (index < 0) {
-        index = length + index;
+        index = ((int64_t) length) + index;
         if (index < 0) {
             (*fail) = true;
             return 0;
