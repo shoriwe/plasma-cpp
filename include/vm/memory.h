@@ -9,9 +9,9 @@ namespace memory {
 
     template<typename T>
     struct page {
-        size_t allocatedElements = 0;
-        size_t length = 0;
-        T *content = nullptr;
+        size_t allocatedElements;
+        size_t length;
+        T *content;
     };
 
     template<typename T>
@@ -23,7 +23,7 @@ namespace memory {
     template<typename T>
     struct memory {
         size_t currentIndex = 0;
-        std::unordered_map<size_t, page<T> *> pages;
+        std::unordered_map<size_t, page<T>> pages;
         std::stack<chunk<T>> availableChunks;
 
         memory() {
@@ -32,8 +32,7 @@ namespace memory {
 
         ~memory() {
             for (const auto &keyValue : this->pages) {
-                // delete keyValue.second->content;
-                // delete keyValue.second;
+                delete[] keyValue.second.content;
             }
             this->pages.clear();
         }
@@ -45,8 +44,8 @@ namespace memory {
         size_t max_page_length() {
             size_t result = 0;
             for (const auto &keyValue: this->pages) {
-                if (keyValue.second->length > result) {
-                    result = keyValue.second->length;
+                if (keyValue.second.length > result) {
+                    result = keyValue.second.length;
                 }
             }
             return result;
@@ -54,22 +53,27 @@ namespace memory {
 
         void new_page(size_t length) {
             size_t pageIndex = this->next_index();
-            this->pages[pageIndex] = new page<T> {
-                .length = length,
-                .content = new T[length]
+            this->pages[pageIndex] = page<T>{
+                    .allocatedElements = 0,
+                    .length = length,
+                    .content = new T[length]
             };
             for (size_t memoryIndex = 0; memoryIndex < length; memoryIndex++) {
                 this->availableChunks.push(
                         chunk{
                                 .page_index=pageIndex,
-                                .object=this->pages[pageIndex]->content + memoryIndex,
+                                .object=this->pages[pageIndex].content + memoryIndex,
                         }
                 );
             }
         }
 
         void remove_page(size_t pageIndex) {
-            this->pages.erase(this->pages.begin() + pageIndex);
+            auto p = this->pages.find(pageIndex);
+            if (p != this->pages.end()) {
+                delete[] p.second.content;
+                this->pages.erase(p);
+            }
         }
 
         [[nodiscard]] bool empty() const {
@@ -79,12 +83,12 @@ namespace memory {
         chunk<T> allocate() {
             chunk result = this->availableChunks.top();
             this->availableChunks.pop();
-            this->pages[result.page_index]->allocatedElements++;
+            this->pages[result.page_index].allocatedElements++;
             return result;
         }
 
         void deallocate(size_t pageIndex, T *o) {
-            this->pages[pageIndex]->allocatedElements--;
+            this->pages[pageIndex].allocatedElements--;
             this->availableChunks.push(
                     chunk<T>{
                             .page_index = pageIndex,

@@ -1,10 +1,5 @@
 #include "vm/virtual_machine.h"
 
-plasma::vm::context::~context() {
-    this->symbol_table_stack.clear();
-    this->value_stack.clear();
-}
-
 plasma::vm::value *plasma::vm::context::allocate_value() {
     // Check if there is space to allocate the object
     if (this->value_heap.empty() && !this->isMaster) {
@@ -119,8 +114,8 @@ void plasma::vm::context::collect_values() {
     toRemove.reserve(this->value_heap.pages.size());
     // Collect all not marked values
     for (const auto &keyValue: this->value_heap.pages) {
-        for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
-            value *v = keyValue.second->content + pageIndex;
+        for (size_t pageIndex = 0; pageIndex < keyValue.second.length; pageIndex++) {
+            value *v = keyValue.second.content + pageIndex;
             if (!v->isSet) {
                 continue;
             }
@@ -140,8 +135,8 @@ void plasma::vm::context::collect_symbol_tables() {
     do {
         collected = false;
         for (const auto &keyValue : this->symbol_table_heap.pages) {
-            for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
-                symbol_table *symbolTable = keyValue.second->content + pageIndex;
+            for (size_t pageIndex = 0; pageIndex < keyValue.second.length; pageIndex++) {
+                symbol_table *symbolTable = keyValue.second.content + pageIndex;
                 if (symbolTable->count == 0 && symbolTable->isSet) {
                     symbolTable->isSet = false;
                     this->symbol_table_heap.deallocate(symbolTable->pageIndex, symbolTable);

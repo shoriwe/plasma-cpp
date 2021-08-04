@@ -416,8 +416,6 @@ namespace plasma::vm {
         // LoopStack   *LoopStack // ToDo:
         // TryStack    *TryStack // ToDo:
 
-        ~context();
-
         value *allocate_value();
 
         symbol_table *allocate_symbol_table(symbol_table *parentSymbolTable);
