@@ -393,7 +393,6 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
     value *executionError = nullptr;
     while (bc->has_next()) {
         instruction instruct = bc->next();
-
         switch (instruct.op_code) {
             case NewStringOP:
                 executionError = this->newStringOP(c, std::any_cast<std::string>(instruct.value));
@@ -486,10 +485,4 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
     }
     (*success) = true;
     return this->get_none(c);
-}
-
-plasma::vm::value *plasma::vm::virtual_machine::execute(plasma::vm::bytecode *bc, bool *success) {
-    context c;
-    this->initialize_context(&c);
-    return execute(&c, bc, success);
 }

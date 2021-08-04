@@ -1,8 +1,6 @@
 #include "vm/virtual_machine.h"
 
 plasma::vm::context::~context() {
-    this->value_heap.clear();
-    this->symbol_table_heap.clear();
     this->symbol_table_stack.clear();
     this->value_stack.clear();
 }
@@ -21,9 +19,9 @@ plasma::vm::value *plasma::vm::context::allocate_value() {
     value *result = resultPage.object;
     // Reset the object
     (*result) = value();
-    result->symbols = this->allocate_symbol_table(nullptr);
     //
     result->pageIndex = resultPage.page_index;
+    result->isSet = true;
     return result;
 }
 
@@ -53,8 +51,13 @@ plasma::vm::symbol_table *plasma::vm::context::allocate_symbol_table(vm::symbol_
     } else {
         (*result) = symbol_table(parentSymbolTable);
     }
+    if (result->parent != nullptr) {
+        // Increment parent when symbol table creation
+        result->parent->count++;
+    }
     //
     result->pageIndex = resultPage.page_index;
+    result->isSet = true;
     return result;
 }
 
@@ -125,6 +128,7 @@ void plasma::vm::context::collect_values() {
                 v->marked = false;
                 continue;
             }
+            v->isSet = false;
             this->value_heap.deallocate(v->pageIndex, v);
         }
     }
@@ -132,14 +136,20 @@ void plasma::vm::context::collect_values() {
 }
 
 void plasma::vm::context::collect_symbol_tables() {
-    for (const auto &keyValue : this->symbol_table_heap.pages) {
-        for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
-            symbol_table *symbolTable = keyValue.second->content + pageIndex;
-            if (symbolTable->count == 0) {
-                this->symbol_table_heap.deallocate(symbolTable->pageIndex, symbolTable);
+    bool collected;
+    do {
+        collected = false;
+        for (const auto &keyValue : this->symbol_table_heap.pages) {
+            for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
+                symbol_table *symbolTable = keyValue.second->content + pageIndex;
+                if (symbolTable->count == 0 && symbolTable->isSet) {
+                    symbolTable->isSet = false;
+                    this->symbol_table_heap.deallocate(symbolTable->pageIndex, symbolTable);
+                    collected = true;
+                }
             }
         }
-    }
+    } while (collected);
 }
 
 void plasma::vm::context::push_value(value *v) {
@@ -157,12 +167,16 @@ plasma::vm::value *plasma::vm::context::pop_value() {
 }
 
 void plasma::vm::context::push_symbol_table(symbol_table *s) {
+    // Increment on push to stack
+    s->count++;
     this->symbol_table_stack.push_back(s);
 }
 
 plasma::vm::symbol_table *plasma::vm::context::pop_symbol_table() {
     symbol_table *result = this->symbol_table_stack.back();
     this->symbol_table_stack.pop_back();
+    // Decrement when pop from the stack
+    result->count--;
     return result;
 }
 

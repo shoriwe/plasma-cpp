@@ -1,5 +1,9 @@
 #include "vm/virtual_machine.h"
 
+/*
+ * ToDo:
+ * Determine all the locations in which the symbol-table reference increment should happen
+ */
 plasma::vm::value *plasma::vm::virtual_machine::construct_subtype(plasma::vm::context *c, value *subType, value *self) {
     value *subTypeConstructionError;
     for (auto subSubType : subType->subTypes) {

@@ -27,18 +27,22 @@ void test_success_expression(int *number_of_tests, int *success) {
                 FAIL(compilationError.string() + ": " + script.path().string());
                 continue;
             }
-            std::stringstream stdinFile;
+            std::istringstream stdinFile;
             std::stringstream stdoutFile;
             std::stringstream stderrFile;
-            plasma::vm::virtual_machine plasmaVM(&std::cin, &std::cout, &std::cerr);
+            plasma::vm::virtual_machine plasmaVM(stdinFile, stdoutFile, stderrFile);
             bool executionSuccess = false;
-            plasma::vm::value *result = plasmaVM.execute(&sourceCode, &executionSuccess);
+            // Initialize the context
+            plasma::vm::context c;
+            plasmaVM.initialize_context(&c);
+            plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
             if (!executionSuccess) {
                 FAIL(result->typeName + ": " + result->string);
                 continue;
             }
             auto output = stdoutFile.str();
-            if (output.find("False\n") != std::string::npos) {
+            if (output.find("False") != std::string::npos) {
+                std::cout << output << std::endl;
                 FAIL(script.path().string() + "\n" + output);
                 continue;
             }

@@ -4,6 +4,11 @@ plasma::vm::value *
 plasma::vm::virtual_machine::new_object(context *c, bool isBuiltIn, const std::string &typeName,
                                         value *type) {
     value *result = c->allocate_value();
+    if (type == nullptr) {
+        result->set_symbols(c->allocate_symbol_table(nullptr));
+    } else {
+        result->set_symbols(c->allocate_symbol_table(type->symbols->parent));
+    }
     result->typeId = Object;
 
     result->id = this->next_id();

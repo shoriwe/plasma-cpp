@@ -5,8 +5,17 @@ void plasma::vm::value::set_on_demand_symbol(const std::string &s, const on_dema
     this->onDemandSymbols[s] = loader;
 }
 
-void plasma::vm::value::set(const std::string &s, value *v) const {
+void plasma::vm::value::set_symbols(symbol_table *symbols) {
+    if (this->symbols != nullptr) {
+        // Decrement count when un-assign
+        this->symbols->count--;
+    }
+    this->symbols = symbols;
+    // Increment count when assigned to object
+    this->symbols->count++;
+}
 
+void plasma::vm::value::set(const std::string &s, value *v) const {
     this->symbols->set(s, v);
 
 }

@@ -293,6 +293,7 @@ namespace plasma::vm {
         // Garbage collector
         size_t pageIndex = SIZE_MAX;
         uint64_t count = 0;
+        bool isSet = false;
         //
         symbol_table *parent = nullptr;
         std::unordered_map<std::string, value *> symbols;
@@ -374,13 +375,15 @@ namespace plasma::vm {
         double floating = 0;
         int64_t integer = 0;
         // Symbols
-        symbol_table *symbols;
+        symbol_table *symbols = nullptr;
         std::unordered_map<std::string, on_demand_loader> onDemandSymbols;
 
         //
         void set_on_demand_symbol(const std::string &symbol, const on_demand_loader &loader);
 
         void set(const std::string &symbol, value *v) const;
+
+        void set_symbols(symbol_table *symbols);
 
         /*
          * - Returns the requested object when success is true
@@ -409,7 +412,7 @@ namespace plasma::vm {
         memory::memory<value> value_heap;
         std::vector<value *> value_stack;
         std::vector<symbol_table *> symbol_table_stack;
-        symbol_table *master;
+        symbol_table *master = nullptr;
         // LoopStack   *LoopStack // ToDo:
         // TryStack    *TryStack // ToDo:
 
@@ -440,13 +443,13 @@ namespace plasma::vm {
         // Attributes
         uint64_t seed;
         uint64_t currentId = 1;
-        std::istream *stdin_file;
-        std::ostream *stdout_file;
-        std::ostream *stderr_file;
+        std::istream &stdin_file;
+        std::ostream &stdout_file;
+        std::ostream &stderr_file;
 
-        virtual_machine(std::istream *stdinFile,
-                        std::ostream *stdoutFile,
-                        std::ostream *stderrFile);
+        virtual_machine(std::istream &stdinFile,
+                        std::ostream &stdoutFile,
+                        std::ostream &stderrFile);
 
         // Initialization
 
@@ -587,7 +590,6 @@ namespace plasma::vm {
                              const std::vector<struct value *> &initArgument);
 
         // Code execution
-        value *execute(bytecode *bc, bool *success);
 
         value *execute(context *c, bytecode *bc, bool *success);
 

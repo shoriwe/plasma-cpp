@@ -12,19 +12,6 @@ namespace memory {
         size_t allocatedElements = 0;
         size_t length = 0;
         T *content = nullptr;
-
-        explicit page(size_t len) {
-            this->length = len;
-            this->content = new T[len];
-        }
-
-        page() = default;
-
-        ~page() {
-            if (this->content != nullptr) {
-                delete this->content;
-            }
-        }
     };
 
     template<typename T>
@@ -45,14 +32,8 @@ namespace memory {
 
         ~memory() {
             for (const auto &keyValue : this->pages) {
-                delete keyValue.second;
-            }
-            this->pages.clear();
-        }
-
-        void clear() {
-            for (const auto &keyValue : this->pages) {
-                delete keyValue.second;
+                // delete keyValue.second->content;
+                // delete keyValue.second;
             }
             this->pages.clear();
         }
@@ -73,7 +54,10 @@ namespace memory {
 
         void new_page(size_t length) {
             size_t pageIndex = this->next_index();
-            this->pages[pageIndex] = new page<T>(length);
+            this->pages[pageIndex] = new page<T> {
+                .length = length,
+                .content = new T[length]
+            };
             for (size_t memoryIndex = 0; memoryIndex < length; memoryIndex++) {
                 this->availableChunks.push(
                         chunk{

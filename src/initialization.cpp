@@ -4,12 +4,12 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::virtual_machine::virtual_machine(std::istream *stdinFile,
-                                             std::ostream *stdoutFile,
-                                             std::ostream *stderrFile) {
-    this->stdin_file = stdinFile;
-    this->stdout_file = stdoutFile;
-    this->stderr_file = stderrFile;
+plasma::vm::virtual_machine::virtual_machine(std::istream &stdinFile,
+                                             std::ostream &stdoutFile,
+                                             std::ostream &stderrFile) :
+        stdin_file(stdinFile),
+        stdout_file(stdoutFile),
+        stderr_file(stderrFile) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<unsigned long long> dis(
@@ -82,8 +82,7 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
 
                                 }
 
-
-                                (*this->stdout_file) << resultAsString->string << std::endl;
+                                this->stdout_file << resultAsString->string << std::endl;
                                 (*success) = true;
                                 return this->get_none(c);
                             }
