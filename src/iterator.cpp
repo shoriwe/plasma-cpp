@@ -54,6 +54,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IteratorInitialize
                     );
                 }
         );
+        return nullptr;
     };
 }
 

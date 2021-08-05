@@ -5,12 +5,12 @@ void plasma::vm::value::set_on_demand_symbol(const std::string &s, const on_dema
     this->onDemandSymbols[s] = loader;
 }
 
-void plasma::vm::value::set_symbols(symbol_table *symbols) {
+void plasma::vm::value::set_symbols(symbol_table *symbolTable) {
     if (this->symbols != nullptr) {
         // Decrement count when un-assign
         this->symbols->count--;
     }
-    this->symbols = symbols;
+    this->symbols = symbolTable;
     // Increment count when assigned to object
     this->symbols->count++;
 }
@@ -27,13 +27,12 @@ plasma::vm::value::get(context *c, virtual_machine *vm, const std::string &symbo
 
         auto onDemandResult = this->onDemandSymbols.find(symbol);
         // Try to get the value from the onDemand map
-
         if (onDemandResult != this->onDemandSymbols.end()) {
-
+            c->objectsInUse.push_back(this);
             result = onDemandResult->second();
             this->set(symbol, result);
             (*success) = true;
-
+            c->objectsInUse.pop_back();
         } else {
 
             (*success) = false;

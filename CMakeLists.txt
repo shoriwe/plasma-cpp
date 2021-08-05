@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 project(plasma)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
 set(SOURCE_FILES

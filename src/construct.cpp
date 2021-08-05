@@ -20,7 +20,7 @@ plasma::vm::value *plasma::vm::virtual_machine::construct_subtype(plasma::vm::co
 
 plasma::vm::value *
 plasma::vm::virtual_machine::construct_object(plasma::vm::context *c, plasma::vm::value *type, bool *success) {
-    value *result = this->new_object(c, false, type->name, type);
+    auto result = this->new_object(c, false, type->name, type);
     value *subTypeInitializationError;
     for (auto subType : type->subTypes) {
         // First initialize every child type
@@ -43,7 +43,9 @@ plasma::vm::virtual_machine::construct_object(plasma::vm::context *c, plasma::vm
 }
 
 plasma::vm::value *plasma::vm::constructor::construct(context *c, virtual_machine *vm, value *self) const {
+    c->objectsInUse.push_back(self);
     if (this->isBuiltIn) {
+        c->objectsInUse.pop_back();
         return this->callback(c, self);
     }
     c->push_symbol_table(self->symbols);
@@ -57,7 +59,9 @@ plasma::vm::value *plasma::vm::constructor::construct(context *c, virtual_machin
     c->pop_symbol_table();
     c->pop_value();
     if (success) {
+        c->objectsInUse.pop_back();
         return nullptr;
     }
+    c->objectsInUse.pop_back();
     return result;
 }

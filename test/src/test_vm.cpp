@@ -15,7 +15,7 @@ void test_success_expression(int *number_of_tests, int *success) {
             std::cout << "[?] Testing: " << script.path().string() << std::endl;
             vmTests++;
             plasma::reader::string_reader scriptReader;
-            if (!plasma::reader::string_reader_new_from_file(&scriptReader, script.path())) {
+            if (!plasma::reader::string_reader_new_from_file(&scriptReader, script.path().string())) {
                 continue;
             }
             plasma::lexer::lexer scriptLexer(&scriptReader);
@@ -33,7 +33,7 @@ void test_success_expression(int *number_of_tests, int *success) {
             plasma::vm::virtual_machine plasmaVM(stdinFile, stdoutFile, stderrFile);
             bool executionSuccess = false;
             // Initialize the context
-            plasma::vm::context c;
+            plasma::vm::context c(1);
             plasmaVM.initialize_context(&c);
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
             if (!executionSuccess) {

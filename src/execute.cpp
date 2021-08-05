@@ -9,8 +9,12 @@ plasma::vm::value *plasma::vm::virtual_machine::newTupleOP(context *c, size_t nu
             return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
         }
         elements.push_back(c->pop_value());
+        c->objectsInUse.push_back(elements.back());
     }
     c->lastObject = this->new_tuple(c, false, elements);
+    for (size_t index = 0; index < numberOfElements; index++) {
+        c->objectsInUse.pop_back();
+    }
     return nullptr;
 }
 
@@ -22,8 +26,12 @@ plasma::vm::value *plasma::vm::virtual_machine::newArrayOP(context *c, size_t nu
             return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
         }
         elements.push_back(c->pop_value());
+        c->objectsInUse.push_back(elements.back());
     }
     c->lastObject = this->new_array(c, false, elements);
+    for (size_t index = 0; index < numberOfElements; index++) {
+        c->objectsInUse.pop_back();
+    }
     return nullptr;
 }
 
@@ -31,15 +39,11 @@ plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t num
     std::unordered_map<value *, value *> elements;
     elements.reserve(numberOfElements);
     for (size_t index = 0; index < numberOfElements; index++) {
-        if (c->value_stack.empty()) {
-            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
-        }
         value *key = c->pop_value();
-        if (c->value_stack.empty()) {
-            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
-        }
         value *v = c->pop_value();
         elements[key] = v;
+        c->objectsInUse.push_back(key);
+        c->objectsInUse.push_back(v);
     }
 
     c->lastObject = this->new_hash_table(c, false);
@@ -48,6 +52,7 @@ plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t num
         if (addError != nullptr) {
             return addError;
         }
+        c->objectsInUse.pop_back();
     }
     return nullptr;
 }
@@ -96,12 +101,15 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
     }
     bool found = false;
     value *target = c->pop_value();
+    c->objectsInUse.push_back(target);
     value *operation = target->get(c, this, operationName, &found);
     if (!found) {
+        c->objectsInUse.pop_back();
         return this->NewObjectWithNameNotFoundError(c, target, operationName);
     }
     bool success = false;
     value *result = this->call_function(c, operation, std::vector<value *>(), &success);
+    c->objectsInUse.pop_back();
     if (success) {
         c->lastObject = result;
         return nullptr;
@@ -208,11 +216,15 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     auto rightHandSide = c->pop_value();
     bool found = false;
     bool success = false;
+    c->objectsInUse.push_back(leftHandSide);
+    c->objectsInUse.push_back(rightHandSide);
     value *result;
     value *operation = leftHandSide->get(c, this, leftHandSideFunction, &found);
     if (found) {
         result = this->call_function(c, operation, std::vector<value *>{rightHandSide}, &success);
         if (success) {
+            c->objectsInUse.pop_back();
+            c->objectsInUse.pop_back();
             c->lastObject = result;
             return nullptr;
         }
@@ -222,9 +234,13 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     success = false;
     operation = rightHandSide->get(c, this, rightHandSideFunction, &found);
     if (!found) {
+        c->objectsInUse.pop_back();
+        c->objectsInUse.pop_back();
         return this->NewObjectWithNameNotFoundError(c, rightHandSide, rightHandSideFunction);
     }
     result = this->call_function(c, operation, std::vector<value *>{leftHandSide}, &success);
+    c->objectsInUse.pop_back();
+    c->objectsInUse.pop_back();
     if (success) {
         c->lastObject = result;
         return nullptr;
@@ -235,8 +251,10 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
 plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *c, const std::string &identifier) {
 
     value *object = c->pop_value();
+    c->objectsInUse.push_back(object);
     bool found = false;
     value *result = object->get(c, this, identifier, &found);
+    c->objectsInUse.pop_back();
     if (!found) {
         return result;
     }
@@ -257,13 +275,19 @@ plasma::vm::value *plasma::vm::virtual_machine::getIdentifierOP(context *c, cons
 plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
     value *index = c->pop_value();
     value *source = c->pop_value();
+    c->objectsInUse.push_back(index);
+    c->objectsInUse.push_back(source);
     bool success = false;
     value *indexFunc = source->get(c, this, Index, &success);
     if (!success) {
+        c->objectsInUse.pop_back();
+        c->objectsInUse.pop_back();
         return indexFunc;
     }
     success = false;
     value *result = this->call_function(c, indexFunc, std::vector<value *>{index}, &success);
+    c->objectsInUse.pop_back();
+    c->objectsInUse.pop_back();
     if (!success) {
         return result;
     }
@@ -287,14 +311,23 @@ plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
     auto index = c->pop_value();
     auto receiver = c->pop_value();
     auto element = c->pop_value();
+    c->objectsInUse.push_back(index);
+    c->objectsInUse.push_back(receiver);
+    c->objectsInUse.push_back(element);
     bool found = false;
 
     auto assignFunc = receiver->get(c, this, Assign, &found);
     if (!found) {
+        c->objectsInUse.pop_back();
+        c->objectsInUse.pop_back();
+        c->objectsInUse.pop_back();
         return assignFunc;
     }
     bool success = false;
     auto result = this->call_function(c, assignFunc, std::vector<value *>{index, element}, &success);
+    c->objectsInUse.pop_back();
+    c->objectsInUse.pop_back();
+    c->objectsInUse.pop_back();
     if (!success) {
         return result;
     }
@@ -315,7 +348,7 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
 
     value *result = this->call_function(c, function, arguments, &success);
     if (!success) {
-
+        c->objectsInUse.pop_back();
         return result;
     }
 
@@ -326,16 +359,23 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
 plasma::vm::value *
 plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation) {
     std::vector<value *> bases;
+    bases.reserve(classInformation.numberOfBases);
     for (size_t baseIndex = 0; baseIndex < classInformation.numberOfBases; baseIndex++) {
         bases.push_back(c->pop_value());
+        c->objectsInUse.push_back(bases.back());
     }
     auto classCode = bc->nextN(classInformation.bodyLength);
-    c->peek_symbol_table()->set(classInformation.name, this->new_type(c, false, classInformation.name, bases,
-                                                                      constructor{
-                                                                              .isBuiltIn = false,
-                                                                              .code = classCode
-                                                                      }
-    ));
+    c->peek_symbol_table()->set(classInformation.name,
+                                this->new_type(c, false, classInformation.name, bases,
+                                               constructor{
+                                                       .isBuiltIn = false,
+                                                       .code = classCode
+                                               }
+                                )
+    );
+    for (size_t baseIndex = 0; baseIndex < classInformation.numberOfBases; baseIndex++) {
+        c->objectsInUse.pop_back();
+    }
     return nullptr;
 }
 
@@ -344,10 +384,8 @@ plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
                                                 const FunctionInformation &functionInformation) {
 
     auto self = c->peek_value();
+    c->objectsInUse.push_back(self);
     auto functionInstructions = bc->nextN(functionInformation.bodyLength);
-    for (const auto &instruction : functionInstructions) {
-
-    }
     self->set(
             functionInformation.name,
             this->new_function(
@@ -360,7 +398,7 @@ plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
                     )
             )
     );
-
+    c->objectsInUse.pop_back();
     return nullptr;
 }
 
@@ -368,7 +406,6 @@ plasma::vm::value *
 plasma::vm::virtual_machine::loadFunctionArgumentsOP(context *c, const std::vector<std::string> &arguments) {
 
     for (const auto &argument : arguments) {
-
         c->peek_symbol_table()->set(argument, c->pop_value());
     }
 
@@ -382,10 +419,16 @@ plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numb
         return c->pop_value();
     }
     std::vector<value *> content;
+    content.reserve(numberOfReturnValues);
     for (size_t index = 0; index < numberOfReturnValues; index++) {
         content.push_back(c->pop_value());
+        c->objectsInUse.push_back(content.back());
     }
-    return this->new_tuple(c, false, content);
+    auto result = this->new_tuple(c, false, content);
+    for (size_t index = 0; index < numberOfReturnValues; index++) {
+        c->objectsInUse.pop_back();
+    }
+    return result;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {

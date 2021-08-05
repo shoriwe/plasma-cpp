@@ -2,6 +2,7 @@
 #include <sstream>
 #include <algorithm>
 #include <regex>
+#include <iostream>
 
 #include "tools.h"
 

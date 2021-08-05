@@ -13,7 +13,7 @@
 #include <stack>
 #include <iostream>
 
-#include "error.h"
+#include "plasma_error.h"
 #include "memory.h"
 
 namespace plasma::vm {
@@ -358,7 +358,7 @@ namespace plasma::vm {
         callable callable_;
         value *self = nullptr; // Also used as root by functions defined in classes and interfaces
         // Iterator Related
-        value *source; // Also used as root by iterators
+        value *source = nullptr; // Also used as root by iterators
         //
         bool isBuiltIn = false;
         int64_t id = 0;
@@ -375,7 +375,7 @@ namespace plasma::vm {
         double floating = 0;
         int64_t integer = 0;
         // Symbols
-        symbol_table *symbols = nullptr;
+        symbol_table *symbols;
         std::unordered_map<std::string, on_demand_loader> onDemandSymbols;
 
         //
@@ -383,7 +383,7 @@ namespace plasma::vm {
 
         void set(const std::string &symbol, value *v) const;
 
-        void set_symbols(symbol_table *symbols);
+        void set_symbols(symbol_table *symbolTable);
 
         /*
          * - Returns the requested object when success is true
@@ -406,15 +406,21 @@ namespace plasma::vm {
 
 
     struct context {
-        bool isMaster = false;
+        std::vector<value *> objectsInUse;
         value *lastObject = nullptr;
-        memory::memory<symbol_table> symbol_table_heap;
-        memory::memory<value> value_heap;
+
+        memory::memory<symbol_table> *symbol_table_heap;
+        memory::memory<value> *value_heap;
+
         std::vector<value *> value_stack;
         std::vector<symbol_table *> symbol_table_stack;
         symbol_table *master = nullptr;
         // LoopStack   *LoopStack // ToDo:
         // TryStack    *TryStack // ToDo:
+
+        context(size_t initialPageLength);
+
+        ~context();
 
         value *allocate_value();
 
@@ -422,7 +428,7 @@ namespace plasma::vm {
 
         void collect_values();
 
-        void collect_symbol_tables();
+        void collect_symbol_tables() const;
 
         void push_value(value *v);
 

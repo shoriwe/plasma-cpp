@@ -22,8 +22,8 @@ plasma::vm::instruction plasma::vm::bytecode::next() {
 
 std::vector<plasma::vm::instruction> plasma::vm::bytecode::nextN(size_t n) {
     std::vector<instruction> result(
-            &this->instructions[this->index],
-            &this->instructions[this->index + n]
+            this->instructions.cbegin() + this->index,
+            this->instructions.cbegin() + this->index + n
     );
     this->index += n;
     return result;
