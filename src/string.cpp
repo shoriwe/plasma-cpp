@@ -1,4 +1,5 @@
 #include "vm/virtual_machine.h"
+#include "tools.h"
 
 plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
@@ -360,6 +361,54 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                               bool *success) -> value * {
                                         (*success) = true;
                                         return this->string_iterator(c, self);
+                                    }
+                            )
+                    );
+                }
+        );
+        object->set_on_demand_symbol(
+                ToInteger,
+                [this, isBuiltIn, c, object]() -> value * {
+                    return this->new_function(
+                            c,
+                            isBuiltIn,
+                            object,
+                            new_builtin_callable(
+                                    0,
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
+                                        bool parsingSuccess = false;
+                                        auto result = plasma::general_tooling::parse_integer(self->string, &parsingSuccess);
+                                        if (parsingSuccess) {
+                                            (*success) = true;
+                                            return this->new_integer(c, false, result);
+                                        }
+                                        (*success) = false;
+                                        return this->NewIntegerParsingError(c);
+                                    }
+                            )
+                    );
+                }
+        );
+        object->set_on_demand_symbol(
+                ToFloat,
+                [this, isBuiltIn, c, object]() -> value * {
+                    return this->new_function(
+                            c,
+                            isBuiltIn,
+                            object,
+                            new_builtin_callable(
+                                    0,
+                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                              bool *success) -> value * {
+                                        bool parsingSuccess = false;
+                                        auto result = plasma::general_tooling::parse_float(self->string, &parsingSuccess);
+                                        if (parsingSuccess) {
+                                            (*success) = true;
+                                            return this->new_float(c, false, result);
+                                        }
+                                        (*success) = false;
+                                        return this->NewIntegerParsingError(c);
                                     }
                             )
                     );

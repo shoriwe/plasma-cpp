@@ -41,6 +41,89 @@ void plasma::vm::virtual_machine::initialize_context(context *c) {
 
 void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
     // Initialize all the symbols that are set by default in the virtual machine
+    //// Classes
+    auto objectType = this->new_type(c, true, ObjectName, std::vector<value *>(),
+                                     constructor{
+                                             .isBuiltIn = true,
+                                             .callback = this->ObjectInitialize(false)
+                                     }
+    );
+    c->master->set(
+            ObjectName,
+            objectType
+    );
+    c->master->set(
+            TypeName,
+            this->new_type(c, true, TypeName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->TypeInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            StringName,
+            this->new_type(c, true, StringName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->StringInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            BytesName,
+            this->new_type(c, true, BytesName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->BytesInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            IntegerName,
+            this->new_type(c, true, IntegerName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->IntegerInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            FloatName,
+            this->new_type(c, true, FloatName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->FloatInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            ArrayName,
+            this->new_type(c, true, ArrayName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->ArrayInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            TupleName,
+            this->new_type(c, true, TupleName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->TupleInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            HashTableName,
+            this->new_type(c, true, HashTableName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->HashTableInitialize(false)
+                           }
+            )
+    );
     //// Functions
     c->master->set(
             "println",
@@ -81,7 +164,6 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                                     }
 
                                 }
-
                                 this->stdout_file << resultAsString->string << std::endl;
                                 (*success) = true;
                                 return this->get_none(c);
@@ -89,7 +171,7 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                     )
             )
     );
-    // Objects
+    //// Objects
     c->master->set(
             None,
             this->new_none(c, true)

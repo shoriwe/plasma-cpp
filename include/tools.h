@@ -13,6 +13,8 @@ namespace plasma::general_tooling {
     std::string remove_floor(std::string string);
 
     int64_t parse_integer(const std::string &string, bool *success);
+
+    double parse_float(const std::string &string, bool *success);
 }
 
 #endif //PLASMA_TOOLS_H

@@ -131,7 +131,8 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
                                   std::vector<plasma::vm::instruction> *result,
                                   plasma::error::error *compilationError) {
     int64_t integerValue;
-    bool integerParsingSuccess;
+    double floatValue;
+    bool parsingSuccess;
     switch (basicLiteralExpression.DirectValue) {
         case plasma::lexer::SingleQuoteString:
         case plasma::lexer::DoubleQuoteString:
@@ -157,8 +158,8 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
         case plasma::lexer::BinaryInteger:
         case plasma::lexer::OctalInteger:
             integerValue = plasma::general_tooling::parse_integer(basicLiteralExpression.Token.string,
-                                                                  &integerParsingSuccess);
-            if (!integerParsingSuccess) {
+                                                                  &parsingSuccess);
+            if (!parsingSuccess) {
                 plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
                 return false;
             }
@@ -172,11 +173,15 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
             break;
         case plasma::lexer::Float:
         case plasma::lexer::ScientificFloat:
+            floatValue = plasma::general_tooling::parse_float(basicLiteralExpression.Token.string,  &parsingSuccess);
+            if  (!parsingSuccess) {
+                plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
+                return false;
+            }
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::NewFloatOP,
-                            .value = std::stod(
-                                    plasma::general_tooling::remove_floor(basicLiteralExpression.Token.string)),
+                            .value = floatValue,
                             .line = static_cast<size_t>(basicLiteralExpression.Token.line),
                     }
             );

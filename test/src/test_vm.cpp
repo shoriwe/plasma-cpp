@@ -42,7 +42,8 @@ void test_success_expression(int *number_of_tests, int *success) {
             }
             auto output = stdoutFile.str();
             if (output.find("False") != std::string::npos) {
-                FAIL(script.path().string() + "\n" + output);
+                std::cout << output;
+                FAIL(script.path().string());
                 continue;
             }
             SUCCESS(script.path().string());
