@@ -36,8 +36,11 @@ std::string plasma::general_tooling::replace_escaped(const std::string &string) 
     std::stringstream buffer;
     uint8_t hexChar;
     uint16_t unicodeChar;
+    bool isBytes = string[0] == 'b';
     for (size_t index = 0; index < string.length(); index++) {
         if (index == 0 || index == string.length() - 1) {
+            continue;
+        } else if (index == 1  && isBytes) {
             continue;
         }
         char character = string[index];

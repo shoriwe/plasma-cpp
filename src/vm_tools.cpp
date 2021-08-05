@@ -394,7 +394,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
 
 plasma::vm::value *
 plasma::vm::virtual_machine::bytes_equals(value *leftHandSide, value *rightHandSide, bool *result) {
-    (*result) = leftHandSide == rightHandSide;
+    (*result) = leftHandSide->bytes == rightHandSide->bytes;
     return nullptr;
 }
 
@@ -440,7 +440,7 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
             return this->NewIndexOutOfRange(c, source->string.size(), index->integer);
         }
         (*success) = true;
-        return this->new_integer(c, false, source->string[realIndex]);
+        return this->new_string(c, false, std::string(1, source->string[realIndex]));
     } else if (index->typeId == Tuple) {
         if (index->content.size() != 2) {
             (*success) = false;
