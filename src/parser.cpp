@@ -1518,7 +1518,7 @@ bool plasma::parser::parser::parseBinaryExpression(uint8_t precedence, std::any 
         return true;
     }
     while (this->hasNext()) {
-        if (!this->kindMatch(lexer::Operator) && !this->kindMatch(lexer::Comparator)) {
+        if (!this->kindMatch(lexer::Operator) && !this->kindMatch(lexer::Operator)) {
             break;
         }
         if (!this->removeNewLines(result_error)) {

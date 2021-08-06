@@ -173,8 +173,8 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
             break;
         case plasma::lexer::Float:
         case plasma::lexer::ScientificFloat:
-            floatValue = plasma::general_tooling::parse_float(basicLiteralExpression.Token.string,  &parsingSuccess);
-            if  (!parsingSuccess) {
+            floatValue = plasma::general_tooling::parse_float(basicLiteralExpression.Token.string, &parsingSuccess);
+            if (!parsingSuccess) {
                 plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
                 return false;
             }
@@ -349,7 +349,7 @@ static bool compile_binary_expression(const plasma::ast::BinaryExpression &binar
         case plasma::lexer::BitwiseXor:
             instruction = plasma::vm::BitXorOP;
             break;
-        case plasma::lexer::BitWiseAnd:
+        case plasma::lexer::BitwiseAnd:
             instruction = plasma::vm::BitAndOP;
             break;
         case plasma::lexer::BitwiseOr:
@@ -558,53 +558,55 @@ static bool compile_assignment(const plasma::ast::AssignStatement &assignStateme
         uint8_t preOperation;
         switch (assignStatement.AssignOperator.directValue) {
             case plasma::lexer::AddAssign:
-                preOperation = plasma::vm::AddOP;
+                preOperation = plasma::lexer::Add;
                 break;
             case plasma::lexer::SubAssign:
-                preOperation = plasma::vm::SubOP;
+                preOperation = plasma::lexer::Sub;
                 break;
             case plasma::lexer::StarAssign:
-                preOperation = plasma::vm::MulOP;
+                preOperation = plasma::lexer::Star;
                 break;
             case plasma::lexer::DivAssign:
-                preOperation = plasma::vm::DivOP;
+                preOperation = plasma::lexer::Div;
                 break;
             case plasma::lexer::ModulusAssign:
-                preOperation = plasma::vm::ModOP;
+                preOperation = plasma::lexer::Modulus;
                 break;
             case plasma::lexer::PowerOfAssign:
-                preOperation = plasma::vm::PowOP;
+                preOperation = plasma::lexer::PowerOf;
                 break;
             case plasma::lexer::BitwiseXorAssign:
-                preOperation = plasma::vm::BitXorOP;
+                preOperation = plasma::lexer::BitwiseXor;
                 break;
-            case plasma::lexer::BitWiseAndAssign:
-                preOperation = plasma::vm::BitAndOP;
+            case plasma::lexer::BitwiseAndAssign:
+                preOperation = plasma::lexer::BitwiseAnd;
                 break;
             case plasma::lexer::BitwiseOrAssign:
-                preOperation = plasma::vm::BitOrOP;
+                preOperation = plasma::lexer::BitwiseOr;
                 break;
             case plasma::lexer::BitwiseLeftAssign:
-                preOperation = plasma::vm::BitLeftOP;
+                preOperation = plasma::lexer::BitwiseLeft;
                 break;
             case plasma::lexer::BitwiseRightAssign:
-                preOperation = plasma::vm::BitRightOP;
+                preOperation = plasma::lexer::BitwiseRight;
                 break;
             default:
                 // Fixme
                 break;
         }
-        if (!compile_expression(
-                plasma::ast::BinaryExpression{
-                        .LeftHandSide = assignStatement.LeftHandSide,
-                        .Operator = plasma::lexer::token{
-                                .directValue = preOperation,
-                                .kind = plasma::lexer::Operator,
-                                .line = assignStatement.AssignOperator.line
-                        },
-                        .RightHandSide = assignStatement.RightHandSide
-                }, true, result, compilationError
-        )) {
+        if (
+                !compile_expression(
+                        plasma::ast::BinaryExpression{
+                                .LeftHandSide = assignStatement.LeftHandSide,
+                                .Operator = plasma::lexer::token{
+                                        .directValue = preOperation,
+                                        .kind = plasma::lexer::Operator,
+                                        .line = assignStatement.AssignOperator.line
+                                },
+                                .RightHandSide = assignStatement.RightHandSide
+                        }, true, result, compilationError
+                )
+                ) {
             return false;
         }
     }
@@ -653,6 +655,45 @@ static bool compile_assignment(const plasma::ast::AssignStatement &assignStateme
 }
 
 static bool
+compile_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
+                            std::vector<plasma::vm::instruction> *result,
+                            plasma::error::error *compilationError) {
+    // ImplementMe:
+    std::vector<std::string> arguments;
+    for (const auto &argument : functionDefinitionStatement.Arguments) {
+        arguments.push_back(argument.Token.string);
+    }
+
+    std::vector<plasma::vm::instruction> body;
+
+    body.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::LoadFunctionArgumentsOP,
+                    .value = arguments
+            }
+    );
+
+    if (!compile_body(functionDefinitionStatement.Body, &body, compilationError)) {
+        return false;
+    }
+
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::NewFunctionOP,
+                    .value = plasma::vm::FunctionInformation{
+                            .name = functionDefinitionStatement.Name.Token.string,
+                            .bodyLength = body.size(),
+                            .numberOfArguments = arguments.size()
+                    }
+            }
+    );
+
+    result->insert(result->end(), body.begin(), body.end());
+
+    return true;
+}
+
+static bool
 compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
                                   std::vector<plasma::vm::instruction> *result,
                                   plasma::error::error *compilationError) {
@@ -673,9 +714,6 @@ compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement
 
     if (!compile_body(functionDefinitionStatement.Body, &body, compilationError)) {
         return false;
-    }
-    for (const auto &instruction : body) {
-
     }
 
     result->push_back(
@@ -743,36 +781,181 @@ compileReturnStatement(const plasma::ast::ReturnStatement &returnStatement,
     return true;
 }
 
+struct elif_information {
+    std::vector<plasma::vm::instruction> condition;
+    std::vector<plasma::vm::instruction> body;
+};
+
+static bool
+compileIfStatement(const plasma::ast::IfStatement &ifStatement,
+                   std::vector<plasma::vm::instruction> *result,
+                   plasma::error::error *compilationError) {
+
+    if (!compile_expression(ifStatement.Condition, true, result, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(ifStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::IfJumpOP,
+                    .value = body.size() + 1
+            }
+    );
+    result->insert(result->end(), body.begin(), body.end());
+
+    size_t jump = 0;
+    std::vector<elif_information> elifBlocks;
+    for (auto const &elifBlock : ifStatement.ElifBlocks) {
+        elif_information elifInformation;
+        if (!compile_expression(elifBlock.Condition, true, &elifInformation.condition, compilationError)) {
+            return false;
+        }
+        if (!compile_body(elifBlock.Body, &elifInformation.body, compilationError)) {
+            return false;
+        }
+        elifBlocks.push_back(elifInformation);
+        jump += elifInformation.condition.size() + 1 + elifInformation.body.size() + 1;
+    }
+    std::vector<plasma::vm::instruction> elseBody;
+    if (!ifStatement.Else.empty()) {
+        if (!compile_body(ifStatement.Else, &elseBody, compilationError)) {
+            return false;
+        }
+    }
+    jump += elseBody.size();
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = jump
+            }
+    );
+    for (const auto &elifBlock : elifBlocks) {
+        jump -= elifBlock.condition.size() + 1 + elifBlock.body.size() + 1;
+        result->insert(result->end(), elifBlock.condition.begin(), elifBlock.condition.end());
+        result->push_back(
+                plasma::vm::instruction{
+                        .op_code = plasma::vm::IfJumpOP,
+                        .value = elifBlock.body.size() + 1
+                }
+        );
+        result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
+        result->push_back(
+                plasma::vm::instruction{
+                        .op_code = plasma::vm::JumpOP,
+                        .value = jump
+                }
+        );
+    }
+    if (!elseBody.empty()) {
+        result->insert(result->end(), elseBody.begin(), elseBody.end());
+    }
+    return true;
+}
+
+static bool
+compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
+                       std::vector<plasma::vm::instruction> *result,
+                       plasma::error::error *compilationError) {
+
+    if (!compile_expression(unlessStatement.Condition, true, result, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(unlessStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UnlessJumpOP,
+                    .value = body.size() + 1
+            }
+    );
+    result->insert(result->end(), body.begin(), body.end());
+
+    size_t jump = 0;
+    std::vector<elif_information> elifBlocks;
+    for (auto const &elifBlock : unlessStatement.ElifBlocks) {
+        elif_information elifInformation;
+        if (!compile_expression(elifBlock.Condition, true, &elifInformation.condition, compilationError)) {
+            return false;
+        }
+        if (!compile_body(elifBlock.Body, &elifInformation.body, compilationError)) {
+            return false;
+        }
+        elifBlocks.push_back(elifInformation);
+        jump += elifInformation.condition.size() + 1 + elifInformation.body.size() + 1;
+    }
+    std::vector<plasma::vm::instruction> elseBody;
+    if (!unlessStatement.Else.empty()) {
+        if (!compile_body(unlessStatement.Else, &elseBody, compilationError)) {
+            return false;
+        }
+    }
+    jump += elseBody.size();
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = jump
+            }
+    );
+    for (const auto &elifBlock : elifBlocks) {
+        jump -= elifBlock.condition.size() + 1 + elifBlock.body.size() + 1;
+        result->insert(result->end(), elifBlock.condition.begin(), elifBlock.condition.end());
+        result->push_back(
+                plasma::vm::instruction{
+                        .op_code = plasma::vm::UnlessJumpOP,
+                        .value = elifBlock.body.size() + 1
+                }
+        );
+        result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
+        result->push_back(
+                plasma::vm::instruction{
+                        .op_code = plasma::vm::JumpOP,
+                        .value = jump
+                }
+        );
+    }
+    if (!elseBody.empty()) {
+        result->insert(result->end(), elseBody.begin(), elseBody.end());
+    }
+    return true;
+}
+
 static bool compile_statement(std::any node, std::vector<plasma::vm::instruction> *result,
                               plasma::error::error *compilationError) {
     if (node.type() == typeid(plasma::ast::AssignStatement)) {
         return compile_assignment(std::any_cast<plasma::ast::AssignStatement>(node), result, compilationError);
-    } /*else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
-        return compileFunctionDefinition(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result,
-                                         compilationError);
-    } */else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
+    } else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
+        return compile_function_definition(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result,
+                                           compilationError);
+    } else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
         return compileReturnStatement(std::any_cast<plasma::ast::ReturnStatement>(node), result, compilationError);
-    } /*else if (node.type() == typeid(plasma::ast::IfStatement)) {
+    } else if (node.type() == typeid(plasma::ast::IfStatement)) {
         return compileIfStatement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
         return compileUnlessStatement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
-        return compileDoWhileStatement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
-        return compileRedoStatement()
-    } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
-        return compileBreakStatement()
-    } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
-        return compileContinueStatement()
-    } else if (node.type() == typeid(plasma::ast::PassStatement)) {
-        return compilePassStatement()
+    }/*else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
+        return compileSwitchStatement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
         return compileWhileLoopStatement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
         return compileUntilLoopStatement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
+        return compileDoWhileStatement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::ForStatement)) {
         return compileForLoopStatement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::TryStatement)) {
+    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
+        return compileRedoStatement();
+    } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
+        return compileBreakStatement();
+    } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
+        return compileContinueStatement();
+    } else if (node.type() == typeid(plasma::ast::PassStatement)) {
+        return compilePassStatement();
+    } /*else if (node.type() == typeid(plasma::ast::TryStatement)) {
         return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
         return compileModuleStatement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
@@ -783,8 +966,6 @@ static bool compile_statement(std::any node, std::vector<plasma::vm::instruction
     }/* else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
         return compileInterfaceStatement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
                                          compilationError);
-    } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
-        return compileSwitchStatement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
     }
     */
     return true;

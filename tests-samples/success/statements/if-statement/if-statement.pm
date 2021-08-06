@@ -1,10 +1,10 @@
 a = 2
 if a < 2
     println(False)
-elif a > 2
-    println(False)
-else
+elif a == 2
     println(True)
+else
+    println(False)
 end
 
 b = 2

@@ -380,6 +380,25 @@ plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInf
 }
 
 plasma::vm::value *
+plasma::vm::virtual_machine::newFunctionOP(context *c, bytecode *bc,
+                                           const FunctionInformation &functionInformation) {
+    auto functionInstructions = bc->nextN(functionInformation.bodyLength);
+    c->peek_symbol_table()->set(
+            functionInformation.name,
+            this->new_function(
+                    c,
+                    false,
+                    nullptr,
+                    new_plasma_callable(
+                            functionInformation.numberOfArguments,
+                            functionInstructions
+                    )
+            )
+    );
+    return nullptr;
+}
+
+plasma::vm::value *
 plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
                                                 const FunctionInformation &functionInformation) {
 
@@ -429,6 +448,30 @@ plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numb
         c->objectsInUse.pop_back();
     }
     return result;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *bc, size_t jump) {
+    bool result = false;
+    auto interpretationError = interpret_as_boolean(c, c->pop_value(), &result);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    if (!result) {
+        bc->index += jump;
+    }
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecode *bc, size_t jump) {
+    bool result = false;
+    auto interpretationError = interpret_as_boolean(c, c->pop_value(), &result);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    if (result) {
+        bc->index += jump;
+    }
+    return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
@@ -506,10 +549,19 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->loadFunctionArgumentsOP(c,
                                                                std::any_cast<std::vector<std::string>>(instruct.value));
                 break;
+            case NewFunctionOP:
+                executionError = this->newFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                break;
             case PushOP:
                 if (c->lastObject != nullptr) {
                     c->push_value(c->lastObject);
                 }
+                break;
+            case IfJumpOP:
+                executionError = this->ifJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                break;
+            case UnlessJumpOP:
+                executionError = this->unlessJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
                 break;
             case ReturnOP:
                 (*success) = true;

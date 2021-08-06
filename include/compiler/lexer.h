@@ -24,7 +24,7 @@ namespace plasma::lexer {
     const char DotChar = '.';
     const char BitwiseOrChar = '|';
     const char BitwiseXorChar = '^';
-    const char BitWiseAndChar = '&';
+    const char BitwiseAndChar = '&';
     const char AddChar = '+';
     const char SubChar = '-';
     const char StarChar = '*';
@@ -94,7 +94,6 @@ namespace plasma::lexer {
         Separator,
         Punctuation, // 10
         Assignment,
-        Comparator,
         Operator,
         SingleQuoteString,
         DoubleQuoteString,
@@ -153,7 +152,7 @@ namespace plasma::lexer {
         NegateBitsAssign,
         BitwiseOrAssign,
         BitwiseXorAssign,
-        BitWiseAndAssign,
+        BitwiseAndAssign,
         BitwiseLeftAssign,
         BitwiseRightAssign,
         AddAssign,
@@ -178,7 +177,7 @@ namespace plasma::lexer {
         LessOrEqualThan,
         BitwiseOr,
         BitwiseXor,
-        BitWiseAnd,
+        BitwiseAnd,
         BitwiseLeft,
         BitwiseRight,
         Add,

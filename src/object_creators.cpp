@@ -52,7 +52,11 @@ plasma::vm::virtual_machine::new_function(context *c, bool isBuiltIn,
                                           value *self, const callable &callable_) {
 
     value *result = this->new_object(c, isBuiltIn, FunctionName, nullptr);
-    result->self = self;
+    if (self == nullptr) {
+        result->self = result;
+    } else {
+        result->self = self;
+    }
     result->typeId = Function;
 
     result->callable_ = callable_;

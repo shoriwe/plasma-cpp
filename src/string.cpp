@@ -378,7 +378,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
                                         bool parsingSuccess = false;
-                                        auto result = plasma::general_tooling::parse_integer(self->string, &parsingSuccess);
+                                        auto result = plasma::general_tooling::parse_integer(self->string,
+                                                                                             &parsingSuccess);
                                         if (parsingSuccess) {
                                             (*success) = true;
                                             return this->new_integer(c, false, result);
@@ -402,7 +403,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
                                         bool parsingSuccess = false;
-                                        auto result = plasma::general_tooling::parse_float(self->string, &parsingSuccess);
+                                        auto result = plasma::general_tooling::parse_float(self->string,
+                                                                                           &parsingSuccess);
                                         if (parsingSuccess) {
                                             (*success) = true;
                                             return this->new_float(c, false, result);

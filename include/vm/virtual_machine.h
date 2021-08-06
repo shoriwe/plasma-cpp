@@ -697,7 +697,7 @@ namespace plasma::vm {
 
         value *newFloatOP(context *c, double floating);
 
-        value *newFunctionOP(context *c, bytecode *bc, instruction instruct);
+        value *newFunctionOP(context *c, bytecode *bc, const FunctionInformation &functionInformation);
 
         value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *);
 
@@ -733,9 +733,9 @@ namespace plasma::vm {
         //// Conditions (if, unless and switch)
         value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        value *ifJumpOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *ifJumpOP(context *c, bytecode *bc, size_t jump);
 
-        value *unlessJumpOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *unlessJumpOP(context *c, bytecode *bc, size_t jump);
 
         value *unaryOP(context *c, uint8_t instruction);
 

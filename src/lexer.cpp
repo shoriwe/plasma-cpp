@@ -67,16 +67,16 @@ void plasma::lexer::lexer::guessKind(const std::string &pattern, uint8_t *kind, 
     } else if (pattern == FinallyString) {
         (*directValue) = Finally;
     } else if (pattern == AndString) {
-        (*kind) = Comparator;
+        (*kind) = Operator;
         (*directValue) = And;
     } else if (pattern == OrString) {
-        (*kind) = Comparator;
+        (*kind) = Operator;
         (*directValue) = Or;
     } else if (pattern == XorString) {
-        (*kind) = Comparator;
+        (*kind) = Operator;
         (*directValue) = Xor;
     } else if (pattern == InString) {
-        (*kind) = Comparator;
+        (*kind) = Operator;
         (*directValue) = In;
     } else if (pattern == AsString) {
         (*directValue) = As;
@@ -670,14 +670,14 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
                                                        Assignment, &content, &kind, &directValue, result_error);
             break;
         case LessThanChar:
-            success = this->tokenizeRepeatableOperator(currentChar, LessThan, Comparator, BitwiseLeft,
-                                                       Operator, LessOrEqualThan, Comparator,
+            success = this->tokenizeRepeatableOperator(currentChar, LessThan, Operator, BitwiseLeft,
+                                                       Operator, LessOrEqualThan, Operator,
                                                        BitwiseLeftAssign, Assignment, &content, &kind, &directValue,
                                                        result_error);
             break;
         case GreatThanChar:
-            success = this->tokenizeRepeatableOperator(currentChar, GreaterThan, Comparator, BitwiseRight,
-                                                       Operator, GreaterOrEqualThan, Comparator,
+            success = this->tokenizeRepeatableOperator(currentChar, GreaterThan, Operator, BitwiseRight,
+                                                       Operator, GreaterOrEqualThan, Operator,
                                                        BitwiseRightAssign, Assignment, &content, &kind,
                                                        &directValue, result_error);
             break;
@@ -699,9 +699,9 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
                                                           BitwiseXorAssign, Assignment, &content, &kind, &directValue,
                                                           result_error);
             break;
-        case BitWiseAndChar:
-            success = this->tokenizeNotRepeatableOperator(currentChar, BitWiseAnd, Operator,
-                                                          BitWiseAndAssign, Assignment, &content, &kind, &directValue,
+        case BitwiseAndChar:
+            success = this->tokenizeNotRepeatableOperator(currentChar, BitwiseAnd, Operator,
+                                                          BitwiseAndAssign, Assignment, &content, &kind, &directValue,
                                                           result_error);
             break;
         case BitwiseOrChar:
@@ -710,7 +710,7 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             break;
         case SignNotChar:
             success = this->tokenizeNotRepeatableOperator(currentChar, SignNot, Operator, NotEqual,
-                                                          Comparator, &content, &kind, &directValue, result_error);
+                                                          Operator, &content, &kind, &directValue, result_error);
             break;
         case NegateBitsChar:
             success = this->tokenizeNotRepeatableOperator(currentChar, NegateBits, Operator,
@@ -719,7 +719,7 @@ bool plasma::lexer::lexer::_next(token *result, error::error *result_error) {
             break;
         case EqualsChar:
             success = this->tokenizeNotRepeatableOperator(currentChar, Assign, Assignment, Equals,
-                                                          Comparator, &content, &kind, &directValue, result_error);
+                                                          Operator, &content, &kind, &directValue, result_error);
             break;
         case BackSlashChar:
             if (this->codeReader->hasNext()) {
