@@ -204,3 +204,17 @@ plasma::vm::symbol_table *plasma::vm::context::pop_symbol_table() {
 plasma::vm::symbol_table *plasma::vm::context::peek_symbol_table() {
     return this->symbol_table_stack.back();
 }
+
+void plasma::vm::context::protect_value(value *v) {
+    this->objectsInUse.push_back(v);
+}
+
+void plasma::vm::context::restore_protected_state(size_t state) {
+    while (this->objectsInUse.size() > state) {
+        this->objectsInUse.pop_back();
+    }
+}
+
+size_t plasma::vm::context::protected_values_state() {
+    return this->objectsInUse.size();
+}

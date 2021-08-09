@@ -7,6 +7,8 @@
 
 #include <filesystem>
 
+const size_t initialMemory = 1;
+
 static void test_success_expression(int *number_of_tests, int *success) {
     int vmTests = 0;
     int vmSuccess = 0;
@@ -33,7 +35,7 @@ static void test_success_expression(int *number_of_tests, int *success) {
             plasma::vm::virtual_machine plasmaVM(stdinFile, stdoutFile, stderrFile);
             bool executionSuccess = false;
             // Initialize the context
-            plasma::vm::context c(1);
+            plasma::vm::context c(initialMemory);
             plasmaVM.initialize_context(&c);
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
             if (!executionSuccess) {
@@ -80,7 +82,7 @@ static void test_success_statements(int *number_of_tests, int *success) {
             plasma::vm::virtual_machine plasmaVM(stdinFile, stdoutFile, stderrFile);
             bool executionSuccess = false;
             // Initialize the context
-            plasma::vm::context c(1);
+            plasma::vm::context c(initialMemory);
             plasmaVM.initialize_context(&c);
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
             if (!executionSuccess) {

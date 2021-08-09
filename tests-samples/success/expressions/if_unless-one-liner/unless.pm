@@ -1,3 +1,5 @@
 a = 0
-println((1 unless a == 2 else 0 unless a == 0 else False) == 1)
-println(((1 if a + 1 * 2 == 2) unless 0) == 1)
+b = (True unless a == 2 else False unless a == 0 else False)
+c = ((False unless a + 1 * 2 == 2) unless 0)
+println(b)
+println(c == None)

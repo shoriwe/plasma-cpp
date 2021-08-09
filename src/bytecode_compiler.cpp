@@ -483,6 +483,105 @@ static bool compile_parentheses_expression(
     return compile_expression(parenthesesExpression.X, false, result, compilationError);
 }
 
+static bool compile_if_one_linear_expression(
+        const plasma::ast::IfOneLinerExpression &ifOneLinerExpression,
+        bool push,
+        std::vector<plasma::vm::instruction> *result,
+        plasma::error::error *compilationError) {
+
+    std::vector<plasma::vm::instruction> condition;
+    if (!compile_expression(ifOneLinerExpression.Condition, true, &condition, compilationError)) {
+        return false;
+    }
+
+    std::vector<plasma::vm::instruction> ifResult;
+    if (!compile_expression(ifOneLinerExpression.Result, push, &ifResult, compilationError)) {
+        return false;
+    }
+
+    std::any elseResultAST;
+    if (ifOneLinerExpression.ElseResult.has_value()) {
+        elseResultAST = ifOneLinerExpression.ElseResult;
+    } else {
+        elseResultAST = plasma::ast::Identifier{
+                .Token= plasma::lexer::token{
+                        .string = plasma::vm::None,
+                        .kind = plasma::lexer::IdentifierKind
+                }
+        };
+    }
+    std::vector<plasma::vm::instruction> elseResult;
+    if (!compile_expression(elseResultAST, push, &elseResult, compilationError)) {
+        return false;
+    }
+
+    result->insert(result->end(), condition.begin(), condition.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::IfJumpOP,
+                    .value = ifResult.size() + 1
+            }
+    );
+    result->insert(result->end(), ifResult.begin(), ifResult.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = elseResult.size()
+            }
+    );
+    result->insert(result->end(), elseResult.begin(), elseResult.end());
+    return true;
+}
+
+static bool compile_unless_one_linear_expression(
+        const plasma::ast::UnlessOneLinerExpression &unlessOneLinerExpression,
+        bool push,
+        std::vector<plasma::vm::instruction> *result,
+        plasma::error::error *compilationError) {
+    std::vector<plasma::vm::instruction> condition;
+    if (!compile_expression(unlessOneLinerExpression.Condition, true, &condition, compilationError)) {
+        return false;
+    }
+
+    std::vector<plasma::vm::instruction> unlessResult;
+    if (!compile_expression(unlessOneLinerExpression.Result, push, &unlessResult, compilationError)) {
+        return false;
+    }
+
+    std::any elseResultAST;
+    std::vector<plasma::vm::instruction> elseResult;
+    if (unlessOneLinerExpression.ElseResult.has_value()) {
+        elseResultAST = unlessOneLinerExpression.ElseResult;
+    } else {
+        elseResultAST = plasma::ast::Identifier{
+                .Token= plasma::lexer::token{
+                        .string = plasma::vm::None,
+                        .kind = plasma::lexer::IdentifierKind
+                }
+        };
+    }
+    if (!compile_expression(elseResultAST, push, &elseResult, compilationError)) {
+        return false;
+    }
+
+    result->insert(result->end(), condition.begin(), condition.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UnlessJumpOP,
+                    .value = unlessResult.size() + 1
+            }
+    );
+    result->insert(result->end(), unlessResult.begin(), unlessResult.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = elseResult.size()
+            }
+    );
+    result->insert(result->end(), elseResult.begin(), elseResult.end());
+    return true;
+}
+
 static bool compile_expression(std::any node, bool push, std::vector<plasma::vm::instruction> *result,
                                plasma::error::error *compilationError) {
     bool success = false;
@@ -504,13 +603,21 @@ static bool compile_expression(std::any node, bool push, std::vector<plasma::vm:
     } else if (node.type() == typeid(plasma::ast::ParenthesesExpression)) {
         success = compile_parentheses_expression(std::any_cast<plasma::ast::ParenthesesExpression>(node),
                                                  result, compilationError);
-    }/* else if (node.type() == typeid(plasma::ast::IfOneLinerExpression)) {
-        success = compile_if_one_linear_expression(std::any_cast<plasma::ast::IfOneLinerExpression>(node), result,
-                                                   compilationError);
+    } else if (node.type() == typeid(plasma::ast::IfOneLinerExpression)) {
+        return compile_if_one_linear_expression(
+                std::any_cast<plasma::ast::IfOneLinerExpression>(node),
+                push,
+                result,
+                compilationError
+        );
     } else if (node.type() == typeid(plasma::ast::UnlessOneLinerExpression)) {
-        success = compile_unless_one_linear_expression(std::any_cast<plasma::ast::UnlessOneLinerExpression>(node),
-                                                       result, compilationError);
-    } */else if (node.type() == typeid(plasma::ast::IndexExpression)) {
+        return compile_unless_one_linear_expression(
+                std::any_cast<plasma::ast::UnlessOneLinerExpression>(node),
+                push,
+                result,
+                compilationError
+        );
+    } else if (node.type() == typeid(plasma::ast::IndexExpression)) {
         success = compile_index_expression(std::any_cast<plasma::ast::IndexExpression>(node), result,
                                            compilationError);
     } else if (node.type() == typeid(plasma::ast::SelectorExpression)) {
@@ -801,7 +908,7 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::IfJumpOP,
-                    .value = ((int64_t) body.size()) + 1
+                    .value = body.size() + 1
             }
     );
     result->insert(result->end(), body.begin(), body.end());
@@ -829,7 +936,7 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::JumpOP,
-                    .value = (int64_t) jump
+                    .value = jump
             }
     );
     for (const auto &elifBlock : elifBlocks) {
@@ -838,14 +945,14 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::IfJumpOP,
-                        .value = ((int64_t) elifBlock.body.size()) + 1
+                        .value = elifBlock.body.size() + 1
                 }
         );
         result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::JumpOP,
-                        .value = (int64_t) jump
+                        .value = jump
                 }
         );
     }
@@ -870,7 +977,7 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::UnlessJumpOP,
-                    .value = ((int64_t) body.size()) + 1
+                    .value = body.size() + 1
             }
     );
     result->insert(result->end(), body.begin(), body.end());
@@ -898,7 +1005,7 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::JumpOP,
-                    .value = (int64_t) jump
+                    .value = jump
             }
     );
     for (const auto &elifBlock : elifBlocks) {
@@ -907,14 +1014,14 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::UnlessJumpOP,
-                        .value = ((int64_t) elifBlock.body.size()) + 1
+                        .value = elifBlock.body.size() + 1
                 }
         );
         result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::JumpOP,
-                        .value = (int64_t) jump
+                        .value = jump
                 }
         );
     }
@@ -981,16 +1088,16 @@ compileWhileStatement(const plasma::ast::WhileStatement &whileStatement,
     for (size_t index = 0; index < body.size(); index++) {
         switch (body[index].op_code) {
             case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = -(int64_t) (index) - 1;
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = index + 1;
                 break;
             case plasma::vm::ContinueOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = -(int64_t) (index) - 1 - ((int64_t) condition.size()) - 1;
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = index + 1 + 1 + condition.size();
                 break;
             case plasma::vm::BreakOP:
                 body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = (int64_t) (body.size() - index);
+                body[index].value = body.size() - index;
                 break;
             default:
                 break;
@@ -1000,14 +1107,14 @@ compileWhileStatement(const plasma::ast::WhileStatement &whileStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::IfJumpOP,
-                    .value = (int64_t) body.size() + 1
+                    .value = body.size() + 1
             }
     );
     result->insert(result->end(), body.begin(), body.end());
     result->push_back(
             plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = -((int64_t) (1 + body.size() + condition.size() + 1))
+                    .op_code = plasma::vm::RJumpOP,
+                    .value = 1 + body.size() + condition.size() + 1
             }
     );
     return true;
@@ -1028,16 +1135,16 @@ compileUntilStatement(const plasma::ast::UntilStatement &untilStatement,
     for (size_t index = 0; index < body.size(); index++) {
         switch (body[index].op_code) {
             case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = -(int64_t) (index) - 1;
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = index + 1;
                 break;
             case plasma::vm::ContinueOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = -(int64_t) (index) - 1 - ((int64_t) condition.size()) - 1;
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = index + 1 + 1 + condition.size();
                 break;
             case plasma::vm::BreakOP:
                 body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = (int64_t) (body.size() - index);
+                body[index].value = body.size() - index;
                 break;
             default:
                 break;
@@ -1047,14 +1154,14 @@ compileUntilStatement(const plasma::ast::UntilStatement &untilStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::UnlessJumpOP,
-                    .value = (int64_t) body.size() + 1
+                    .value = body.size() + 1
             }
     );
     result->insert(result->end(), body.begin(), body.end());
     result->push_back(
             plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = -((int64_t) (1 + body.size() + condition.size() + 1))
+                    .op_code = plasma::vm::RJumpOP,
+                    .value = 1 + body.size() + condition.size() + 1
             }
     );
     return true;
@@ -1075,16 +1182,16 @@ compileDoWhileStatement(const plasma::ast::DoWhileStatement &doWhileStatement,
     for (size_t index = 0; index < body.size(); index++) {
         switch (body[index].op_code) {
             case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = -(int64_t) (index + 1);
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = index + 1;
                 break;
             case plasma::vm::ContinueOP:
                 body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = (int64_t) (body.size() - index - 1);
+                body[index].value = body.size() - index - 1;
                 break;
             case plasma::vm::BreakOP:
                 body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = (int64_t) (body.size() - index - 1 + condition.size() + 1 + 1);
+                body[index].value = body.size() - 1 - index + condition.size() + 1;
                 break;
             default:
                 break;
@@ -1094,16 +1201,8 @@ compileDoWhileStatement(const plasma::ast::DoWhileStatement &doWhileStatement,
     result->insert(result->end(), condition.begin(), condition.end());
     result->push_back(
             plasma::vm::instruction{
-                    .op_code = plasma::vm::IfJumpOP,
-                    .value = (int64_t) 1
-            }
-    );
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = -(
-                            (int64_t) (1 + 1 + condition.size() + body.size())
-                    )
+                    .op_code = plasma::vm::RUnlessJumpOP,
+                    .value = 1 + condition.size() + body.size()
             }
     );
     return true;

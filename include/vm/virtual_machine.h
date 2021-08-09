@@ -16,6 +16,8 @@
 #include "plasma_error.h"
 #include "memory.h"
 
+using defer = std::shared_ptr<void>;
+
 namespace plasma::vm {
     // OP Codes
     enum {
@@ -74,8 +76,10 @@ namespace plasma::vm {
         AssignSelectorOP,
         AssignIndexOP,
         IfJumpOP,
+        RIfJumpOP,
         LoadForReloadOP,
         UnlessJumpOP,
+        RUnlessJumpOP,
         SetupLoopOP,
         PopLoopOP,
         UnpackForLoopOP, // 50
@@ -89,6 +93,7 @@ namespace plasma::vm {
         LoadFunctionArgumentsOP,
         NewFunctionOP,
         JumpOP,
+        RJumpOP,
         PushOP,
         PopOP,
         NOP, // 60
@@ -286,7 +291,9 @@ namespace plasma::vm {
 
         std::vector<instruction> nextN(size_t n);
 
-        void jump(int64_t offset);
+        void jump(size_t offset);
+
+        void rjump(size_t offset);
     };
 
     struct symbol_table {
@@ -418,7 +425,7 @@ namespace plasma::vm {
         // LoopStack   *LoopStack // ToDo:
         // TryStack    *TryStack // ToDo:
 
-        context(size_t initialPageLength);
+        explicit context(size_t initialPageLength);
 
         ~context();
 
@@ -441,6 +448,12 @@ namespace plasma::vm {
         symbol_table *pop_symbol_table();
 
         symbol_table *peek_symbol_table();
+
+        void protect_value(value *v);
+
+        void restore_protected_state(size_t state);
+
+        size_t protected_values_state();
     };
 
     struct virtual_machine {
@@ -733,9 +746,13 @@ namespace plasma::vm {
         //// Conditions (if, unless and switch)
         value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        value *ifJumpOP(context *c, bytecode *bc, int64_t jump);
+        value *ifJumpOP(context *c, bytecode *bc, size_t jump);
 
-        value *unlessJumpOP(context *c, bytecode *bc, int64_t jump);
+        value *unlessJumpOP(context *c, bytecode *bc, size_t jump);
+
+        value *rIfJumpOP(context *c, bytecode *bc, size_t jump);
+
+        value *rUnlessJumpOP(context *c, bytecode *bc, size_t jump);
 
         value *unaryOP(context *c, uint8_t instruction);
 

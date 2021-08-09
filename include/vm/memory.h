@@ -31,6 +31,9 @@ namespace memory {
         }
 
         ~memory() {
+            if (this->pages.empty()) {
+                return;
+            }
             for (const auto &keyValue : this->pages) {
                 delete[]keyValue.second->content;
                 delete keyValue.second;

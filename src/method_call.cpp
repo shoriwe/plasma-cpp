@@ -3,9 +3,11 @@
 plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value *function,
                                                               const std::vector<value *> &arguments,
                                                               bool *success) {
-    c->objectsInUse.push_back(function);
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+    c->protect_value(function);
     for (const auto &argument : arguments) {
-        c->objectsInUse.push_back(argument);
+        c->protect_value(argument);
     }
     bool isType = function->typeId == Type;
     value *constructedObject;
@@ -15,37 +17,20 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
     } else if (isType) {
         constructedObject = this->construct_object(c, function, success);
         if (!(*success)) {
-            c->objectsInUse.pop_back();
-            for (const auto &argument : arguments) {
-                c->objectsInUse.pop_back();
-            }
             return constructedObject;
         }
-        c->objectsInUse.push_back(constructedObject);
+        c->protect_value(constructedObject);
         (*success) = false;
         callFunction = constructedObject->get(c, this, Initialize, success);
         if (!(*success)) {
-            c->objectsInUse.pop_back();
-            for (const auto &argument : arguments) {
-                c->objectsInUse.pop_back();
-            }
-            c->objectsInUse.pop_back();
             return callFunction;
         }
     } else { // Request get Call Function of the object
         callFunction = function->get(c, this, Call, success);
         if (!(*success)) {
-            c->objectsInUse.pop_back();
-            for (const auto &argument : arguments) {
-                c->objectsInUse.pop_back();
-            }
             return callFunction;
         }
         if (callFunction->typeId != Function) {
-            c->objectsInUse.pop_back();
-            for (const auto &argument : arguments) {
-                c->objectsInUse.pop_back();
-            }
             return this->NewInvalidTypeError(c, callFunction->get_type(c, this),
                                              std::vector<std::string>{FunctionName, CallableName});
         }
@@ -85,18 +70,8 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
     }
 
     c->pop_symbol_table();
-
     if (isType) {
-        c->objectsInUse.pop_back();
-        for (const auto &argument : arguments) {
-            c->objectsInUse.pop_back();
-        }
-        c->objectsInUse.pop_back();
         return constructedObject;
-    }
-    c->objectsInUse.pop_back();
-    for (const auto &argument : arguments) {
-        c->objectsInUse.pop_back();
     }
     return result;
 }

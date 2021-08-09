@@ -28,11 +28,12 @@ plasma::vm::value::get(context *c, virtual_machine *vm, const std::string &symbo
         auto onDemandResult = this->onDemandSymbols.find(symbol);
         // Try to get the value from the onDemand map
         if (onDemandResult != this->onDemandSymbols.end()) {
-            c->objectsInUse.push_back(this);
+            auto state = c->protected_values_state();
+            defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+            c->protect_value(this);
             result = onDemandResult->second();
             this->set(symbol, result);
             (*success) = true;
-            c->objectsInUse.pop_back();
         } else {
 
             (*success) = false;

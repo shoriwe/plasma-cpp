@@ -1,49 +1,50 @@
 #include "compiler/lexer.h"
 #include "vm/virtual_machine.h"
 
+
 plasma::vm::value *plasma::vm::virtual_machine::newTupleOP(context *c, size_t numberOfElements) {
     std::vector<value *> elements;
     elements.reserve(numberOfElements);
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
     for (size_t index = 0; index < numberOfElements; index++) {
         if (c->value_stack.empty()) {
             return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
         }
         elements.push_back(c->pop_value());
-        c->objectsInUse.push_back(elements.back());
+        c->protect_value(elements.back());
     }
     c->lastObject = this->new_tuple(c, false, elements);
-    for (size_t index = 0; index < numberOfElements; index++) {
-        c->objectsInUse.pop_back();
-    }
     return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::newArrayOP(context *c, size_t numberOfElements) {
     std::vector<value *> elements;
     elements.reserve(numberOfElements);
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
     for (size_t index = 0; index < numberOfElements; index++) {
         if (c->value_stack.empty()) {
             return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
         }
         elements.push_back(c->pop_value());
-        c->objectsInUse.push_back(elements.back());
+        c->protect_value(elements.back());
     }
     c->lastObject = this->new_array(c, false, elements);
-    for (size_t index = 0; index < numberOfElements; index++) {
-        c->objectsInUse.pop_back();
-    }
     return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t numberOfElements) {
     std::unordered_map<value *, value *> elements;
     elements.reserve(numberOfElements);
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
     for (size_t index = 0; index < numberOfElements; index++) {
         value *key = c->pop_value();
         value *v = c->pop_value();
         elements[key] = v;
-        c->objectsInUse.push_back(key);
-        c->objectsInUse.push_back(v);
+        c->protect_value(key);
+        c->protect_value(v);
     }
 
     c->lastObject = this->new_hash_table(c, false);
@@ -52,7 +53,6 @@ plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t num
         if (addError != nullptr) {
             return addError;
         }
-        c->objectsInUse.pop_back();
     }
     return nullptr;
 }
@@ -81,6 +81,9 @@ plasma::vm::value *plasma::vm::virtual_machine::newFloatOP(context *c, double fl
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t instruction) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     std::string operationName;
     switch (instruction) {
         case NegateBitsOP:
@@ -101,15 +104,14 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
     }
     bool found = false;
     value *target = c->pop_value();
-    c->objectsInUse.push_back(target);
+    c->protect_value(target);
     value *operation = target->get(c, this, operationName, &found);
     if (!found) {
-        c->objectsInUse.pop_back();
         return this->NewObjectWithNameNotFoundError(c, target, operationName);
     }
+    c->protect_value(operation);
     bool success = false;
     value *result = this->call_function(c, operation, std::vector<value *>(), &success);
-    c->objectsInUse.pop_back();
     if (success) {
         c->lastObject = result;
         return nullptr;
@@ -118,6 +120,9 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t instruction) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     std::string leftHandSideFunction, rightHandSideFunction;
     switch (instruction) {
         case AddOP:
@@ -216,15 +221,14 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     auto rightHandSide = c->pop_value();
     bool found = false;
     bool success = false;
-    c->objectsInUse.push_back(leftHandSide);
-    c->objectsInUse.push_back(rightHandSide);
+    c->protect_value(leftHandSide);
+    c->protect_value(rightHandSide);
     value *result;
     value *operation = leftHandSide->get(c, this, leftHandSideFunction, &found);
+    c->protect_value(operation);
     if (found) {
         result = this->call_function(c, operation, std::vector<value *>{rightHandSide}, &success);
         if (success) {
-            c->objectsInUse.pop_back();
-            c->objectsInUse.pop_back();
             c->lastObject = result;
             return nullptr;
         }
@@ -233,14 +237,11 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     found = false;
     success = false;
     operation = rightHandSide->get(c, this, rightHandSideFunction, &found);
+    c->protect_value(operation);
     if (!found) {
-        c->objectsInUse.pop_back();
-        c->objectsInUse.pop_back();
         return this->NewObjectWithNameNotFoundError(c, rightHandSide, rightHandSideFunction);
     }
     result = this->call_function(c, operation, std::vector<value *>{leftHandSide}, &success);
-    c->objectsInUse.pop_back();
-    c->objectsInUse.pop_back();
     if (success) {
         c->lastObject = result;
         return nullptr;
@@ -249,12 +250,13 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *c, const std::string &identifier) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
     value *object = c->pop_value();
-    c->objectsInUse.push_back(object);
+    c->protect_value(object);
     bool found = false;
     value *result = object->get(c, this, identifier, &found);
-    c->objectsInUse.pop_back();
     if (!found) {
         return result;
     }
@@ -273,21 +275,21 @@ plasma::vm::value *plasma::vm::virtual_machine::getIdentifierOP(context *c, cons
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     value *index = c->pop_value();
     value *source = c->pop_value();
-    c->objectsInUse.push_back(index);
-    c->objectsInUse.push_back(source);
+    c->protect_value(index);
+    c->protect_value(source);
     bool success = false;
     value *indexFunc = source->get(c, this, Index, &success);
     if (!success) {
-        c->objectsInUse.pop_back();
-        c->objectsInUse.pop_back();
         return indexFunc;
     }
+    c->protect_value(indexFunc);
     success = false;
     value *result = this->call_function(c, indexFunc, std::vector<value *>{index}, &success);
-    c->objectsInUse.pop_back();
-    c->objectsInUse.pop_back();
     if (!success) {
         return result;
     }
@@ -301,33 +303,39 @@ plasma::vm::value *plasma::vm::virtual_machine::assignIdentifierOP(context *c, c
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::assignSelectorOP(context *c, const std::string &symbol) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     auto receiver = c->pop_value();
+    c->protect_value(receiver);
     receiver->set(symbol, c->pop_value());
     return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
 
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     auto index = c->pop_value();
     auto receiver = c->pop_value();
     auto element = c->pop_value();
-    c->objectsInUse.push_back(index);
-    c->objectsInUse.push_back(receiver);
-    c->objectsInUse.push_back(element);
+
+    c->protect_value(index);
+    c->protect_value(receiver);
+    c->protect_value(element);
+
     bool found = false;
 
     auto assignFunc = receiver->get(c, this, Assign, &found);
+    c->protect_value(assignFunc);
     if (!found) {
-        c->objectsInUse.pop_back();
-        c->objectsInUse.pop_back();
-        c->objectsInUse.pop_back();
         return assignFunc;
     }
     bool success = false;
     auto result = this->call_function(c, assignFunc, std::vector<value *>{index, element}, &success);
-    c->objectsInUse.pop_back();
-    c->objectsInUse.pop_back();
-    c->objectsInUse.pop_back();
+    c->protect_value(result);
     if (!success) {
         return result;
     }
@@ -337,18 +345,24 @@ plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
 
 plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, size_t numberOfArguments) {
 
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     value *function = c->pop_value();
+    c->protect_value(function);
     std::vector<value *> arguments;
     arguments.reserve(numberOfArguments);
 
-    for (size_t argument = 0; argument < numberOfArguments; argument++) {
-        arguments.push_back(c->pop_value());
+    for (size_t argumentIndex = 0; argumentIndex < numberOfArguments; argumentIndex++) {
+        auto argument = c->pop_value();
+        arguments.push_back(argument);
+        c->protect_value(argument);
     }
     bool success = false;
 
     value *result = this->call_function(c, function, arguments, &success);
+    c->protect_value(result);
     if (!success) {
-        c->objectsInUse.pop_back();
         return result;
     }
 
@@ -358,11 +372,17 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
 
 plasma::vm::value *
 plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     std::vector<value *> bases;
     bases.reserve(classInformation.numberOfBases);
+
     for (size_t baseIndex = 0; baseIndex < classInformation.numberOfBases; baseIndex++) {
-        bases.push_back(c->pop_value());
-        c->objectsInUse.push_back(bases.back());
+        auto base = c->pop_value();
+        bases.push_back(base);
+        c->protect_value(base);
     }
     auto classCode = bc->nextN(classInformation.bodyLength);
     c->peek_symbol_table()->set(classInformation.name,
@@ -373,15 +393,16 @@ plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInf
                                                }
                                 )
     );
-    for (size_t baseIndex = 0; baseIndex < classInformation.numberOfBases; baseIndex++) {
-        c->objectsInUse.pop_back();
-    }
     return nullptr;
 }
 
 plasma::vm::value *
 plasma::vm::virtual_machine::newFunctionOP(context *c, bytecode *bc,
                                            const FunctionInformation &functionInformation) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     auto functionInstructions = bc->nextN(functionInformation.bodyLength);
     c->peek_symbol_table()->set(
             functionInformation.name,
@@ -402,8 +423,14 @@ plasma::vm::value *
 plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
                                                 const FunctionInformation &functionInformation) {
 
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     auto self = c->peek_value();
-    c->objectsInUse.push_back(self);
+
+    c->protect_value(self);
+
     auto functionInstructions = bc->nextN(functionInformation.bodyLength);
     self->set(
             functionInformation.name,
@@ -417,7 +444,6 @@ plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
                     )
             )
     );
-    c->objectsInUse.pop_back();
     return nullptr;
 }
 
@@ -432,6 +458,10 @@ plasma::vm::virtual_machine::loadFunctionArgumentsOP(context *c, const std::vect
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numberOfReturnValues) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     if (numberOfReturnValues == 0) {
         return this->get_none(c);
     } else if (numberOfReturnValues == 1) {
@@ -440,36 +470,89 @@ plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numb
     std::vector<value *> content;
     content.reserve(numberOfReturnValues);
     for (size_t index = 0; index < numberOfReturnValues; index++) {
-        content.push_back(c->pop_value());
-        c->objectsInUse.push_back(content.back());
+        auto returnValue = c->pop_value();
+        content.push_back(returnValue);
+        c->protect_value(returnValue);
     }
     auto result = this->new_tuple(c, false, content);
-    for (size_t index = 0; index < numberOfReturnValues; index++) {
-        c->objectsInUse.pop_back();
-    }
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *bc, int64_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *bc, size_t jump) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto condition = c->pop_value();
+
+    c->protect_value(condition);
+
     bool result = false;
-    auto interpretationError = interpret_as_boolean(c, c->pop_value(), &result);
+    auto interpretationError = interpret_as_boolean(c, condition, &result);
     if (interpretationError != nullptr) {
         return interpretationError;
     }
     if (!result) {
-        bc->index += jump;
+        bc->jump(jump);
     }
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecode *bc, int64_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::rIfJumpOP(context *c, bytecode *bc, size_t jump) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto condition = c->pop_value();
+
+    c->protect_value(condition);
+
     bool result = false;
-    auto interpretationError = interpret_as_boolean(c, c->pop_value(), &result);
+    auto interpretationError = interpret_as_boolean(c, condition, &result);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    if (!result) {
+        bc->rjump(jump);
+    }
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecode *bc, size_t jump) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto condition = c->pop_value();
+
+    c->protect_value(condition);
+
+    bool result = false;
+    auto interpretationError = interpret_as_boolean(c, condition, &result);
     if (interpretationError != nullptr) {
         return interpretationError;
     }
     if (result) {
-        bc->index += jump;
+        bc->jump(jump);
+    }
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::rUnlessJumpOP(context *c, bytecode *bc, size_t jump) {
+
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto condition = c->pop_value();
+    c->protect_value(condition);
+
+    bool result = false;
+    auto interpretationError = interpret_as_boolean(c, condition, &result);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    if (result) {
+        bc->rjump(jump);
     }
     return nullptr;
 }
@@ -528,7 +611,10 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->methodInvocationOP(c, std::any_cast<size_t>(instruct.value));
                 break;
             case JumpOP:
-                bc->jump(std::any_cast<int64_t>(instruct.value));
+                bc->jump(std::any_cast<size_t>(instruct.value));
+                break;
+            case RJumpOP:
+                bc->rjump(std::any_cast<size_t>(instruct.value));
                 break;
             case AssignIdentifierOP:
                 executionError = this->assignIdentifierOP(c, std::any_cast<std::string>(instruct.value));
@@ -558,12 +644,18 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 }
                 break;
             case IfJumpOP:
-                executionError = this->ifJumpOP(c, bc, std::any_cast<int64_t>(instruct.value));
-                break;
-            case NOP:
+                executionError = this->ifJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
                 break;
             case UnlessJumpOP:
-                executionError = this->unlessJumpOP(c, bc, std::any_cast<int64_t>(instruct.value));
+                executionError = this->unlessJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                break;
+            case RIfJumpOP:
+                executionError = this->rIfJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                break;
+            case RUnlessJumpOP:
+                executionError = this->rUnlessJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                break;
+            case NOP:
                 break;
             case ReturnOP:
                 (*success) = true;
