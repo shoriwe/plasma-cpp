@@ -450,7 +450,7 @@ plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numb
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *bc, size_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *bc, int64_t jump) {
     bool result = false;
     auto interpretationError = interpret_as_boolean(c, c->pop_value(), &result);
     if (interpretationError != nullptr) {
@@ -462,7 +462,7 @@ plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *b
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecode *bc, size_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecode *bc, int64_t jump) {
     bool result = false;
     auto interpretationError = interpret_as_boolean(c, c->pop_value(), &result);
     if (interpretationError != nullptr) {
@@ -528,7 +528,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->methodInvocationOP(c, std::any_cast<size_t>(instruct.value));
                 break;
             case JumpOP:
-                bc->jump(std::any_cast<size_t>(instruct.value));
+                bc->jump(std::any_cast<int64_t>(instruct.value));
                 break;
             case AssignIdentifierOP:
                 executionError = this->assignIdentifierOP(c, std::any_cast<std::string>(instruct.value));
@@ -558,10 +558,12 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 }
                 break;
             case IfJumpOP:
-                executionError = this->ifJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                executionError = this->ifJumpOP(c, bc, std::any_cast<int64_t>(instruct.value));
+                break;
+            case NOP:
                 break;
             case UnlessJumpOP:
-                executionError = this->unlessJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                executionError = this->unlessJumpOP(c, bc, std::any_cast<int64_t>(instruct.value));
                 break;
             case ReturnOP:
                 (*success) = true;

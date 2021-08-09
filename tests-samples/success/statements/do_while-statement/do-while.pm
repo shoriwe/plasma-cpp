@@ -1,4 +1,27 @@
 a = 0
+
+do
+    a += 1
+    if a < 10
+        continue
+    else
+        break
+    end
+while True
+println(a == 10)
+
+a = 0
+
+do
+    a += 1
+    if a < 10
+        redo
+    end
+while False
+println(a == 10)
+
+a = 0
+
 do
     a += 1
 while False

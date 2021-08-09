@@ -29,6 +29,6 @@ std::vector<plasma::vm::instruction> plasma::vm::bytecode::nextN(size_t n) {
     return result;
 }
 
-void plasma::vm::bytecode::jump(size_t offset) {
+void plasma::vm::bytecode::jump(int64_t offset) {
     this->index += offset;
 }

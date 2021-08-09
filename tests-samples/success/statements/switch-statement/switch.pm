@@ -1,5 +1,4 @@
 number = 2
-
 switch number
 case 1
     println(False)

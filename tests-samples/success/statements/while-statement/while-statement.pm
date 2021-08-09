@@ -1,20 +1,25 @@
+# Test Redo
+
 a = 0
 while True
     a += 1
-    break
-end
-println(a == 1)
-
-a = 0
-while a < 100
-    if a == 10
+    if a < 100
+        redo
+    else
         break
-    elif a != 0 and a % 3 == 0
-        a += 2
+    end
+end
+
+println(a == 100)
+
+# Test Break and Continue
+a = 0
+while True
+    if a == 100
+        break
     else
         a += 1
         continue
     end
-    a += 1
 end
-println(a == 102)
+println(a == 100)

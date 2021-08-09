@@ -801,7 +801,7 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::IfJumpOP,
-                    .value = body.size() + 1
+                    .value = ((int64_t) body.size()) + 1
             }
     );
     result->insert(result->end(), body.begin(), body.end());
@@ -829,7 +829,7 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::JumpOP,
-                    .value = jump
+                    .value = (int64_t) jump
             }
     );
     for (const auto &elifBlock : elifBlocks) {
@@ -838,14 +838,14 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::IfJumpOP,
-                        .value = elifBlock.body.size() + 1
+                        .value = ((int64_t) elifBlock.body.size()) + 1
                 }
         );
         result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::JumpOP,
-                        .value = jump
+                        .value = (int64_t) jump
                 }
         );
     }
@@ -870,7 +870,7 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::UnlessJumpOP,
-                    .value = body.size() + 1
+                    .value = ((int64_t) body.size()) + 1
             }
     );
     result->insert(result->end(), body.begin(), body.end());
@@ -898,7 +898,7 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::JumpOP,
-                    .value = jump
+                    .value = (int64_t) jump
             }
     );
     for (const auto &elifBlock : elifBlocks) {
@@ -907,20 +907,245 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::UnlessJumpOP,
-                        .value = elifBlock.body.size() + 1
+                        .value = ((int64_t) elifBlock.body.size()) + 1
                 }
         );
         result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
         result->push_back(
                 plasma::vm::instruction{
                         .op_code = plasma::vm::JumpOP,
-                        .value = jump
+                        .value = (int64_t) jump
                 }
         );
     }
     if (!elseBody.empty()) {
         result->insert(result->end(), elseBody.begin(), elseBody.end());
     }
+    return true;
+}
+
+static bool
+compileSwitchStatement(const plasma::ast::SwitchStatement &switchStatement,
+                       std::vector<plasma::vm::instruction> *result,
+                       plasma::error::error *compilationError) {
+    plasma::ast::IfStatement ifEquivalent;
+    bool first = true;
+    for (const auto &switchCase : switchStatement.CaseBlocks) {
+        if (first) {
+            ifEquivalent.Condition = plasma::ast::BinaryExpression{
+                    .LeftHandSide = switchStatement.Target,
+                    .Operator = plasma::lexer::token{
+                            .directValue = plasma::lexer::In,
+                            .kind = plasma::lexer::Operator
+                    },
+                    .RightHandSide = plasma::ast::TupleExpression{
+                            .Values = switchCase.Cases
+                    }
+            };
+            ifEquivalent.Body = switchCase.Body;
+            first = false;
+        } else {
+            plasma::ast::ElifBlock elifBlock;
+            elifBlock.Condition = plasma::ast::BinaryExpression{
+                    .LeftHandSide = switchStatement.Target,
+                    .Operator = plasma::lexer::token{
+                            .directValue = plasma::lexer::In,
+                            .kind = plasma::lexer::Operator
+                    },
+                    .RightHandSide = plasma::ast::TupleExpression{
+                            .Values = switchCase.Cases
+                    }
+            };
+            elifBlock.Body = switchCase.Body;
+            ifEquivalent.ElifBlocks.push_back(elifBlock);
+        }
+    }
+    if (!switchStatement.Default.empty()) {
+        ifEquivalent.Else = switchStatement.Default;
+    }
+    return compileIfStatement(ifEquivalent, result, compilationError);
+}
+
+static bool
+compileWhileStatement(const plasma::ast::WhileStatement &whileStatement,
+                      std::vector<plasma::vm::instruction> *result,
+                      plasma::error::error *compilationError) {
+    std::vector<plasma::vm::instruction> condition;
+    if (!compile_expression(whileStatement.Condition, true, &condition, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(whileStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    for (size_t index = 0; index < body.size(); index++) {
+        switch (body[index].op_code) {
+            case plasma::vm::RedoOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = -(int64_t) (index) - 1;
+                break;
+            case plasma::vm::ContinueOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = -(int64_t) (index) - 1 - ((int64_t) condition.size()) - 1;
+                break;
+            case plasma::vm::BreakOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = (int64_t) (body.size() - index);
+                break;
+            default:
+                break;
+        }
+    }
+    result->insert(result->end(), condition.begin(), condition.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::IfJumpOP,
+                    .value = (int64_t) body.size() + 1
+            }
+    );
+    result->insert(result->end(), body.begin(), body.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = -((int64_t) (1 + body.size() + condition.size() + 1))
+            }
+    );
+    return true;
+}
+
+static bool
+compileUntilStatement(const plasma::ast::UntilStatement &untilStatement,
+                      std::vector<plasma::vm::instruction> *result,
+                      plasma::error::error *compilationError) {
+    std::vector<plasma::vm::instruction> condition;
+    if (!compile_expression(untilStatement.Condition, true, &condition, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(untilStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    for (size_t index = 0; index < body.size(); index++) {
+        switch (body[index].op_code) {
+            case plasma::vm::RedoOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = -(int64_t) (index) - 1;
+                break;
+            case plasma::vm::ContinueOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = -(int64_t) (index) - 1 - ((int64_t) condition.size()) - 1;
+                break;
+            case plasma::vm::BreakOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = (int64_t) (body.size() - index);
+                break;
+            default:
+                break;
+        }
+    }
+    result->insert(result->end(), condition.begin(), condition.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UnlessJumpOP,
+                    .value = (int64_t) body.size() + 1
+            }
+    );
+    result->insert(result->end(), body.begin(), body.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = -((int64_t) (1 + body.size() + condition.size() + 1))
+            }
+    );
+    return true;
+}
+
+static bool
+compileDoWhileStatement(const plasma::ast::DoWhileStatement &doWhileStatement,
+                        std::vector<plasma::vm::instruction> *result,
+                        plasma::error::error *compilationError) {
+    std::vector<plasma::vm::instruction> condition;
+    if (!compile_expression(doWhileStatement.Condition, true, &condition, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(doWhileStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    for (size_t index = 0; index < body.size(); index++) {
+        switch (body[index].op_code) {
+            case plasma::vm::RedoOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = -(int64_t) (index + 1);
+                break;
+            case plasma::vm::ContinueOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = (int64_t) (body.size() - index - 1);
+                break;
+            case plasma::vm::BreakOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = (int64_t) (body.size() - index - 1 + condition.size() + 1 + 1);
+                break;
+            default:
+                break;
+        }
+    }
+    result->insert(result->end(), body.begin(), body.end());
+    result->insert(result->end(), condition.begin(), condition.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::IfJumpOP,
+                    .value = (int64_t) 1
+            }
+    );
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::JumpOP,
+                    .value = -(
+                            (int64_t) (1 + 1 + condition.size() + body.size())
+                    )
+            }
+    );
+    return true;
+}
+
+static bool
+compileRedoStatement(std::vector<plasma::vm::instruction> *result) {
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::RedoOP,
+            }
+    );
+    return true;
+}
+
+static bool
+compileContinueStatement(std::vector<plasma::vm::instruction> *result) {
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ContinueOP,
+            }
+    );
+    return true;
+}
+
+static bool
+compileBreakStatement(std::vector<plasma::vm::instruction> *result) {
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::BreakOP,
+            }
+    );
+    return true;
+}
+
+static bool
+compilePassStatement(std::vector<plasma::vm::instruction> *result) {
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::NOP,
+            }
+    );
     return true;
 }
 
@@ -937,24 +1162,24 @@ static bool compile_statement(std::any node, std::vector<plasma::vm::instruction
         return compileIfStatement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
         return compileUnlessStatement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
-    }/*else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
+    } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
         return compileSwitchStatement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
-        return compileWhileLoopStatement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
+        return compileWhileStatement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
-        return compileUntilLoopStatement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
+        return compileUntilStatement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
         return compileDoWhileStatement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::ForStatement)) {
+    } /* else if (node.type() == typeid(plasma::ast::ForStatement)) {
         return compileForLoopStatement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
-        return compileRedoStatement();
+    }*/ else if (node.type() == typeid(plasma::ast::RedoStatement)) {
+        return compileRedoStatement(result);
     } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
-        return compileBreakStatement();
+        return compileBreakStatement(result);
     } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
-        return compileContinueStatement();
+        return compileContinueStatement(result);
     } else if (node.type() == typeid(plasma::ast::PassStatement)) {
-        return compilePassStatement();
+        return compilePassStatement(result);
     } /*else if (node.type() == typeid(plasma::ast::TryStatement)) {
         return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {

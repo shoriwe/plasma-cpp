@@ -286,7 +286,7 @@ namespace plasma::vm {
 
         std::vector<instruction> nextN(size_t n);
 
-        void jump(size_t offset);
+        void jump(int64_t offset);
     };
 
     struct symbol_table {
@@ -733,9 +733,9 @@ namespace plasma::vm {
         //// Conditions (if, unless and switch)
         value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        value *ifJumpOP(context *c, bytecode *bc, size_t jump);
+        value *ifJumpOP(context *c, bytecode *bc, int64_t jump);
 
-        value *unlessJumpOP(context *c, bytecode *bc, size_t jump);
+        value *unlessJumpOP(context *c, bytecode *bc, int64_t jump);
 
         value *unaryOP(context *c, uint8_t instruction);
 
