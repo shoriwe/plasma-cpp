@@ -2,6 +2,7 @@
 #define PLASMA_MEMORY_H
 
 #include <iostream>
+#include <memory>
 #include <stack>
 #include <unordered_map>
 
@@ -11,7 +12,11 @@ namespace memory {
     struct page {
         size_t allocatedElements;
         size_t length;
-        T *content;
+        std::vector<T> content;
+
+        T *index(size_t i) {
+            return this->content.data() + i;
+        };
     };
 
     template<typename T>
@@ -31,14 +36,15 @@ namespace memory {
         }
 
         ~memory() {
+            // FixMe: This is nasty, why the program collapse when manually deleting allocated elements? Find a way to fix it
             if (this->pages.empty()) {
                 return;
             }
-            for (const auto &keyValue : this->pages) {
-                delete[]keyValue.second->content;
-                delete keyValue.second;
-            }
+            std::cout << "Does this crash? 1\n";
+            std::cout << "survived 1\n";
+            std::cout << "Does this crash? 2\n";
             this->pages.clear();
+            std::cout << "survived 2\n";
         }
 
         size_t next_index() {
@@ -60,20 +66,20 @@ namespace memory {
             this->pages[pageIndex] = new page<T>{
                     .allocatedElements = 0,
                     .length = length,
-                    .content = new T[length]
+                    .content = std::vector<T>(length, T())
             };
             for (size_t memoryIndex = 0; memoryIndex < length; memoryIndex++) {
                 this->availableChunks.push(
                         chunk<T>{
                                 .page_index=pageIndex,
-                                .object=this->pages[pageIndex]->content + memoryIndex,
+                                .object=this->pages[pageIndex]->content.data() + memoryIndex,
                         }
                 );
             }
         }
 
         void shrink() {
-            if (this->pages.size() == 0) {
+            if (this->pages.empty()) {
                 return;
             }
             std::vector<size_t> toRemovePages;
@@ -95,9 +101,6 @@ namespace memory {
             if (p == this->pages.end()) {
                 return;
             }
-            delete[] p->second->content;
-            delete p->second;
-            this->pages.erase(p);
             std::stack<chunk<T>> newChunkMap;
             while (!this->availableChunks.empty()) {
                 auto element = this->availableChunks.top();
@@ -108,6 +111,8 @@ namespace memory {
                 newChunkMap.push(element);
             }
             this->availableChunks = newChunkMap;
+            p->second->content.clear();
+            this->pages.erase(p);
         }
 
         [[nodiscard]] bool empty() const {
@@ -117,12 +122,12 @@ namespace memory {
         chunk<T> allocate() {
             chunk result = this->availableChunks.top();
             this->availableChunks.pop();
-            this->pages.at(result.page_index)->allocatedElements++;
+            this->pages[result.page_index]->allocatedElements++;
             return result;
         }
 
         void deallocate(size_t pageIndex, T *o) {
-            this->pages.at(pageIndex)->allocatedElements--;
+            this->pages[pageIndex]->allocatedElements--;
             this->availableChunks.push(
                     chunk<T>{
                             .page_index = pageIndex,

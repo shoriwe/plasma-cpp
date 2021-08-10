@@ -416,8 +416,8 @@ namespace plasma::vm {
         std::vector<value *> objectsInUse;
         value *lastObject = nullptr;
 
-        memory::memory<symbol_table> *symbol_table_heap;
-        memory::memory<value> *value_heap;
+        memory::memory<symbol_table> symbol_table_heap;
+        memory::memory<value> value_heap;
 
         std::vector<value *> value_stack;
         std::vector<symbol_table *> symbol_table_stack;
@@ -435,7 +435,7 @@ namespace plasma::vm {
 
         void collect_values();
 
-        void collect_symbol_tables() const;
+        void collect_symbol_tables();
 
         void push_value(value *v);
 

@@ -344,7 +344,6 @@ plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, size_t numberOfArguments) {
-
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -361,11 +360,9 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
     bool success = false;
 
     value *result = this->call_function(c, function, arguments, &success);
-    c->protect_value(result);
     if (!success) {
         return result;
     }
-
     c->lastObject = result;
     return nullptr;
 }
@@ -561,6 +558,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
     value *executionError = nullptr;
     while (bc->has_next()) {
         instruction instruct = bc->next();
+        // std::cout << std::to_string(instruct.op_code) << std::endl;
         switch (instruct.op_code) {
             case NewStringOP:
                 executionError = this->newStringOP(c, std::any_cast<std::string>(instruct.value));

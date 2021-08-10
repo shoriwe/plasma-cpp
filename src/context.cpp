@@ -1,30 +1,35 @@
 #include "vm/virtual_machine.h"
 
-plasma::vm::context::context(size_t initialPageLength) {
+plasma::vm::context::context(size_t initialPageLength) : symbol_table_heap(initialPageLength), value_heap(initialPageLength){
     if (initialPageLength == 0) {
         throw std::out_of_range("initialPageLength can't be zero");
     }
-    this->symbol_table_heap = new memory::memory<symbol_table>(initialPageLength);
-    this->value_heap = new memory::memory<value>(initialPageLength);
+    this->symbol_table_heap = memory::memory<symbol_table>(initialPageLength);
+    this->value_heap = memory::memory<value>(initialPageLength);
 }
 
 plasma::vm::context::~context() {
-    delete this->symbol_table_heap;
-    delete this->value_heap;
+    std::cout << "COLLECTING\n";
+    this->objectsInUse.clear();
+    this->symbol_table_stack.clear();
+    this->value_stack.clear();
+    this->master->symbols.clear();
+    std::cout << "DELETING\n";
+    std::cout << "COLLECTED\n";
 }
 
 plasma::vm::value *plasma::vm::context::allocate_value() {
     // Check if there is space to allocate the object
-    if (this->value_heap->empty()) {
+    if (this->value_heap.empty()) {
         // If no space if available, collect garbage
         this->collect_values();
         // If there is still no space, allocate a new page
-        if (this->value_heap->empty()) {
-            auto newPageLength = this->value_heap->max_page_length() * 2;
-            this->value_heap->new_page(newPageLength);
+        if (this->value_heap.empty()) {
+            auto newPageLength = this->value_heap.max_page_length() * 2;
+            this->value_heap.new_page(newPageLength);
         }
     }
-    auto resultPage = this->value_heap->allocate();
+    auto resultPage = this->value_heap.allocate();
     value *result = resultPage.object;
     // Reset the object
     (*result) = value();
@@ -36,16 +41,16 @@ plasma::vm::value *plasma::vm::context::allocate_value() {
 
 plasma::vm::symbol_table *plasma::vm::context::allocate_symbol_table(vm::symbol_table *parentSymbolTable) {
     // Check if there is space to allocate the object
-    if (this->symbol_table_heap->empty()) {
+    if (this->symbol_table_heap.empty()) {
         // If no space if available, collect garbage
         this->collect_symbol_tables();
         // If there is still no space, allocate a new page
-        if (this->symbol_table_heap->empty()) {
-            auto newPageLength = this->symbol_table_heap->max_page_length() * 2;
-            this->symbol_table_heap->new_page(newPageLength);
+        if (this->symbol_table_heap.empty()) {
+            auto newPageLength = this->symbol_table_heap.max_page_length() * 2;
+            this->symbol_table_heap.new_page(newPageLength);
         }
     }
-    auto resultPage = this->symbol_table_heap->allocate();
+    auto resultPage = this->symbol_table_heap.allocate();
     symbol_table *result = resultPage.object;
     // Reset the object
     if (parentSymbolTable == nullptr) {
@@ -136,11 +141,11 @@ void plasma::vm::context::collect_values() {
         }
     }
     std::vector<size_t> toRemove;
-    toRemove.reserve(this->value_heap->pages.size());
+    toRemove.reserve(this->value_heap.pages.size());
     // Collect all not marked values
-    for (const auto &keyValue: this->value_heap->pages) {
-        for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
-            value *v = keyValue.second->content + pageIndex;
+    for (const auto &keyValue: this->value_heap.pages) {
+        for (size_t index = 0; index < keyValue.second->length; index++) {
+            value *v = keyValue.second->index(index);// keyValue.second->index(index);
             if (!v->isSet) {
                 continue;
             }
@@ -149,28 +154,28 @@ void plasma::vm::context::collect_values() {
                 continue;
             }
             v->isSet = false;
-            this->value_heap->deallocate(v->pageIndex, v);
+            this->value_heap.deallocate(v->pageIndex, v);
         }
     }
-    this->value_heap->shrink();
+    this->value_heap.shrink();
 }
 
-void plasma::vm::context::collect_symbol_tables() const {
+void plasma::vm::context::collect_symbol_tables() {
     bool collected;
     do {
         collected = false;
-        for (const auto &keyValue : this->symbol_table_heap->pages) {
-            for (size_t pageIndex = 0; pageIndex < keyValue.second->length; pageIndex++) {
-                symbol_table *symbolTable = keyValue.second->content + pageIndex;
+        for (const auto &keyValue : this->symbol_table_heap.pages) {
+            for (size_t index = 0; index < keyValue.second->length; index++) {
+                symbol_table *symbolTable = keyValue.second->index(index);// keyValue.second.index(index);
                 if (symbolTable->count == 0 && symbolTable->isSet) {
                     symbolTable->isSet = false;
-                    this->symbol_table_heap->deallocate(symbolTable->pageIndex, symbolTable);
+                    this->symbol_table_heap.deallocate(symbolTable->pageIndex, symbolTable);
                     collected = true;
                 }
             }
         }
     } while (collected);
-    this->symbol_table_heap->shrink();
+    this->symbol_table_heap.shrink();
 }
 
 void plasma::vm::context::push_value(value *v) {
