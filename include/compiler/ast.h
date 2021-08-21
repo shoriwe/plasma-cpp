@@ -51,9 +51,13 @@ namespace plasma::ast {
         std::any X;
     };
 
+    struct ReturnStatement {
+        std::vector<std::any> Results;
+    };
+
     struct LambdaExpression {
         std::vector<Identifier> Arguments;
-        std::any Code;
+        struct ReturnStatement Output;
     };
 
     struct GeneratorExpression {
@@ -201,10 +205,6 @@ namespace plasma::ast {
 
     struct EndStatement {
         std::vector<std::any> Body;
-    };
-
-    struct ReturnStatement {
-        std::vector<std::any> Results;
     };
 
     struct YieldStatement {

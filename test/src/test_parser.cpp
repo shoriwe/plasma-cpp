@@ -200,7 +200,7 @@ static std::string reconstruct_lambda_expression(const plasma::ast::LambdaExpres
         }
         result += reconstruct_node(argument);
     }
-    return result += ": " + reconstruct_node(x.Code);
+    return result += ": " + reconstruct_node(x.Output);
 }
 
 static std::string reconstruct_if_one_liner_expression(const plasma::ast::IfOneLinerExpression &x) {

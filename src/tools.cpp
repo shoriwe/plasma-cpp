@@ -201,3 +201,4 @@ double plasma::general_tooling::parse_float(const std::string &string, bool *suc
     (*success) = false;
     return 0;
 }
+

@@ -152,7 +152,7 @@ plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, val
                           )
                   )
     );
-    iterator->set(HasNext,
+    iterator->set(Next,
                   this->new_function(
                           c,
                           false,
@@ -365,7 +365,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
                           )
                   )
     );
-    iterator->set(HasNext,
+    iterator->set(Next,
                   this->new_function(
                           c,
                           false,
@@ -520,7 +520,7 @@ plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, valu
                           )
                   )
     );
-    iterator->set(HasNext,
+    iterator->set(Next,
                   this->new_function(
                           c,
                           false,
@@ -909,3 +909,70 @@ plasma::vm::virtual_machine::interpret_as_boolean(context *c, plasma::vm::value 
     return nullptr;
 }
 
+plasma::vm::value *plasma::vm::virtual_machine::interpret_as_iterator(context *c, struct value *v, bool *success) {
+    // Check if the object has Next and HasNext Functions
+    bool nextFound;
+    v->get(c, this, Next, &nextFound);
+    bool hasNextFound;
+    v->get(c, this, HasNext, &hasNextFound);
+    if (nextFound && hasNextFound) {
+        (*success) = true;
+        return v;
+    }
+    // If not do the transformation
+    bool iterFound;
+    auto iterFunc = v->get(c, this, Iter, &iterFound);
+    if (!iterFound) {
+        (*success) = false;
+        return iterFunc;
+    }
+    return this->call_function(c, iterFunc, std::vector<value*>{}, success);
+}
+
+plasma::vm::value *
+plasma::vm::virtual_machine::unpack_values(context *c, struct value *v, size_t expect, std::vector<value *> *result) {
+    // Check if the result can be iterated
+    bool interpretationSuccess = false;
+    auto valueAsIter = this->interpret_as_iterator(c, v,
+                                                   &interpretationSuccess);
+    if (!interpretationSuccess) {
+        return valueAsIter;
+    }
+    bool foundObject;
+    auto hasNext = valueAsIter->get(c, this, HasNext, &foundObject);
+    if (!foundObject) {
+        return hasNext;
+    }
+    auto next = valueAsIter->get(c, this, Next, &foundObject);
+    if (!foundObject) {
+        return next;
+    }
+    // Unpack the next value into a list of arguments
+    std::vector<value *> operationArguments;
+    bool callSuccess = false;
+    for (size_t argumentIndex = 0; argumentIndex < expect; argumentIndex++) {
+        // Check if there are more values to unpack
+        auto doesHaveNextValue = this->call_function(c, hasNext, std::vector<value *>{}, &callSuccess);
+        if (!callSuccess) {
+            return doesHaveNextValue;
+        }
+        bool doesHaveNext;
+        auto interpretationError = this->interpret_as_boolean(c, doesHaveNextValue, &doesHaveNext);
+        if (interpretationError != nullptr) {
+            return interpretationError;
+        }
+        // If not, crash
+        if (!hasNext) {
+            return this->NewInvalidNumberOfArgumentsError(c, expect, argumentIndex);
+        }
+        // Capture the child value
+        callSuccess = false;
+        auto childValue = this->call_function(c, next, std::vector<value *>{}, &callSuccess);
+        if (!callSuccess) {
+            return childValue;
+        }
+        // Else push the value to the container result
+        result->push_back(childValue);
+    }
+    return nullptr;
+}

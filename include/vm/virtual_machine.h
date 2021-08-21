@@ -34,6 +34,7 @@ namespace plasma::vm {
         NewTupleOP,
         NewArrayOP,
         NewHashOP, // 10
+        NewGeneratorOP,
 
         // Unary Expressions
         NegateBitsOP,
@@ -47,8 +48,8 @@ namespace plasma::vm {
         DivOP,
         FloorDivOP,
         ModOP,
-        PowOP, // 20
-        BitXorOP,
+        PowOP,
+        BitXorOP, // 20
         BitAndOP,
         BitOrOP,
         BitLeftOP,
@@ -57,8 +58,8 @@ namespace plasma::vm {
         OrOP,
         XorOP,
         EqualsOP,
-        NotEqualsOP, // 30
-        GreaterThanOP,
+        NotEqualsOP,
+        GreaterThanOP, // 30
         LessThanOP,
         GreaterThanOrEqualOP,
         LessThanOrEqualOP,
@@ -68,8 +69,8 @@ namespace plasma::vm {
         // Other expressions
         GetIdentifierOP,
         IndexOP,
-        SelectNameFromObjectOP, // 40
-        MethodInvocationOP,
+        SelectNameFromObjectOP,
+        MethodInvocationOP, // 40
 
         // Assign Statement
         AssignIdentifierOP,
@@ -82,8 +83,8 @@ namespace plasma::vm {
         RUnlessJumpOP,
         SetupLoopOP,
         PopLoopOP,
-        UnpackForLoopOP, // 50
-        BreakOP,
+        UnpackForLoopOP,
+        BreakOP, // 50
         RedoOP,
         ContinueOP,
 
@@ -96,8 +97,8 @@ namespace plasma::vm {
         RJumpOP,
         PushOP,
         PopOP,
-        NOP, // 60
-        NewIteratorOP,
+        NOP,
+        NewIteratorOP, // 60
 
         SetupTryOP,
         PopTryOP,
@@ -258,6 +259,11 @@ namespace plasma::vm {
         String,
         Tuple,
         Type
+    };
+
+    struct generator_information {
+        size_t numberOfReceivers;
+        size_t operationLength;
     };
 
     struct FunctionInformation {
@@ -694,6 +700,10 @@ namespace plasma::vm {
 
         value *interpret_as_boolean(context *c, struct value *v, bool *result);
 
+        value *interpret_as_iterator(context *c, struct value *v, bool *success);
+
+        value *unpack_values(context *c, struct value *b, size_t expect, std::vector<value *> *result);
+
         // Operations callbacks
         //// Object creation
         value *newTupleOP(context *c, size_t numberOfElements);
@@ -720,7 +730,11 @@ namespace plasma::vm {
 
         value *newClassFunctionOP(context *c, bytecode *bc, const FunctionInformation &functionInformation);
 
-        value *newLambdaFunctionOP(context *c, bytecode *bc, instruction instruct);
+        value *newLambdaFunctionOP(context *c, bytecode *bc,
+                                   const FunctionInformation &functionInformation);
+
+        value *newGeneratorOP(context *c, bytecode *bc,
+                              const generator_information &generatorInformation);
 
         //// Loop setup and operation
         value *setupForLoopOP(context *c, instruction instruct, value *);

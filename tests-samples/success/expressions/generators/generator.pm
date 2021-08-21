@@ -1,6 +1,10 @@
+my_generator = (a for a in "hello")
+println(my_generator.Next() == "h")
+println(my_generator.HasNext())
 index = 0
 reference = "Hello"
-for a in (char for char in ((char2 * 10) for char2 in "Hello"))
+my_generator = (char for char in ((char2 * 10) for char2 in "Hello"))
+for a in my_generator
     println(a == reference[index] * 10)
     index += 1
 end

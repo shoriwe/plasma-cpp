@@ -1,6 +1,6 @@
 #include "vm/virtual_machine.h"
 
-plasma::vm::context::context(size_t initialPageLength) : symbol_table_heap(initialPageLength), value_heap(initialPageLength){
+plasma::vm::context::context(size_t initialPageLength) {
     if (initialPageLength == 0) {
         throw std::out_of_range("initialPageLength can't be zero");
     }
@@ -9,13 +9,10 @@ plasma::vm::context::context(size_t initialPageLength) : symbol_table_heap(initi
 }
 
 plasma::vm::context::~context() {
-    std::cout << "COLLECTING\n";
     this->objectsInUse.clear();
     this->symbol_table_stack.clear();
     this->value_stack.clear();
     this->master->symbols.clear();
-    std::cout << "DELETING\n";
-    std::cout << "COLLECTED\n";
 }
 
 plasma::vm::value *plasma::vm::context::allocate_value() {

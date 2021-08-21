@@ -554,6 +554,134 @@ plasma::vm::value *plasma::vm::virtual_machine::rUnlessJumpOP(context *c, byteco
     return nullptr;
 }
 
+plasma::vm::value *plasma::vm::virtual_machine::newLambdaFunctionOP(context *c, bytecode *bc,
+                                                                    const FunctionInformation &functionInformation) {
+    auto functionInstructions = bc->nextN(functionInformation.bodyLength);
+    c->lastObject = this->new_function(
+            c,
+            false,
+            nullptr,
+            new_plasma_callable(
+                    functionInformation.numberOfArguments,
+                    functionInstructions
+            )
+    );
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newGeneratorOP(context *c, bytecode *bc,
+                                                               const generator_information &generatorInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto operationCode = bc->nextN(generatorInformation.operationLength);
+
+    auto result = new_iterator(c, false);
+    c->protect_value(result);
+
+    auto rawSource = c->pop_value();
+    c->protect_value(rawSource);
+
+    bool interpretationSuccess = false;
+    auto source = this->interpret_as_iterator(c, rawSource, &interpretationSuccess);
+    if (!interpretationSuccess) {
+        return source;
+    }
+    c->protect_value(source);
+
+    bool nameFound = false;
+    auto hasNext = source->get(c, this, HasNext, &nameFound);
+    if (!nameFound) {
+        return hasNext;
+    }
+    c->protect_value(hasNext);
+
+    auto next = source->get(c, this, Next, &nameFound);
+    if (!nameFound) {
+        return next;
+    }
+    c->protect_value(next);
+
+    result->source = source;
+
+    auto operationFunction = this->new_function(
+            c,
+            false,
+            result,
+            new_plasma_callable(
+                    generatorInformation.numberOfReceivers,
+                    operationCode
+            )
+    );
+    c->protect_value(operationFunction);
+
+    result->set(
+            "Operation",
+            operationFunction
+    );
+
+
+    result->set(
+            HasNext,
+            this->new_function(
+                    c,
+                    false,
+                    result,
+                    new_builtin_callable(
+                            0,
+                            [c, this, hasNext](value *self, const std::vector<value *> &arguments,
+                                               bool *success) -> value * {
+                                return this->call_function(c, hasNext, std::vector<value *>{}, success);
+                            }
+                    )
+            )
+    );
+
+    result->set(
+            Next,
+            this->new_function(
+                    c,
+                    false,
+                    result,
+                    new_builtin_callable(
+                            0,
+                            [c, this, next, operationFunction, generatorInformation](value *self,
+                                                                                     const std::vector<value *> &arguments,
+                                                                                     bool *success) -> value * {
+                                bool callSuccess;
+                                // Receive the next value
+                                auto nextValue = this->call_function(c, next, std::vector<value *>{}, &callSuccess);
+                                if (!callSuccess) {
+                                    (*success) = false;
+                                    return nextValue;
+                                }
+
+                                // If is only one receiver pass it directly to the operation function
+                                if (generatorInformation.numberOfReceivers == 1) {
+                                    return this->call_function(c, operationFunction, std::vector<value *>{nextValue},
+                                                               success);
+                                }
+                                // Unpack the values
+                                std::vector<value *> operationArguments;
+                                auto unpackError = this->unpack_values(c, nextValue,
+                                                                       generatorInformation.numberOfReceivers,
+                                                                       &operationArguments);
+                                if (unpackError != nullptr) {
+                                    (*success) = false;
+                                    return unpackError;
+                                }
+                                // Pass the arguments to the operation function
+                                return this->call_function(c, operationFunction, operationArguments, success);
+                            }
+                    )
+            )
+    );
+
+    c->lastObject = result;
+
+    return nullptr;
+}
+
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
     while (bc->has_next()) {
@@ -635,6 +763,12 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 break;
             case NewFunctionOP:
                 executionError = this->newFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                break;
+            case NewLambdaFunctionOP:
+                executionError = this->newLambdaFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                break;
+            case NewGeneratorOP:
+                executionError = this->newGeneratorOP(c, bc, std::any_cast<generator_information>(instruct.value));
                 break;
             case PushOP:
                 if (c->lastObject != nullptr) {

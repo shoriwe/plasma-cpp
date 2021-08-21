@@ -1811,9 +1811,13 @@ bool plasma::parser::parser::parseLambdaExpression(std::any *result, error::erro
         newNonExpressionReceivedError(line, LambdaExpression, result_error);
         return false;
     }
+    std::vector<std::any> results;
+    results.push_back(code);
     (*result) = ast::LambdaExpression{
             .Arguments = arguments,
-            .Code = code
+            .Output = ast::ReturnStatement{
+                    .Results = results
+            }
     };
     return true;
 }

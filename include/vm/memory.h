@@ -10,12 +10,21 @@ namespace memory {
 
     template<typename T>
     struct page {
-        size_t allocatedElements;
-        size_t length;
-        std::vector<T> content;
+        size_t allocatedElements = 0;
+        size_t length = 0;
+        T *content;
+
+        explicit page(size_t l) {
+            this->length = l;
+            this->content = new T[l];
+        }
+
+        ~page() {
+            delete[]this->content;
+        }
 
         T *index(size_t i) {
-            return this->content.data() + i;
+            return &this->content[i];
         };
     };
 
@@ -31,6 +40,8 @@ namespace memory {
         std::unordered_map<size_t, page<T> *> pages;
         std::stack<chunk<T>> availableChunks;
 
+        memory() = default;
+
         explicit memory(size_t initialPageLength) {
             this->new_page(initialPageLength);
         }
@@ -40,11 +51,8 @@ namespace memory {
             if (this->pages.empty()) {
                 return;
             }
-            std::cout << "Does this crash? 1\n";
-            std::cout << "survived 1\n";
-            std::cout << "Does this crash? 2\n";
+            // Fixme: start clearing also the pages
             this->pages.clear();
-            std::cout << "survived 2\n";
         }
 
         size_t next_index() {
@@ -63,16 +71,12 @@ namespace memory {
 
         void new_page(size_t length) {
             size_t pageIndex = this->next_index();
-            this->pages[pageIndex] = new page<T>{
-                    .allocatedElements = 0,
-                    .length = length,
-                    .content = std::vector<T>(length, T())
-            };
+            this->pages[pageIndex] = new page<T>(length);
             for (size_t memoryIndex = 0; memoryIndex < length; memoryIndex++) {
                 this->availableChunks.push(
                         chunk<T>{
                                 .page_index=pageIndex,
-                                .object=this->pages[pageIndex]->content.data() + memoryIndex,
+                                .object=&this->pages[pageIndex]->content[memoryIndex],
                         }
                 );
             }
@@ -111,7 +115,7 @@ namespace memory {
                 newChunkMap.push(element);
             }
             this->availableChunks = newChunkMap;
-            p->second->content.clear();
+            delete p->second;
             this->pages.erase(p);
         }
 
