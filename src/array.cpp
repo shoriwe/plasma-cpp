@@ -2,7 +2,7 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::array_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
 
         object->set_on_demand_symbol(
@@ -19,7 +19,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                         value *right = arguments[0];
                                         if (right->typeId != Array) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{ArrayName}
@@ -51,7 +51,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                         value *left = arguments[0];
                                         if (left->typeId != Array) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{ArrayName}
@@ -83,7 +83,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                         value *right = arguments[0];
                                         if (right->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
@@ -121,7 +121,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                         value *left = arguments[0];
                                         if (left->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
@@ -298,7 +298,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ArrayInitialize(bo
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
                                         (*success) = false;
-                                        return this->NewUnhashableTypeError(c, self->get_type(c, this));
+                                        return this->new_unhashable_type_error(c, self->get_type(c, this));
                                     }
                             )
                     );

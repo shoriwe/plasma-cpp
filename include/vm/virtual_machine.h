@@ -268,12 +268,12 @@ namespace plasma::vm {
         size_t operationLength;
     };
 
-    struct FunctionInformation {
+    struct function_information {
         std::string name;
         size_t bodyLength;
         size_t numberOfArguments;
     };
-    struct ClassInformation {
+    struct class_information {
         std::string name;
         size_t bodyLength;
         size_t numberOfBases;
@@ -536,34 +536,34 @@ namespace plasma::vm {
         // Error Creators
         value *NewFloatParsingError(context *c);
 
-        value *NewIntegerParsingError(context *c);
+        value *new_integer_parsing_error(context *c);
 
-        value *NewKeyNotFoundError(context *c, struct value *key);
+        value *new_key_not_found_error(context *c, struct value *key);
 
-        value *NewIndexOutOfRange(context *c, size_t length, size_t requestedIndex);
+        value *new_index_out_of_range_error(context *c, size_t length, size_t requestedIndex);
 
-        value *NewUnhashableTypeError(context *c, struct value *objectType);
+        value *new_unhashable_type_error(context *c, struct value *objectType);
 
-        value *NewNotImplementedCallableError(context *c, std::string symbol);
+        value *new_not_implemented_callable_error(context *c, std::string symbol);
 
-        value *NewInvalidNumberOfArgumentsError(context *c, size_t expected, size_t received);
-
-        value *
-        NewObjectWithNameNotFoundError(context *c, struct value *source, const std::string &symbol);
+        value *new_invalid_number_of_arguments_error(context *c, size_t expected, size_t received);
 
         value *
-        NewObjectWithNameNotFoundError(context *c, const std::string &symbol);
+        new_object_with_name_not_found_error(context *c, struct value *source, const std::string &symbol);
 
         value *
-        NewInvalidTypeError(context *c, struct value *receivedType,
-                            const std::vector<std::string> &expectedTypes);
-
-        value *NewObjectConstructionError(context *c, value *type, const std::string &errorMessage);
+        new_object_with_name_not_found_error(context *c, const std::string &symbol);
 
         value *
-        NewBuiltInSymbolProtectionError(context *c, struct value *source, const std::string &symbol);
+        new_invalid_type_error(context *c, struct value *receivedType,
+                               const std::vector<std::string> &expectedTypes);
 
-        struct value *NewObjectNotCallableError(context *c, struct value *objectType);
+        value *new_object_construction_error(context *c, value *type, const std::string &errorMessage);
+
+        value *
+        new_builtin_symbol_protection_error(context *c, struct value *source, const std::string &symbol);
+
+        struct value *new_object_not_callable_error(context *c, struct value *objectType);
 
         // Basic object caching
         struct value *get_none(context *c);
@@ -575,58 +575,58 @@ namespace plasma::vm {
         struct value *get_boolean(context *c, bool condition);
 
         // Object Initializers
-        constructor_callback RuntimeErrorInitialize(bool isBuiltIn);
+        constructor_callback runtime_error_initialize(bool isBuiltIn);
 
-        constructor_callback FloatParsingErrorInitialize(bool isBuiltIn);
+        constructor_callback float_parsing_error_initialize(bool isBuiltIn);
 
-        constructor_callback IntegerParsingErrorInitialize(bool isBuiltIn);
+        constructor_callback integer_parsing_error_initialize(bool isBuiltIn);
 
-        constructor_callback KeyNotFoundErrorInitialize(bool isBuiltIn);
+        constructor_callback key_not_found_error_initialize(bool isBuiltIn);
 
-        constructor_callback IndexOutOfRangeErrorInitialize(bool isBuiltIn);
+        constructor_callback index_out_of_range_error_initialize(bool isBuiltIn);
 
-        constructor_callback UnhashableTypeErrorInitialize(bool isBuiltIn);
+        constructor_callback unhashable_type_error_initialize(bool isBuiltIn);
 
-        constructor_callback NotImplementedCallableErrorInitialize(bool isBuiltIn);
+        constructor_callback not_implemented_callable_error_initialize(bool isBuiltIn);
 
-        constructor_callback InvalidNumberOfArgumentsErrorInitialize(bool isBuiltIn);
+        constructor_callback invalid_number_of_arguments_error_initialize(bool isBuiltIn);
 
-        constructor_callback ObjectWithNameNotFoundErrorInitialize(bool isBuiltIn);
+        constructor_callback object_with_name_not_found_error_initialize(bool isBuiltIn);
 
-        constructor_callback InvalidTypeErrorInitialize(bool isBuiltIn);
+        constructor_callback invalid_type_error_initialize(bool isBuiltIn);
 
-        constructor_callback ObjectConstructionErrorInitialize(bool isBuiltIn);
+        constructor_callback object_construction_error_initialize(bool isBuiltIn);
 
-        constructor_callback BuiltInSymbolProtectionErrorInitialize(bool isBuiltIn);
+        constructor_callback builtin_symbol_protection_error_initialize(bool isBuiltIn);
 
-        constructor_callback ObjectNotCallableErrorInitialize(bool isBuiltIn);
+        constructor_callback object_not_callable_error_initialize(bool isBuiltIn);
 
 
-        constructor_callback CallableInitialize(bool isBuiltIn);
+        constructor_callback callable_initialize(bool isBuiltIn);
 
-        constructor_callback TypeInitialize(bool isBuiltIn);
+        constructor_callback type_initialize(bool isBuiltIn);
 
-        constructor_callback ArrayInitialize(bool isBuiltIn);
+        constructor_callback array_initialize(bool isBuiltIn);
 
-        constructor_callback ObjectInitialize(bool isBuiltIn);
+        constructor_callback object_initialize(bool isBuiltIn);
 
-        constructor_callback HashTableInitialize(bool isBuiltIn);
+        constructor_callback hash_table_initialize(bool isBuiltIn);
 
-        constructor_callback TupleInitialize(bool isBuiltIn);
+        constructor_callback tuple_initialize(bool isBuiltIn);
 
-        constructor_callback IteratorInitialize(bool isBuiltIn);
+        constructor_callback iterator_initialize(bool isBuiltIn);
 
-        constructor_callback BytesInitialize(bool isBuiltIn);
+        constructor_callback bytes_initialize(bool isBuiltIn);
 
-        constructor_callback StringInitialize(bool isBuiltIn);
+        constructor_callback string_initialize(bool isBuiltIn);
 
-        constructor_callback IntegerInitialize(bool isBuiltIn);
+        constructor_callback integer_initialize(bool isBuiltIn);
 
-        constructor_callback FloatInitialize(bool isBuiltIn);
+        constructor_callback float_initialize(bool isBuiltIn);
 
-        constructor_callback BoolInitialize(bool isBuiltIn);
+        constructor_callback bool_initialize(bool isBuiltIn);
 
-        constructor_callback NoneInitialize(bool isBuiltIn);
+        constructor_callback none_initialize(bool isBuiltIn);
 
         // Force Operation
         struct value *force_get_from_source(context *c, const std::string &symbol, struct value *source);
@@ -733,93 +733,91 @@ namespace plasma::vm {
 
         // Operations callbacks
         //// Object creation
-        value *newTupleOP(context *c, size_t numberOfElements);
+        value *new_tuple_op(context *c, size_t numberOfElements);
 
-        value *newArrayOP(context *c, size_t numberOfElements);
+        value *new_array_op(context *c, size_t numberOfElements);
 
-        value *newHashOP(context *c, size_t numberOfElements);
+        value *new_hash_op(context *c, size_t numberOfElements);
 
-        value *newStringOP(context *c, const std::string &string);
+        value *new_string_op(context *c, const std::string &string);
 
-        value *newBytesOP(context *c, const std::string &bytes);
+        value *new_bytes_op(context *c, const std::string &bytes);
 
-        value *newIntegerOP(context *c, int64_t integer);
+        value *new_integer_op(context *c, int64_t integer);
 
-        value *newFloatOP(context *c, double floating);
+        value *new_float_op(context *c, double floating);
 
-        value *newFunctionOP(context *c, bytecode *bc, const FunctionInformation &functionInformation);
+        value *new_function_op(context *c, bytecode *bc, const function_information &functionInformation);
 
-        value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *);
+        value *new_module_op(context *c, bytecode *bc, const class_information &moduleInformation);
 
-        value *newModuleOP(context *c, bytecode *bc, const ClassInformation &moduleInformation);
+        value *new_class_op(context *c, bytecode *bc, const class_information &classInformation);
 
-        value *newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation);
+        value *new_class_function_op(context *c, bytecode *bc, const function_information &functionInformation);
 
-        value *newClassFunctionOP(context *c, bytecode *bc, const FunctionInformation &functionInformation);
+        value *new_lambda_function_op(context *c, bytecode *bc,
+                                      const function_information &functionInformation);
 
-        value *newLambdaFunctionOP(context *c, bytecode *bc,
-                                   const FunctionInformation &functionInformation);
-
-        value *newGeneratorOP(context *c, bytecode *bc,
-                              const generator_information &generatorInformation);
+        value *new_generator_op(context *c, bytecode *bc,
+                                const generator_information &generatorInformation);
 
         //// Loop setup and operation
-        value *setupForLoopOP(context *c, instruction instruct, value *);
+        value *setup_for_loop(context *c, instruction instruct, value *);
 
-        value *loadForLoopArguments(context *c, value *);
+        value *load_for_loop_names(context *c, value *);
 
         // FixMe:
         // value *unpackForArguments(context *c, loopSettings *LoopSettings, result Value, value *);
 
-        value *unpackForLoopOP(context *c, bytecode *bc, value *);
+        value *unpack_for_loop(context *c, bytecode *bc, value *);
 
         //// Try blocks
-        value *setupTryOP(context *c, bytecode *bc, instruction instruct);
+        value *setup_try_block(context *c, bytecode *bc, instruction instruct);
 
-        value *popTryOP(context *c);
+        value *pop_try_context(context *c);
 
-        value *exceptOP(context *c, bytecode *bc, instruction instruct);
+        value *except_op(context *c, bytecode *bc, instruction instruct);
 
-        value *tryJumpOP(context *c, bytecode *bc);
+        value *try_jump_op(context *c, bytecode *bc);
 
-        value *raiseOP(context *c);
+        value *reverse_try_jump_op(context *c, bytecode *bc);
+
+        value *raise_op(context *c);
 
         //// Conditions (if, unless and switch)
-        value *ifJumpOP(context *c, bytecode *bc, size_t jump);
+        value *if_jump_op(context *c, bytecode *bc, size_t jump);
 
-        value *unlessJumpOP(context *c, bytecode *bc, size_t jump);
+        value *unless_jump_op(context *c, bytecode *bc, size_t jump);
 
-        value *rIfJumpOP(context *c, bytecode *bc, size_t jump);
+        value *reverse_if_jump_op(context *c, bytecode *bc, size_t jump);
 
-        value *rUnlessJumpOP(context *c, bytecode *bc, size_t jump);
+        value *reverse_unless_jump_op(context *c, bytecode *bc, size_t jump);
 
-        value *unaryOP(context *c, uint8_t instruction);
+        value *unary_op(context *c, uint8_t instruction);
 
-        value *binaryOP(context *c, uint8_t instruction);
+        value *binary_op(context *c, uint8_t instruction);
 
         //// Function calls
-        static value *loadFunctionArgumentsOP(context *c, const std::vector<std::string> &arguments);
+        static value *load_function_arguments_op(context *c, const std::vector<std::string> &arguments);
 
-        value *noArgsGetAndCall(context *c, std::string, value *);
-
-        value *methodInvocationOP(context *c, size_t numberOfArguments);
+        value *method_invocation_op(context *c, size_t numberOfArguments);
 
         //// Symbol assign and request
-        value *selectNameFromObjectOP(context *c, const std::string &identifier);
+        value *select_name_from_object_op(context *c, const std::string &identifier);
 
-        value *getIdentifierOP(context *c, const std::string &identifier);
+        value *get_identifier_op(context *c, const std::string &identifier);
 
-        static value *assignIdentifierOP(context *c, const std::string &symbol);
+        static value *assign_identifier_op(context *c, const std::string &symbol);
 
-        static value *assignSelectorOP(context *c, const std::string &symbol);
+        static value *assign_selector_op(context *c, const std::string &symbol);
 
         //// Index assign and request
-        value *assignIndexOP(context *c);
+        value *assign_index_op(context *c);
 
-        value *indexOP(context *c);
+        value *index_op(context *c);
 
         //// Function  return
-        value *returnOP(context *c, size_t numberOfReturnValues);
+        value *return_op(context *c, size_t numberOfReturnValues);
     };
 
 }

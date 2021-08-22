@@ -2,7 +2,7 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::tuple_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Mul,
@@ -18,7 +18,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                         value *right = arguments[0];
                                         if (right->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
@@ -57,7 +57,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::TupleInitialize(bo
                                         value *left = arguments[0];
                                         if (left->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}

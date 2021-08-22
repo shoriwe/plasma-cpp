@@ -2,14 +2,14 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::value *plasma::vm::virtual_machine::newTupleOP(context *c, size_t numberOfElements) {
+plasma::vm::value *plasma::vm::virtual_machine::new_tuple_op(context *c, size_t numberOfElements) {
     std::vector<value *> elements;
     elements.reserve(numberOfElements);
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
     for (size_t index = 0; index < numberOfElements; index++) {
         if (c->value_stack.empty()) {
-            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
+            return this->new_invalid_number_of_arguments_error(c, numberOfElements, index + 1);
         }
         elements.push_back(c->pop_value());
         c->protect_value(elements.back());
@@ -18,14 +18,14 @@ plasma::vm::value *plasma::vm::virtual_machine::newTupleOP(context *c, size_t nu
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newArrayOP(context *c, size_t numberOfElements) {
+plasma::vm::value *plasma::vm::virtual_machine::new_array_op(context *c, size_t numberOfElements) {
     std::vector<value *> elements;
     elements.reserve(numberOfElements);
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
     for (size_t index = 0; index < numberOfElements; index++) {
         if (c->value_stack.empty()) {
-            return this->NewInvalidNumberOfArgumentsError(c, numberOfElements, index + 1);
+            return this->new_invalid_number_of_arguments_error(c, numberOfElements, index + 1);
         }
         elements.push_back(c->pop_value());
         c->protect_value(elements.back());
@@ -34,7 +34,7 @@ plasma::vm::value *plasma::vm::virtual_machine::newArrayOP(context *c, size_t nu
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t numberOfElements) {
+plasma::vm::value *plasma::vm::virtual_machine::new_hash_op(context *c, size_t numberOfElements) {
     std::unordered_map<value *, value *> elements;
     elements.reserve(numberOfElements);
     auto state = c->protected_values_state();
@@ -57,12 +57,12 @@ plasma::vm::value *plasma::vm::virtual_machine::newHashOP(context *c, size_t num
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newStringOP(context *c, const std::string &string) {
+plasma::vm::value *plasma::vm::virtual_machine::new_string_op(context *c, const std::string &string) {
     c->lastObject = this->new_string(c, false, string);
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newBytesOP(context *c, const std::string &bytes) {
+plasma::vm::value *plasma::vm::virtual_machine::new_bytes_op(context *c, const std::string &bytes) {
     std::vector<uint8_t> bytesVector;
     bytesVector.reserve(bytes.size());
     bytesVector.insert(bytesVector.end(), bytes.begin(), bytes.end());
@@ -70,17 +70,17 @@ plasma::vm::value *plasma::vm::virtual_machine::newBytesOP(context *c, const std
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newIntegerOP(context *c, int64_t integer) {
+plasma::vm::value *plasma::vm::virtual_machine::new_integer_op(context *c, int64_t integer) {
     c->lastObject = this->new_integer(c, false, integer);
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newFloatOP(context *c, double floating) {
+plasma::vm::value *plasma::vm::virtual_machine::new_float_op(context *c, double floating) {
     c->lastObject = this->new_float(c, false, floating);
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t instruction) {
+plasma::vm::value *plasma::vm::virtual_machine::unary_op(context *c, uint8_t instruction) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -107,7 +107,7 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
     c->protect_value(target);
     value *operation = target->get(c, this, operationName, &found);
     if (!found) {
-        return this->NewObjectWithNameNotFoundError(c, target, operationName);
+        return this->new_object_with_name_not_found_error(c, target, operationName);
     }
     c->protect_value(operation);
     bool success = false;
@@ -119,7 +119,7 @@ plasma::vm::value *plasma::vm::virtual_machine::unaryOP(context *c, uint8_t inst
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t instruction) {
+plasma::vm::value *plasma::vm::virtual_machine::binary_op(context *c, uint8_t instruction) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -239,7 +239,7 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     operation = rightHandSide->get(c, this, rightHandSideFunction, &found);
     c->protect_value(operation);
     if (!found) {
-        return this->NewObjectWithNameNotFoundError(c, rightHandSide, rightHandSideFunction);
+        return this->new_object_with_name_not_found_error(c, rightHandSide, rightHandSideFunction);
     }
     result = this->call_function(c, operation, std::vector<value *>{leftHandSide}, &success);
     if (success) {
@@ -249,7 +249,7 @@ plasma::vm::value *plasma::vm::virtual_machine::binaryOP(context *c, uint8_t ins
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *c, const std::string &identifier) {
+plasma::vm::value *plasma::vm::virtual_machine::select_name_from_object_op(context *c, const std::string &identifier) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -265,17 +265,17 @@ plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::getIdentifierOP(context *c, const std::string &identifier) {
+plasma::vm::value *plasma::vm::virtual_machine::get_identifier_op(context *c, const std::string &identifier) {
 
     value *result = c->peek_symbol_table()->get_any(identifier);
     if (result == nullptr) {
-        return this->NewObjectWithNameNotFoundError(c, identifier);
+        return this->new_object_with_name_not_found_error(c, identifier);
     }
     c->lastObject = result;
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
+plasma::vm::value *plasma::vm::virtual_machine::index_op(context *c) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -298,12 +298,12 @@ plasma::vm::value *plasma::vm::virtual_machine::indexOP(context *c) {
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::assignIdentifierOP(context *c, const std::string &symbol) {
+plasma::vm::value *plasma::vm::virtual_machine::assign_identifier_op(context *c, const std::string &symbol) {
     c->peek_symbol_table()->set(symbol, c->pop_value());
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::assignSelectorOP(context *c, const std::string &symbol) {
+plasma::vm::value *plasma::vm::virtual_machine::assign_selector_op(context *c, const std::string &symbol) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -314,7 +314,7 @@ plasma::vm::value *plasma::vm::virtual_machine::assignSelectorOP(context *c, con
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
+plasma::vm::value *plasma::vm::virtual_machine::assign_index_op(context *c) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -344,7 +344,7 @@ plasma::vm::value *plasma::vm::virtual_machine::assignIndexOP(context *c) {
 
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, size_t numberOfArguments) {
+plasma::vm::value *plasma::vm::virtual_machine::method_invocation_op(context *c, size_t numberOfArguments) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -369,7 +369,7 @@ plasma::vm::value *plasma::vm::virtual_machine::methodInvocationOP(context *c, s
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation) {
+plasma::vm::virtual_machine::new_class_op(context *c, bytecode *bc, const class_information &classInformation) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -395,8 +395,8 @@ plasma::vm::virtual_machine::newClassOP(context *c, bytecode *bc, const ClassInf
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::newFunctionOP(context *c, bytecode *bc,
-                                           const FunctionInformation &functionInformation) {
+plasma::vm::virtual_machine::new_function_op(context *c, bytecode *bc,
+                                             const function_information &functionInformation) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -418,8 +418,8 @@ plasma::vm::virtual_machine::newFunctionOP(context *c, bytecode *bc,
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
-                                                const FunctionInformation &functionInformation) {
+plasma::vm::virtual_machine::new_class_function_op(context *c, bytecode *bc,
+                                                   const function_information &functionInformation) {
 
 
     auto state = c->protected_values_state();
@@ -446,7 +446,7 @@ plasma::vm::virtual_machine::newClassFunctionOP(context *c, bytecode *bc,
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::loadFunctionArgumentsOP(context *c, const std::vector<std::string> &arguments) {
+plasma::vm::virtual_machine::load_function_arguments_op(context *c, const std::vector<std::string> &arguments) {
 
     for (const auto &argument : arguments) {
         c->peek_symbol_table()->set(argument, c->pop_value());
@@ -455,7 +455,7 @@ plasma::vm::virtual_machine::loadFunctionArgumentsOP(context *c, const std::vect
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numberOfReturnValues) {
+plasma::vm::value *plasma::vm::virtual_machine::return_op(context *c, size_t numberOfReturnValues) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -476,7 +476,7 @@ plasma::vm::value *plasma::vm::virtual_machine::returnOP(context *c, size_t numb
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *bc, size_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::if_jump_op(context *c, bytecode *bc, size_t jump) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -496,7 +496,7 @@ plasma::vm::value *plasma::vm::virtual_machine::ifJumpOP(context *c, bytecode *b
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::rIfJumpOP(context *c, bytecode *bc, size_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::reverse_if_jump_op(context *c, bytecode *bc, size_t jump) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -516,7 +516,7 @@ plasma::vm::value *plasma::vm::virtual_machine::rIfJumpOP(context *c, bytecode *
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecode *bc, size_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::unless_jump_op(context *c, bytecode *bc, size_t jump) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -536,7 +536,7 @@ plasma::vm::value *plasma::vm::virtual_machine::unlessJumpOP(context *c, bytecod
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::rUnlessJumpOP(context *c, bytecode *bc, size_t jump) {
+plasma::vm::value *plasma::vm::virtual_machine::reverse_unless_jump_op(context *c, bytecode *bc, size_t jump) {
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
@@ -555,8 +555,8 @@ plasma::vm::value *plasma::vm::virtual_machine::rUnlessJumpOP(context *c, byteco
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newLambdaFunctionOP(context *c, bytecode *bc,
-                                                                    const FunctionInformation &functionInformation) {
+plasma::vm::value *plasma::vm::virtual_machine::new_lambda_function_op(context *c, bytecode *bc,
+                                                                       const function_information &functionInformation) {
     auto functionInstructions = bc->nextN(functionInformation.bodyLength);
     c->lastObject = this->new_function(
             c,
@@ -570,8 +570,8 @@ plasma::vm::value *plasma::vm::virtual_machine::newLambdaFunctionOP(context *c, 
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newGeneratorOP(context *c, bytecode *bc,
-                                                               const generator_information &generatorInformation) {
+plasma::vm::value *plasma::vm::virtual_machine::new_generator_op(context *c, bytecode *bc,
+                                                                 const generator_information &generatorInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -683,7 +683,7 @@ plasma::vm::value *plasma::vm::virtual_machine::newGeneratorOP(context *c, bytec
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::raiseOP(context *c) {
+plasma::vm::value *plasma::vm::virtual_machine::raise_op(context *c) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -692,13 +692,13 @@ plasma::vm::value *plasma::vm::virtual_machine::raiseOP(context *c) {
 
     if (!raisedError->implements(c, this, this->force_any_from_master(c, RuntimeError))) {
         // Raise that the output is not and RuntimeError
-        return this->NewInvalidTypeError(c, raisedError->get_type(c, this), std::vector<std::string>{RuntimeError});
+        return this->new_invalid_type_error(c, raisedError->get_type(c, this), std::vector<std::string>{RuntimeError});
     }
     return raisedError;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::newModuleOP(context *c, bytecode *bc,
-                                                            const ClassInformation &moduleInformation) {
+plasma::vm::value *plasma::vm::virtual_machine::new_module_op(context *c, bytecode *bc,
+                                                              const class_information &moduleInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -732,16 +732,16 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
         // std::cout << std::to_string(instruct.op_code) << std::endl;
         switch (instruct.op_code) {
             case NewStringOP:
-                executionError = this->newStringOP(c, std::any_cast<std::string>(instruct.value));
+                executionError = this->new_string_op(c, std::any_cast<std::string>(instruct.value));
                 break;
             case NewFloatOP:
-                executionError = this->newFloatOP(c, std::any_cast<double>(instruct.value));
+                executionError = this->new_float_op(c, std::any_cast<double>(instruct.value));
                 break;
             case NewIntegerOP:
-                executionError = this->newIntegerOP(c, std::any_cast<int64_t>(instruct.value));
+                executionError = this->new_integer_op(c, std::any_cast<int64_t>(instruct.value));
                 break;
             case NewBytesOP:
-                executionError = this->newBytesOP(c, std::any_cast<std::string>(instruct.value));
+                executionError = this->new_bytes_op(c, std::any_cast<std::string>(instruct.value));
                 break;
             case GetTrueOP:
                 c->lastObject = this->get_true(c);
@@ -753,31 +753,31 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 c->lastObject = this->get_none(c);
                 break;
             case NewTupleOP:
-                executionError = this->newTupleOP(c, std::any_cast<size_t>(instruct.value));
+                executionError = this->new_tuple_op(c, std::any_cast<size_t>(instruct.value));
                 break;
             case NewArrayOP:
-                executionError = this->newArrayOP(c, std::any_cast<size_t>(instruct.value));
+                executionError = this->new_array_op(c, std::any_cast<size_t>(instruct.value));
                 break;
             case NewHashOP:
-                executionError = this->newHashOP(c, std::any_cast<size_t>(instruct.value));
+                executionError = this->new_hash_op(c, std::any_cast<size_t>(instruct.value));
                 break;
             case UnaryOP:
-                executionError = this->unaryOP(c, std::any_cast<uint8_t>(instruct.value));
+                executionError = this->unary_op(c, std::any_cast<uint8_t>(instruct.value));
                 break;
             case BinaryOP:
-                executionError = this->binaryOP(c, std::any_cast<uint8_t>(instruct.value));
+                executionError = this->binary_op(c, std::any_cast<uint8_t>(instruct.value));
                 break;
             case GetIdentifierOP:
-                executionError = this->getIdentifierOP(c, std::any_cast<std::string>(instruct.value));
+                executionError = this->get_identifier_op(c, std::any_cast<std::string>(instruct.value));
                 break;
             case SelectNameFromObjectOP:
-                executionError = this->selectNameFromObjectOP(c, std::any_cast<std::string>(instruct.value));
+                executionError = this->select_name_from_object_op(c, std::any_cast<std::string>(instruct.value));
                 break;
             case IndexOP:
-                executionError = this->indexOP(c);
+                executionError = this->index_op(c);
                 break;
             case MethodInvocationOP:
-                executionError = this->methodInvocationOP(c, std::any_cast<size_t>(instruct.value));
+                executionError = this->method_invocation_op(c, std::any_cast<size_t>(instruct.value));
                 break;
             case JumpOP:
                 bc->jump(std::any_cast<size_t>(instruct.value));
@@ -786,33 +786,35 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 bc->rjump(std::any_cast<size_t>(instruct.value));
                 break;
             case AssignIdentifierOP:
-                executionError = this->assignIdentifierOP(c, std::any_cast<std::string>(instruct.value));
+                executionError = this->assign_identifier_op(c, std::any_cast<std::string>(instruct.value));
                 break;
             case AssignSelectorOP:
-                executionError = this->assignSelectorOP(c, std::any_cast<std::string>(instruct.value));
+                executionError = this->assign_selector_op(c, std::any_cast<std::string>(instruct.value));
                 break;
             case AssignIndexOP:
-                executionError = this->assignIndexOP(c);
+                executionError = this->assign_index_op(c);
                 break;
             case NewInterfaceOP:
             case NewClassOP:
-                executionError = this->newClassOP(c, bc, std::any_cast<ClassInformation>(instruct.value));
+                executionError = this->new_class_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
             case NewClassFunctionOP:
-                executionError = this->newClassFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                executionError = this->new_class_function_op(c, bc, std::any_cast<function_information>(instruct.value));
                 break;
             case LoadFunctionArgumentsOP:
-                executionError = this->loadFunctionArgumentsOP(c,
-                                                               std::any_cast<std::vector<std::string>>(instruct.value));
+                executionError = this->load_function_arguments_op(c,
+                                                                  std::any_cast<std::vector<std::string>>(
+                                                                          instruct.value));
                 break;
             case NewFunctionOP:
-                executionError = this->newFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                executionError = this->new_function_op(c, bc, std::any_cast<function_information>(instruct.value));
                 break;
             case NewLambdaFunctionOP:
-                executionError = this->newLambdaFunctionOP(c, bc, std::any_cast<FunctionInformation>(instruct.value));
+                executionError = this->new_lambda_function_op(c, bc,
+                                                              std::any_cast<function_information>(instruct.value));
                 break;
             case NewGeneratorOP:
-                executionError = this->newGeneratorOP(c, bc, std::any_cast<generator_information>(instruct.value));
+                executionError = this->new_generator_op(c, bc, std::any_cast<generator_information>(instruct.value));
                 break;
             case PushOP:
                 if (c->lastObject != nullptr) {
@@ -820,27 +822,27 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 }
                 break;
             case IfJumpOP:
-                executionError = this->ifJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                executionError = this->if_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
                 break;
             case UnlessJumpOP:
-                executionError = this->unlessJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                executionError = this->unless_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
                 break;
             case RIfJumpOP:
-                executionError = this->rIfJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                executionError = this->reverse_if_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
                 break;
             case RUnlessJumpOP:
-                executionError = this->rUnlessJumpOP(c, bc, std::any_cast<size_t>(instruct.value));
+                executionError = this->reverse_unless_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
                 break;
             case NOP:
                 break;
             case ReturnOP:
                 (*success) = true;
-                return this->returnOP(c, std::any_cast<size_t>(instruct.value));
+                return this->return_op(c, std::any_cast<size_t>(instruct.value));
             case RaiseOP:
-                executionError = this->raiseOP(c);
+                executionError = this->raise_op(c);
                 break;
             case NewModuleOP:
-                executionError = this->newModuleOP(c, bc, std::any_cast<ClassInformation>(instruct.value));
+                executionError = this->new_module_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
             default:
                 // FixMe: Do something when

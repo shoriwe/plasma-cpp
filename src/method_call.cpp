@@ -31,8 +31,8 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
             return callFunction;
         }
         if (callFunction->typeId != Function) {
-            return this->NewInvalidTypeError(c, callFunction->get_type(c, this),
-                                             std::vector<std::string>{FunctionName, CallableName});
+            return this->new_invalid_type_error(c, callFunction->get_type(c, this),
+                                                std::vector<std::string>{FunctionName, CallableName});
         }
     }
 

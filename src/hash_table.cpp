@@ -1,6 +1,6 @@
 #include "vm/virtual_machine.h"
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::hash_table_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Equals,
@@ -172,7 +172,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::HashTableInitializ
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
                                         (*success) = false;
-                                        return this->NewUnhashableTypeError(c, self->get_type(c, this));
+                                        return this->new_unhashable_type_error(c, self->get_type(c, this));
                                     }
                             )
                     );

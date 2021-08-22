@@ -8,14 +8,14 @@ plasma::vm::value *plasma::vm::virtual_machine::NewFloatParsingError(plasma::vm:
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::NewIntegerParsingError(plasma::vm::context *c) {
+plasma::vm::value *plasma::vm::virtual_machine::new_integer_parsing_error(plasma::vm::context *c) {
     value *errorType = this->force_any_from_master(c, IntegerParsingError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>());
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::NewKeyNotFoundError(plasma::vm::context *c, plasma::vm::value *key) {
+plasma::vm::value *plasma::vm::virtual_machine::new_key_not_found_error(plasma::vm::context *c, plasma::vm::value *key) {
     value *errorType = this->force_any_from_master(c, KeyNotFoundError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{key});
@@ -23,7 +23,7 @@ plasma::vm::value *plasma::vm::virtual_machine::NewKeyNotFoundError(plasma::vm::
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewIndexOutOfRange(plasma::vm::context *c, size_t length, size_t requestedIndex) {
+plasma::vm::virtual_machine::new_index_out_of_range_error(plasma::vm::context *c, size_t length, size_t requestedIndex) {
     value *errorType = this->force_any_from_master(c, IndexOutOfRangeError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -34,7 +34,7 @@ plasma::vm::virtual_machine::NewIndexOutOfRange(plasma::vm::context *c, size_t l
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewUnhashableTypeError(plasma::vm::context *c, plasma::vm::value *objectType) {
+plasma::vm::virtual_machine::new_unhashable_type_error(plasma::vm::context *c, plasma::vm::value *objectType) {
     value *errorType = this->force_any_from_master(c, UnhashableTypeError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -44,7 +44,7 @@ plasma::vm::virtual_machine::NewUnhashableTypeError(plasma::vm::context *c, plas
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewNotImplementedCallableError(plasma::vm::context *c, std::string symbol) {
+plasma::vm::virtual_machine::new_not_implemented_callable_error(plasma::vm::context *c, std::string symbol) {
     value *errorType = this->force_any_from_master(c, NotImplementedCallableError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -54,8 +54,8 @@ plasma::vm::virtual_machine::NewNotImplementedCallableError(plasma::vm::context 
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewInvalidNumberOfArgumentsError(plasma::vm::context *c, size_t expected,
-                                                              size_t received) {
+plasma::vm::virtual_machine::new_invalid_number_of_arguments_error(plasma::vm::context *c, size_t expected,
+                                                                   size_t received) {
     value *errorType = this->force_any_from_master(c, InvalidNumberOfArgumentsError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -66,8 +66,8 @@ plasma::vm::virtual_machine::NewInvalidNumberOfArgumentsError(plasma::vm::contex
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewObjectWithNameNotFoundError(context *c, value *source,
-                                                            const std::string &symbol) {
+plasma::vm::virtual_machine::new_object_with_name_not_found_error(context *c, value *source,
+                                                                  const std::string &symbol) {
     value *errorType = this->force_any_from_master(c, ObjectWithNameNotFoundError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -77,7 +77,7 @@ plasma::vm::virtual_machine::NewObjectWithNameNotFoundError(context *c, value *s
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewObjectWithNameNotFoundError(context *c, const std::string &symbol) {
+plasma::vm::virtual_machine::new_object_with_name_not_found_error(context *c, const std::string &symbol) {
     value *errorType = this->force_any_from_master(c, ObjectWithNameNotFoundError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -87,8 +87,8 @@ plasma::vm::virtual_machine::NewObjectWithNameNotFoundError(context *c, const st
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewInvalidTypeError(plasma::vm::context *c, plasma::vm::value *receivedType,
-                                                 const std::vector<std::string> &expectedTypes) {
+plasma::vm::virtual_machine::new_invalid_type_error(plasma::vm::context *c, plasma::vm::value *receivedType,
+                                                    const std::vector<std::string> &expectedTypes) {
     value *errorType = this->force_any_from_master(c, InvalidTypeError);
     value *result = this->force_construction(c, errorType);
     std::string expecting;
@@ -109,8 +109,8 @@ plasma::vm::virtual_machine::NewInvalidTypeError(plasma::vm::context *c, plasma:
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewObjectConstructionError(plasma::vm::context *c, value *type,
-                                                        const std::string &errorMessage) {
+plasma::vm::virtual_machine::new_object_construction_error(plasma::vm::context *c, value *type,
+                                                           const std::string &errorMessage) {
     value *errorType = this->force_any_from_master(c, ObjectConstructionError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -120,8 +120,8 @@ plasma::vm::virtual_machine::NewObjectConstructionError(plasma::vm::context *c, 
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewBuiltInSymbolProtectionError(plasma::vm::context *c, plasma::vm::value *source,
-                                                             const std::string &symbol) {
+plasma::vm::virtual_machine::new_builtin_symbol_protection_error(plasma::vm::context *c, plasma::vm::value *source,
+                                                                 const std::string &symbol) {
     value *errorType = this->force_any_from_master(c, BuiltInSymbolProtectionError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{
@@ -131,7 +131,7 @@ plasma::vm::virtual_machine::NewBuiltInSymbolProtectionError(plasma::vm::context
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::NewObjectNotCallableError(plasma::vm::context *c, plasma::vm::value *objectType) {
+plasma::vm::virtual_machine::new_object_not_callable_error(plasma::vm::context *c, plasma::vm::value *objectType) {
     value *errorType = this->force_any_from_master(c, ObjectNotCallableError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{

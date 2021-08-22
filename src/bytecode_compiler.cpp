@@ -51,9 +51,9 @@ compile_method_invocation(const plasma::ast::MethodInvocationExpression &methodI
                           plasma::error::error *compilationError);
 
 static bool
-compileReturnStatement(const plasma::ast::ReturnStatement &returnStatement,
-                       std::vector<plasma::vm::instruction> *result,
-                       plasma::error::error *compilationError);
+compile_return_statement(const plasma::ast::ReturnStatement &returnStatement,
+                         std::vector<plasma::vm::instruction> *result,
+                         plasma::error::error *compilationError);
 
 plasma::bytecode_compiler::compiler::compiler(plasma::parser::parser *p) {
     this->parser = p;
@@ -605,13 +605,13 @@ static bool compile_lambda_expression(const plasma::ast::LambdaExpression &lambd
                     .value = arguments
             }
     );
-    if (!compileReturnStatement(lambdaExpression.Output, &body, compilationError)) {
+    if (!compile_return_statement(lambdaExpression.Output, &body, compilationError)) {
         return false;
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewLambdaFunctionOP,
-                    .value = plasma::vm::FunctionInformation{
+                    .value = plasma::vm::function_information{
                             .bodyLength = body.size(),
                             .numberOfArguments = arguments.size()
                     }
@@ -645,7 +645,7 @@ static bool compile_generator_expression(
     std::vector<std::any> generatorOperation;
     generatorOperation.push_back(generatorExpression.Operation);
     if (
-            !compileReturnStatement(
+            !compile_return_statement(
                     plasma::ast::ReturnStatement{
                             .Results = generatorOperation
                     },
@@ -878,7 +878,7 @@ compile_function_definition(const plasma::ast::FunctionDefinitionStatement &func
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewFunctionOP,
-                    .value = plasma::vm::FunctionInformation{
+                    .value = plasma::vm::function_information{
                             .name = functionDefinitionStatement.Name.Token.string,
                             .bodyLength = body.size(),
                             .numberOfArguments = arguments.size()
@@ -917,7 +917,7 @@ compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewClassFunctionOP,
-                    .value = plasma::vm::FunctionInformation{
+                    .value = plasma::vm::function_information{
                             .name = functionDefinitionStatement.Name.Token.string,
                             .bodyLength = body.size(),
                             .numberOfArguments = arguments.size()
@@ -946,7 +946,7 @@ compile_class_statement(const plasma::ast::ClassStatement &classStatement, std::
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewClassOP,
-                    .value = plasma::vm::ClassInformation{
+                    .value = plasma::vm::class_information{
                             .name = classStatement.Name.Token.string,
                             .bodyLength = body.size(),
                             .numberOfBases = classStatement.Bases.size()
@@ -960,9 +960,9 @@ compile_class_statement(const plasma::ast::ClassStatement &classStatement, std::
 }
 
 static bool
-compileReturnStatement(const plasma::ast::ReturnStatement &returnStatement,
-                       std::vector<plasma::vm::instruction> *result,
-                       plasma::error::error *compilationError) {
+compile_return_statement(const plasma::ast::ReturnStatement &returnStatement,
+                         std::vector<plasma::vm::instruction> *result,
+                         plasma::error::error *compilationError) {
     for (auto returnValue = returnStatement.Results.rbegin();
          returnValue != returnStatement.Results.rend();
          returnValue++) {
@@ -985,9 +985,9 @@ struct elif_information {
 };
 
 static bool
-compileIfStatement(const plasma::ast::IfStatement &ifStatement,
-                   std::vector<plasma::vm::instruction> *result,
-                   plasma::error::error *compilationError) {
+compile_if_statement(const plasma::ast::IfStatement &ifStatement,
+                     std::vector<plasma::vm::instruction> *result,
+                     plasma::error::error *compilationError) {
 
     if (!compile_expression(ifStatement.Condition, true, result, compilationError)) {
         return false;
@@ -1054,9 +1054,9 @@ compileIfStatement(const plasma::ast::IfStatement &ifStatement,
 }
 
 static bool
-compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
-                       std::vector<plasma::vm::instruction> *result,
-                       plasma::error::error *compilationError) {
+compile_unless_statement(const plasma::ast::UnlessStatement &unlessStatement,
+                         std::vector<plasma::vm::instruction> *result,
+                         plasma::error::error *compilationError) {
 
     if (!compile_expression(unlessStatement.Condition, true, result, compilationError)) {
         return false;
@@ -1123,9 +1123,9 @@ compileUnlessStatement(const plasma::ast::UnlessStatement &unlessStatement,
 }
 
 static bool
-compileSwitchStatement(const plasma::ast::SwitchStatement &switchStatement,
-                       std::vector<plasma::vm::instruction> *result,
-                       plasma::error::error *compilationError) {
+compile_switch_statement(const plasma::ast::SwitchStatement &switchStatement,
+                         std::vector<plasma::vm::instruction> *result,
+                         plasma::error::error *compilationError) {
     plasma::ast::IfStatement ifEquivalent;
     bool first = true;
     for (const auto &switchCase : switchStatement.CaseBlocks) {
@@ -1161,13 +1161,13 @@ compileSwitchStatement(const plasma::ast::SwitchStatement &switchStatement,
     if (!switchStatement.Default.empty()) {
         ifEquivalent.Else = switchStatement.Default;
     }
-    return compileIfStatement(ifEquivalent, result, compilationError);
+    return compile_if_statement(ifEquivalent, result, compilationError);
 }
 
 static bool
-compileWhileStatement(const plasma::ast::WhileStatement &whileStatement,
-                      std::vector<plasma::vm::instruction> *result,
-                      plasma::error::error *compilationError) {
+compile_while_statement(const plasma::ast::WhileStatement &whileStatement,
+                        std::vector<plasma::vm::instruction> *result,
+                        plasma::error::error *compilationError) {
     std::vector<plasma::vm::instruction> condition;
     if (!compile_expression(whileStatement.Condition, true, &condition, compilationError)) {
         return false;
@@ -1212,9 +1212,9 @@ compileWhileStatement(const plasma::ast::WhileStatement &whileStatement,
 }
 
 static bool
-compileUntilStatement(const plasma::ast::UntilStatement &untilStatement,
-                      std::vector<plasma::vm::instruction> *result,
-                      plasma::error::error *compilationError) {
+compile_until_statement(const plasma::ast::UntilStatement &untilStatement,
+                        std::vector<plasma::vm::instruction> *result,
+                        plasma::error::error *compilationError) {
     std::vector<plasma::vm::instruction> condition;
     if (!compile_expression(untilStatement.Condition, true, &condition, compilationError)) {
         return false;
@@ -1259,9 +1259,9 @@ compileUntilStatement(const plasma::ast::UntilStatement &untilStatement,
 }
 
 static bool
-compileDoWhileStatement(const plasma::ast::DoWhileStatement &doWhileStatement,
-                        std::vector<plasma::vm::instruction> *result,
-                        plasma::error::error *compilationError) {
+compile_do_while_statement(const plasma::ast::DoWhileStatement &doWhileStatement,
+                           std::vector<plasma::vm::instruction> *result,
+                           plasma::error::error *compilationError) {
     std::vector<plasma::vm::instruction> condition;
     if (!compile_expression(doWhileStatement.Condition, true, &condition, compilationError)) {
         return false;
@@ -1300,7 +1300,7 @@ compileDoWhileStatement(const plasma::ast::DoWhileStatement &doWhileStatement,
 }
 
 static bool
-compileRedoStatement(std::vector<plasma::vm::instruction> *result) {
+compile_redo_statement(std::vector<plasma::vm::instruction> *result) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::RedoOP,
@@ -1310,7 +1310,7 @@ compileRedoStatement(std::vector<plasma::vm::instruction> *result) {
 }
 
 static bool
-compileContinueStatement(std::vector<plasma::vm::instruction> *result) {
+compile_continue_statement(std::vector<plasma::vm::instruction> *result) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::ContinueOP,
@@ -1320,7 +1320,7 @@ compileContinueStatement(std::vector<plasma::vm::instruction> *result) {
 }
 
 static bool
-compileBreakStatement(std::vector<plasma::vm::instruction> *result) {
+compile_break_statement(std::vector<plasma::vm::instruction> *result) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::BreakOP,
@@ -1330,7 +1330,7 @@ compileBreakStatement(std::vector<plasma::vm::instruction> *result) {
 }
 
 static bool
-compilePassStatement(std::vector<plasma::vm::instruction> *result) {
+compile_pass_statement(std::vector<plasma::vm::instruction> *result) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NOP,
@@ -1340,8 +1340,8 @@ compilePassStatement(std::vector<plasma::vm::instruction> *result) {
 }
 
 static bool
-compileRaiseStatement(const plasma::ast::RaiseStatement &raiseStatement, std::vector<plasma::vm::instruction> *result,
-                      plasma::error::error *compilationError) {
+compile_raise_statement(const plasma::ast::RaiseStatement &raiseStatement, std::vector<plasma::vm::instruction> *result,
+                        plasma::error::error *compilationError) {
     if (!compile_expression(raiseStatement.X, true, result, compilationError)) {
         return false;
     }
@@ -1353,9 +1353,9 @@ compileRaiseStatement(const plasma::ast::RaiseStatement &raiseStatement, std::ve
     return true;
 }
 
-static bool compileModuleStatement(const plasma::ast::ModuleStatement &moduleStatement,
-                                   std::vector<plasma::vm::instruction> *result,
-                                   plasma::error::error *compilationError) {
+static bool compile_module_statement(const plasma::ast::ModuleStatement &moduleStatement,
+                                     std::vector<plasma::vm::instruction> *result,
+                                     plasma::error::error *compilationError) {
     std::vector<plasma::vm::instruction> body;
     if (!compile_body(moduleStatement.Body, &body, compilationError)) {
         return false;
@@ -1363,7 +1363,7 @@ static bool compileModuleStatement(const plasma::ast::ModuleStatement &moduleSta
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewModuleOP,
-                    .value = plasma::vm::ClassInformation{
+                    .value = plasma::vm::class_information{
                             .name = moduleStatement.Name.Token.string,
                             .bodyLength = body.size()
                     }
@@ -1373,9 +1373,9 @@ static bool compileModuleStatement(const plasma::ast::ModuleStatement &moduleSta
     return true;
 }
 
-static bool compileInterfaceStatement(const plasma::ast::InterfaceStatement &interfaceStatement,
-                                      std::vector<plasma::vm::instruction> *result,
-                                      plasma::error::error *compilationError) {
+static bool compile_interface_statement(const plasma::ast::InterfaceStatement &interfaceStatement,
+                                        std::vector<plasma::vm::instruction> *result,
+                                        plasma::error::error *compilationError) {
     for (const auto &base : interfaceStatement.Bases) {
         if (!compile_expression(base, true, result, compilationError)) {
             return false;
@@ -1391,7 +1391,7 @@ static bool compileInterfaceStatement(const plasma::ast::InterfaceStatement &int
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewInterfaceOP,
-                    .value = plasma::vm::ClassInformation{
+                    .value = plasma::vm::class_information{
                             .name = interfaceStatement.Name.Token.string,
                             .bodyLength = body.size(),
                             .numberOfBases = interfaceStatement.Bases.size()
@@ -1412,40 +1412,40 @@ static bool compile_statement(std::any node, std::vector<plasma::vm::instruction
         return compile_function_definition(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result,
                                            compilationError);
     } else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
-        return compileReturnStatement(std::any_cast<plasma::ast::ReturnStatement>(node), result, compilationError);
+        return compile_return_statement(std::any_cast<plasma::ast::ReturnStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::IfStatement)) {
-        return compileIfStatement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
+        return compile_if_statement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
-        return compileUnlessStatement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
+        return compile_unless_statement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
-        return compileSwitchStatement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
+        return compile_switch_statement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
-        return compileWhileStatement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
+        return compile_while_statement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
-        return compileUntilStatement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
+        return compile_until_statement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
-        return compileDoWhileStatement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
+        return compile_do_while_statement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
     } /* else if (node.type() == typeid(plasma::ast::ForStatement)) {
         return compileForLoopStatement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
     }*/ else if (node.type() == typeid(plasma::ast::RedoStatement)) {
-        return compileRedoStatement(result);
+        return compile_redo_statement(result);
     } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
-        return compileBreakStatement(result);
+        return compile_break_statement(result);
     } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
-        return compileContinueStatement(result);
+        return compile_continue_statement(result);
     } else if (node.type() == typeid(plasma::ast::PassStatement)) {
-        return compilePassStatement(result);
+        return compile_pass_statement(result);
     } /*else if (node.type() == typeid(plasma::ast::TryStatement)) {
         return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
     } */ else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
-        return compileModuleStatement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
+        return compile_module_statement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
-        return compileRaiseStatement(std::any_cast<plasma::ast::RaiseStatement>(node), result, compilationError);
+        return compile_raise_statement(std::any_cast<plasma::ast::RaiseStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::ClassStatement)) {
         return compile_class_statement(std::any_cast<plasma::ast::ClassStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
-        return compileInterfaceStatement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
-                                         compilationError);
+        return compile_interface_statement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
+                                           compilationError);
     }
     return true;
 }

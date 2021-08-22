@@ -2,7 +2,7 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::integer_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 NegBits,
@@ -58,9 +58,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, self->integer + right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -87,9 +88,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, left->floating + self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -116,9 +118,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, self->integer - right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -145,9 +148,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, left->floating - self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -174,9 +178,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, self->integer * right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -203,9 +208,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, left->floating * self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -233,9 +239,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, self->integer / right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -263,9 +270,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_float(c, false, left->floating / self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -292,9 +300,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer / right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -321,9 +330,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->floating / self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -347,8 +357,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer % right->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -372,8 +383,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->integer % self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -402,9 +414,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                                        std::pow(self->integer, right->floating));
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -433,9 +446,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                                        std::pow(left->floating, self->integer));
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -459,8 +473,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer ^ right->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -484,8 +499,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->integer ^ self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -509,8 +525,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer & right->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -534,8 +551,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->integer & self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -559,8 +577,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer | right->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -584,8 +603,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->integer | self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -609,8 +629,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer << right->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -634,8 +655,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->integer << self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -659,8 +681,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, self->integer >> right->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -684,8 +707,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->new_integer(c, false, left->integer >> self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName});
                                         }
                                     }
                             )
@@ -713,9 +737,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, self->integer == right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -742,9 +767,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, left->floating == self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -771,9 +797,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, self->integer != right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -800,9 +827,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, left->floating != self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -829,9 +857,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, self->integer > right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -858,9 +887,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, left->floating > self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -887,9 +917,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, self->integer < right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -916,9 +947,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, left->floating < self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -945,9 +977,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, self->integer >= right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -974,9 +1007,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, left->floating >= self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -1003,9 +1037,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, self->integer <= right->floating);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, right->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, right->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )
@@ -1032,9 +1067,10 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::IntegerInitialize(
                                                 return this->get_boolean(c, left->floating <= self->integer);
                                             default:
                                                 (*success) = false;
-                                                return this->NewInvalidTypeError(c, left->type,
-                                                                                 std::vector<std::string>{IntegerName,
-                                                                                                          FloatName});
+                                                return this->new_invalid_type_error(c, left->type,
+                                                                                    std::vector<std::string>{
+                                                                                            IntegerName,
+                                                                                            FloatName});
                                         }
                                     }
                             )

@@ -37,7 +37,7 @@ plasma::vm::value::get(context *c, virtual_machine *vm, const std::string &symbo
         } else {
 
             (*success) = false;
-            result = vm->NewObjectWithNameNotFoundError(c, this, symbol);
+            result = vm->new_object_with_name_not_found_error(c, this, symbol);
         }
     } else {
         (*success) = true;

@@ -1,7 +1,7 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::NoneInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::none_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Equals,

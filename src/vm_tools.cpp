@@ -12,20 +12,20 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
         size_t realIndex = plasma::vm::virtual_machine::calculate_index(index->integer, source->content.size(), &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->content.size(), index->integer);
+            return this->new_index_out_of_range_error(c, source->content.size(), index->integer);
         }
         (*success) = true;
         return source->content[realIndex];
     } else if (index->typeId == Tuple) {
         if (index->content.size() != 2) {
             (*success) = false;
-            return this->NewInvalidNumberOfArgumentsError(c, 2, index->content.size());
+            return this->new_invalid_number_of_arguments_error(c, 2, index->content.size());
         }
         value *start = index->content[0];
         value *end = index->content[1];
         if (start->typeId != Integer) {
             (*success) = false;
-            return this->NewInvalidTypeError(
+            return this->new_invalid_type_error(
                     c,
                     start->get_type(c, this),
                     std::vector<std::string>{IntegerName}
@@ -33,7 +33,7 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
         }
         if (end->typeId != Integer) {
             (*success) = false;
-            return this->NewInvalidTypeError(
+            return this->new_invalid_type_error(
                     c,
                     end->get_type(c, this),
                     std::vector<std::string>{IntegerName}
@@ -43,13 +43,13 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
                                                                              &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->content.size(), start->integer);
+            return this->new_index_out_of_range_error(c, source->content.size(), start->integer);
         }
         fail = false;
         size_t endRealIndex = plasma::vm::virtual_machine::calculate_index(end->integer, source->content.size(), &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->content.size(), end->integer);
+            return this->new_index_out_of_range_error(c, source->content.size(), end->integer);
         }
         (*success) = true;
         if (startRealIndex > endRealIndex) {
@@ -66,7 +66,7 @@ plasma::vm::virtual_machine::content_index(context *c, value *index, value *sour
                                                               &source->content[endRealIndex]));
     }
     (*success) = false;
-    return this->NewInvalidTypeError(
+    return this->new_invalid_type_error(
             c,
             index->get_type(c, this),
             std::vector<std::string>{IntegerName, TupleName}
@@ -77,16 +77,16 @@ plasma::vm::value *
 plasma::vm::virtual_machine::content_assign(context *c, value *container, value *index, value *object, bool *success) {
     if (index->typeId != Integer) {
         (*success) = false;
-        return this->NewInvalidTypeError(c, index->get_type(c, this), std::vector<std::string>{
-                                                 IntegerName
-                                         }
+        return this->new_invalid_type_error(c, index->get_type(c, this), std::vector<std::string>{
+                                                    IntegerName
+                                            }
         );
     }
     bool fail = false;
     size_t realIndex = plasma::vm::virtual_machine::calculate_index(index->integer, container->content.size(), &fail);
     if (fail) {
         (*success) = false;
-        return this->NewIndexOutOfRange(c, container->content.size(), index->integer);
+        return this->new_index_out_of_range_error(c, container->content.size(), index->integer);
     }
 
     container->content[realIndex] = object;
@@ -115,8 +115,8 @@ plasma::vm::value *plasma::vm::virtual_machine::content_to_string(context *c, va
         }
         if (objectAsString->typeId != String) {
             (*success) = false;
-            return this->NewInvalidTypeError(c, objectAsString->get_type(c, this),
-                                             std::vector<std::string>{StringName});
+            return this->new_invalid_type_error(c, objectAsString->get_type(c, this),
+                                                std::vector<std::string>{StringName});
         }
         if (first) {
             first = false;
@@ -169,8 +169,8 @@ plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, val
                                       bool *success) -> value * {
                                       if (self->integer >= iterator->source->content.size()) {
                                           (*success) = false;
-                                          return this->NewIndexOutOfRange(c, iterator->source->content.size(),
-                                                                          self->integer);
+                                          return this->new_index_out_of_range_error(c, iterator->source->content.size(),
+                                                                                    self->integer);
                                       }
                                       (*success) = true;
                                       value *result = iterator->source->content[self->integer];
@@ -278,20 +278,20 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
         size_t realIndex = plasma::vm::virtual_machine::calculate_index(index->integer, source->bytes.size(), &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->bytes.size(), index->integer);
+            return this->new_index_out_of_range_error(c, source->bytes.size(), index->integer);
         }
         (*success) = true;
         return this->new_integer(c, false, source->bytes[realIndex]);
     } else if (index->typeId == Tuple) {
         if (index->content.size() != 2) {
             (*success) = false;
-            return this->NewInvalidNumberOfArgumentsError(c, 2, index->content.size());
+            return this->new_invalid_number_of_arguments_error(c, 2, index->content.size());
         }
         value *start = index->content[0];
         value *end = index->content[1];
         if (start->typeId != Integer) {
             (*success) = false;
-            return this->NewInvalidTypeError(
+            return this->new_invalid_type_error(
                     c,
                     start->get_type(c, this),
                     std::vector<std::string>{IntegerName}
@@ -299,7 +299,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
         }
         if (end->typeId != Integer) {
             (*success) = false;
-            return this->NewInvalidTypeError(
+            return this->new_invalid_type_error(
                     c,
                     end->get_type(c, this),
                     std::vector<std::string>{IntegerName}
@@ -309,13 +309,13 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
                                                                              &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->bytes.size(), start->integer);
+            return this->new_index_out_of_range_error(c, source->bytes.size(), start->integer);
         }
         fail = false;
         size_t endRealIndex = plasma::vm::virtual_machine::calculate_index(end->integer, source->bytes.size(), &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->bytes.size(), end->integer);
+            return this->new_index_out_of_range_error(c, source->bytes.size(), end->integer);
         }
         (*success) = true;
         if (startRealIndex > endRealIndex) {
@@ -325,7 +325,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_index(context *c, value *s
                                                               &source->bytes[endRealIndex]));
     }
     (*success) = false;
-    return this->NewInvalidTypeError(
+    return this->new_invalid_type_error(
             c,
             index->get_type(c, this),
             std::vector<std::string>{IntegerName, TupleName}
@@ -387,8 +387,8 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
                                       bool *success) -> value * {
                                       if (self->integer >= iterator->source->bytes.size()) {
                                           (*success) = false;
-                                          return this->NewIndexOutOfRange(c, iterator->source->bytes.size(),
-                                                                          self->integer);
+                                          return this->new_index_out_of_range_error(c, iterator->source->bytes.size(),
+                                                                                    self->integer);
                                       }
                                       (*success) = true;
                                       value *result = this->new_integer(c, false,
@@ -411,7 +411,7 @@ plasma::vm::virtual_machine::bytes_equals(value *leftHandSide, value *rightHandS
 plasma::vm::value *
 plasma::vm::virtual_machine::bytes_contains(context *c, value *bytes, value *subBytes, bool *result) {
     if (subBytes->typeId != Bytes) {
-        return this->NewInvalidTypeError(c, subBytes->get_type(c, this), std::vector<std::string>{Bytes});
+        return this->new_invalid_type_error(c, subBytes->get_type(c, this), std::vector<std::string>{Bytes});
     }
     if (subBytes->bytes.size() == 1) {
         (*result) = std::find(bytes->bytes.begin(), bytes->bytes.end(), subBytes->bytes[0]) != bytes->bytes.end();
@@ -447,20 +447,20 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
         size_t realIndex = plasma::vm::virtual_machine::calculate_index(index->integer, source->string.size(), &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->string.size(), index->integer);
+            return this->new_index_out_of_range_error(c, source->string.size(), index->integer);
         }
         (*success) = true;
         return this->new_string(c, false, std::string(1, source->string[realIndex]));
     } else if (index->typeId == Tuple) {
         if (index->content.size() != 2) {
             (*success) = false;
-            return this->NewInvalidNumberOfArgumentsError(c, 2, index->content.size());
+            return this->new_invalid_number_of_arguments_error(c, 2, index->content.size());
         }
         value *start = index->content[0];
         value *end = index->content[1];
         if (start->typeId != Integer) {
             (*success) = false;
-            return this->NewInvalidTypeError(
+            return this->new_invalid_type_error(
                     c,
                     start->get_type(c, this),
                     std::vector<std::string>{IntegerName}
@@ -468,7 +468,7 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
         }
         if (end->typeId != Integer) {
             (*success) = false;
-            return this->NewInvalidTypeError(
+            return this->new_invalid_type_error(
                     c,
                     end->get_type(c, this),
                     std::vector<std::string>{IntegerName}
@@ -478,13 +478,13 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
                                                                              &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->string.size(), start->integer);
+            return this->new_index_out_of_range_error(c, source->string.size(), start->integer);
         }
         fail = false;
         size_t endRealIndex = plasma::vm::virtual_machine::calculate_index(end->integer, source->string.size(), &fail);
         if (fail) {
             (*success) = false;
-            return this->NewIndexOutOfRange(c, source->string.size(), end->integer);
+            return this->new_index_out_of_range_error(c, source->string.size(), end->integer);
         }
         (*success) = true;
         if (startRealIndex > endRealIndex) {
@@ -494,7 +494,7 @@ plasma::vm::virtual_machine::string_index(context *c, value *source, value *inde
                                                       &source->string[endRealIndex]));
     }
     (*success) = false;
-    return this->NewInvalidTypeError(
+    return this->new_invalid_type_error(
             c,
             index->get_type(c, this),
             std::vector<std::string>{IntegerName, TupleName}
@@ -547,8 +547,8 @@ plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, valu
                                       bool *success) -> value * {
                                       if (self->integer >= iterator->source->string.size()) {
                                           (*success) = false;
-                                          return this->NewIndexOutOfRange(c, iterator->source->string.size(),
-                                                                          self->integer);
+                                          return this->new_index_out_of_range_error(c, iterator->source->string.size(),
+                                                                                    self->integer);
                                       }
                                       (*success) = true;
                                       value *result = this->new_string(c, false, std::string(1,
@@ -596,7 +596,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_index(context *c, valu
     }
     if (!source->keyValues.contains(hashKey)) {
         (*success) = false;
-        return this->NewKeyNotFoundError(c, key);
+        return this->new_key_not_found_error(c, key);
     }
     bool comparison;
     value *comparisonError;
@@ -612,7 +612,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_index(context *c, valu
         }
     }
     (*success) = false;
-    return this->NewKeyNotFoundError(c, key);
+    return this->new_key_not_found_error(c, key);
 }
 
 plasma::vm::value *
@@ -701,7 +701,7 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, v
                                 bool *success) -> value * {
                                 if (self->integer >= content.size()) {
                                     (*success) = false;
-                                    return this->NewIndexOutOfRange(c, content.size(), self->integer);
+                                    return this->new_index_out_of_range_error(c, content.size(), self->integer);
                                 }
                                 return this->hashtable_index(c, self->source, content[self->integer], success);
                             }
@@ -734,8 +734,8 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_to_string(context *c, 
             }
             if (objectAsString->typeId != String) {
                 (*success) = false;
-                return this->NewInvalidTypeError(c, objectAsString->get_type(c, this),
-                                                 std::vector<std::string>{StringName}
+                return this->new_invalid_type_error(c, objectAsString->get_type(c, this),
+                                                    std::vector<std::string>{StringName}
                 );
             }
             result += objectAsString->string + ": ";
@@ -749,8 +749,8 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_to_string(context *c, 
             }
             if (objectAsString->typeId != String) {
                 (*success) = false;
-                return this->NewInvalidTypeError(c, objectAsString->get_type(c, this),
-                                                 std::vector<std::string>{StringName}
+                return this->new_invalid_type_error(c, objectAsString->get_type(c, this),
+                                                    std::vector<std::string>{StringName}
                 );
             }
             result += objectAsString->string;
@@ -899,7 +899,7 @@ plasma::vm::virtual_machine::calculate_hash(plasma::vm::context *c, plasma::vm::
         return hashValue;
     }
     if (hashValue->typeId != Integer) {
-        return this->NewInvalidTypeError(c, hashValue->get_type(c, this), std::vector<std::string>{IntegerName});
+        return this->new_invalid_type_error(c, hashValue->get_type(c, this), std::vector<std::string>{IntegerName});
     }
     (*hash_) = hashValue->integer;
     return nullptr;
@@ -923,7 +923,7 @@ plasma::vm::virtual_machine::interpret_as_boolean(context *c, plasma::vm::value 
         return toBoolResult;
     }
     if (toBoolResult->typeId != Boolean) {
-        return this->NewInvalidTypeError(c, toBoolResult->get_type(c, this), std::vector<std::string>{BoolName,});
+        return this->new_invalid_type_error(c, toBoolResult->get_type(c, this), std::vector<std::string>{BoolName,});
     }
     (*result) = toBoolResult->boolean;
     return nullptr;
@@ -983,7 +983,7 @@ plasma::vm::virtual_machine::unpack_values(context *c, struct value *v, size_t e
         }
         // If not, crash
         if (!hasNext) {
-            return this->NewInvalidNumberOfArgumentsError(c, expect, argumentIndex);
+            return this->new_invalid_number_of_arguments_error(c, expect, argumentIndex);
         }
         // Capture the child value
         callSuccess = false;

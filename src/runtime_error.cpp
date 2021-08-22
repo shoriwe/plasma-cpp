@@ -1,7 +1,7 @@
 #include "vm/virtual_machine.h"
 
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::RuntimeErrorInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::runtime_error_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, struct value *object) -> value * {
         object->set_on_demand_symbol(
                 Initialize,
@@ -16,7 +16,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::RuntimeErrorInitia
                                         value *message = arguments[0];
                                         if (message->typeId != String) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     message->get_type(c, this),
                                                     std::vector<std::string>{StringName}

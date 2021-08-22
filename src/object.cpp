@@ -2,7 +2,7 @@
 
 #include "vm/virtual_machine.h"
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::object_initialize(bool isBuiltIn) {
     return [=](context *c, value *object) {
         object->set_on_demand_symbol(
                 Initialize,
@@ -566,8 +566,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{IntegerName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{IntegerName});
 
                                         }
                                         self->integer = argument->integer;
@@ -592,8 +592,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != Float) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{FloatName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{FloatName});
 
                                         }
                                         self->floating = argument->floating;
@@ -618,8 +618,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != String) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{StringName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{StringName});
 
                                         }
                                         self->string = argument->string;
@@ -644,8 +644,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != Boolean) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{BoolName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{BoolName});
 
                                         }
                                         self->boolean = argument->boolean;
@@ -670,8 +670,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != Bytes) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{BytesName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{BytesName});
 
                                         }
                                         self->bytes = argument->bytes;
@@ -696,9 +696,9 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != Array && argument->typeId != Tuple) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{ArrayName,
-                                                                                                      TupleName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{ArrayName,
+                                                                                                         TupleName});
 
                                         }
                                         self->content = argument->content;
@@ -723,8 +723,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::ObjectInitialize(b
                                         value *argument = arguments[0];
                                         if (argument->typeId != HashTable) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(c, argument->get_type(c, this),
-                                                                             std::vector<std::string>{HashTableName});
+                                            return this->new_invalid_type_error(c, argument->get_type(c, this),
+                                                                                std::vector<std::string>{HashTableName});
 
                                         }
                                         self->keyValues = argument->keyValues;

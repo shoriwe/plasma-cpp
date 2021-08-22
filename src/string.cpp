@@ -1,7 +1,7 @@
 #include "vm/virtual_machine.h"
 #include "tools.h"
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::string_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Add,
@@ -17,7 +17,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                         value *right = arguments[0];
                                         if (right->typeId != String) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{StringName}
@@ -49,7 +49,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                         value *left = arguments[0];
                                         if (left->typeId != String) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{StringName}
@@ -81,7 +81,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                         value *right = arguments[0];
                                         if (right->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
@@ -120,7 +120,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                         value *left = arguments[0];
                                         if (left->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
@@ -385,7 +385,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                             return this->new_integer(c, false, result);
                                         }
                                         (*success) = false;
-                                        return this->NewIntegerParsingError(c);
+                                        return this->new_integer_parsing_error(c);
                                     }
                             )
                     );
@@ -410,7 +410,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::StringInitialize(b
                                             return this->new_float(c, false, result);
                                         }
                                         (*success) = false;
-                                        return this->NewIntegerParsingError(c);
+                                        return this->NewFloatParsingError(c);
                                     }
                             )
                     );

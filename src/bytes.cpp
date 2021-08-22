@@ -1,6 +1,6 @@
 #include "vm/virtual_machine.h"
 
-plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bool isBuiltIn) {
+plasma::vm::constructor_callback plasma::vm::virtual_machine::bytes_initialize(bool isBuiltIn) {
     return [this, isBuiltIn](context *c, value *object) -> value * {
         object->set_on_demand_symbol(
                 Add,
@@ -16,7 +16,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                         value *right = arguments[0];
                                         if (right->typeId != Bytes) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{BytesName}
@@ -48,7 +48,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                         value *left = arguments[0];
                                         if (left->typeId != Bytes) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{BytesName}
@@ -80,7 +80,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                         value *right = arguments[0];
                                         if (right->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     right->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
@@ -120,7 +120,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::BytesInitialize(bo
                                         value *left = arguments[0];
                                         if (left->typeId != Integer) {
                                             (*success) = false;
-                                            return this->NewInvalidTypeError(
+                                            return this->new_invalid_type_error(
                                                     c,
                                                     left->get_type(c, this),
                                                     std::vector<std::string>{IntegerName}
