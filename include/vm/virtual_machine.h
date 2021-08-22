@@ -12,6 +12,7 @@
 #include <fstream>
 #include <stack>
 #include <iostream>
+#include <deque>
 
 #include "plasma_error.h"
 #include "memory.h"
@@ -420,7 +421,7 @@ namespace plasma::vm {
 
 
     struct context {
-        std::vector<value *> objectsInUse;
+        std::deque<value *> objectsInUse;
         value *lastObject = nullptr;
 
         memory::memory<symbol_table> symbol_table_heap;
@@ -460,7 +461,7 @@ namespace plasma::vm {
 
         void restore_protected_state(size_t state);
 
-        size_t protected_values_state();
+        size_t protected_values_state() const;
     };
 
     struct virtual_machine {

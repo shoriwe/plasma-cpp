@@ -6,6 +6,7 @@
 #include "print.h"
 
 #include <filesystem>
+#include <chrono>
 
 const size_t initialMemory = 1;
 
@@ -37,7 +38,9 @@ static void test_success_expression(int *number_of_tests, int *success) {
             // Initialize the context
             plasma::vm::context c(initialMemory);
             plasmaVM.initialize_context(&c);
+            auto start = std::chrono::steady_clock::now();
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
+            auto end = std::chrono::steady_clock::now();
             if (!executionSuccess) {
                 FAIL(result->typeName + ": " + result->string);
                 continue;
@@ -48,7 +51,9 @@ static void test_success_expression(int *number_of_tests, int *success) {
                 FAIL(script.path().string());
                 continue;
             }
-            SUCCESS(script.path().string());
+            SUCCESS(script.path().string() + " -> " +
+                    BLUE(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()) +
+                         " milliseconds"));
             vmSuccess++;
         }
     }
@@ -84,7 +89,9 @@ static void test_success_statements(int *number_of_tests, int *success) {
             // Initialize the context
             plasma::vm::context c(initialMemory);
             plasmaVM.initialize_context(&c);
+            auto start = std::chrono::steady_clock::now();
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
+            auto end = std::chrono::steady_clock::now();
             if (!executionSuccess) {
                 FAIL(result->typeName + ": " + result->string);
                 continue;
@@ -95,7 +102,9 @@ static void test_success_statements(int *number_of_tests, int *success) {
                 FAIL(script.path().string());
                 continue;
             }
-            SUCCESS(script.path().string());
+            SUCCESS(script.path().string() + " -> " +
+                    BLUE(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()) +
+                         " milliseconds"));
             vmSuccess++;
         }
     }

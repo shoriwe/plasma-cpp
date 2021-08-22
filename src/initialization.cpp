@@ -42,15 +42,14 @@ void plasma::vm::virtual_machine::initialize_context(context *c) {
 void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
     // Initialize all the symbols that are set by default in the virtual machine
     //// Classes
-    auto objectType = this->new_type(c, true, ObjectName, std::vector<value *>(),
-                                     constructor{
-                                             .isBuiltIn = true,
-                                             .callback = this->ObjectInitialize(false)
-                                     }
-    );
     c->master->set(
             ObjectName,
-            objectType
+            this->new_type(c, true, ObjectName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->ObjectInitialize(false)
+                           }
+            )
     );
     c->master->set(
             TypeName,
@@ -126,16 +125,97 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
     );
     c->master->set(
             ModuleName,
-            this->new_type(c, true, HashTableName, std::vector<value *>(),
+            this->new_type(c, true, ModuleName, std::vector<value *>(),
                            constructor{
                                    .isBuiltIn = true,
                                    .callback = this->ObjectInitialize(false)
                            }
             )
     );
+    c->master->set(
+            IteratorName,
+            this->new_type(c, true, IteratorName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->IteratorInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            BoolName,
+            this->new_type(c, true, BoolName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->BoolInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            FunctionName,
+            this->new_type(c, true, FunctionName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->ObjectInitialize(false)
+                           }
+            )
+    );
+    c->master->set(
+            NoneName,
+            this->new_type(c, true, NoneName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->NoneInitialize(false)
+                           }
+            )
+    );
+    //// Error types
+
     //// Functions
     c->master->set(
             "println",
+            this->new_function(
+                    c,
+                    true,
+                    nullptr,
+                    new_builtin_callable(
+                            1,
+                            [this, c](value *self, const std::vector<value *> &arguments, bool *success) {
+                                value *resultAsString;
+                                auto target = arguments[0];
+                                if (target->typeId == String) {
+                                    resultAsString = target;
+                                } else {
+                                    bool found = false;
+                                    value *resultToString = target->get(c, this, ToString, &found);
+                                    if (!found) {
+                                        (*success) = false;
+                                        return this->NewObjectWithNameNotFoundError(c, target, ToString);
+                                    }
+                                    bool callSuccess = false;
+
+                                    resultAsString = this->call_function(c, resultToString,
+                                                                         std::vector<value *>(), &callSuccess);
+                                    if (!callSuccess) {
+
+                                        (*success) = false;
+                                        return resultAsString;
+                                    }
+                                    if (resultAsString->typeId != String) {
+                                        (*success) = false;
+                                        return this->NewInvalidTypeError(c,
+                                                                         resultAsString->get_type(c, this),
+                                                                         std::vector<std::string>{StringName});
+                                    }
+                                }
+                                this->stdout_file << resultAsString->string << std::endl;
+                                (*success) = true;
+                                return this->get_none(c);
+                            }
+                    )
+            )
+    );
+    c->master->set(
+            "print",
             this->new_function(
                     c,
                     true,
@@ -173,7 +253,7 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                                     }
 
                                 }
-                                this->stdout_file << resultAsString->string << std::endl;
+                                this->stdout_file << resultAsString->string;
                                 (*success) = true;
                                 return this->get_none(c);
                             }

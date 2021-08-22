@@ -255,6 +255,7 @@ plasma::vm::value *plasma::vm::virtual_machine::selectNameFromObjectOP(context *
 
     value *object = c->pop_value();
     c->protect_value(object);
+
     bool found = false;
     value *result = object->get(c, this, identifier, &found);
     if (!found) {

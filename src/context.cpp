@@ -151,6 +151,8 @@ void plasma::vm::context::collect_values() {
                 continue;
             }
             v->isSet = false;
+            // Object was destroyed, decrement count of its symbol table
+            v->symbols->count--;
             this->value_heap.deallocate(v->pageIndex, v);
         }
     }
@@ -212,11 +214,11 @@ void plasma::vm::context::protect_value(value *v) {
 }
 
 void plasma::vm::context::restore_protected_state(size_t state) {
-    while (this->objectsInUse.size() > state) {
-        this->objectsInUse.pop_back();
+    if (state < this->objectsInUse.size()) {
+        this->objectsInUse.erase(this->objectsInUse.begin() + state, this->objectsInUse.end());
     }
 }
 
-size_t plasma::vm::context::protected_values_state() {
+size_t plasma::vm::context::protected_values_state() const {
     return this->objectsInUse.size();
 }

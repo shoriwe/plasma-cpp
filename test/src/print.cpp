@@ -2,11 +2,15 @@
 
 #include "print.h"
 
-void LOG(std::string message) {
+std::string BLUE(const std::string &s) {
+    return "\u001b[34m" + s + "\u001b[0m";
+}
+
+void LOG(const std::string &message) {
     std::cout << "---- " << message << " ----" << std::endl;
 }
 
-void TEST_FINISH(std::string message, int number_of_tests, int success) {
+void TEST_FINISH(const std::string &message, int number_of_tests, int success) {
     std::cout << message << ": ";
     if (number_of_tests == success) {
         std::cout << "\u001b[32m" << success << "\u001b[0m";
