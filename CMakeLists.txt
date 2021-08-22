@@ -41,6 +41,7 @@ set(SOURCE_FILES
         src/execute.cpp
         src/bytecode_compiler.cpp
         src/tools.cpp
+        src/runtime_errors_initialize.cpp
         )
 
 set(TEST_SOURCE_FILES

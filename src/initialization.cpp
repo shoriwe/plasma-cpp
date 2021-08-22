@@ -169,7 +169,106 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
             )
     );
     //// Error types
-
+    auto runtimeError = this->new_type(
+            c,
+            true,
+            RuntimeError,
+            std::vector<value *>(),
+            constructor{
+                    .isBuiltIn = true,
+                    .callback = this->RuntimeErrorInitialize(false)
+            }
+    );
+    c->master->set(RuntimeError, runtimeError);
+    c->master->set(InvalidTypeError,
+                   this->new_type(
+                           c,
+                           true,
+                           InvalidTypeError,
+                           std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->InvalidTypeErrorInitialize(false)
+                           }
+                   )
+    );
+    c->master->set(NotImplementedCallableError,
+                   this->new_type(c, true, NotImplementedCallableError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = NotImplementedCallableErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(ObjectConstructionError,
+                   this->new_type(c, true, ObjectConstructionError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = ObjectConstructionErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(ObjectWithNameNotFoundError,
+                   this->new_type(c, true, ObjectWithNameNotFoundError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = ObjectWithNameNotFoundErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(InvalidNumberOfArgumentsError,
+                   this->new_type(c, true, InvalidNumberOfArgumentsError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = InvalidNumberOfArgumentsErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(UnhashableTypeError,
+                   this->new_type(c, true, UnhashableTypeError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = UnhashableTypeErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(IndexOutOfRangeError,
+                   this->new_type(c, true, IndexOutOfRangeError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = IndexOutOfRangeErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(KeyNotFoundError,
+                   this->new_type(c, true, KeyNotFoundError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = KeyNotFoundErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(IntegerParsingError,
+                   this->new_type(c, true, IntegerParsingError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = IntegerParsingErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(FloatParsingError,
+                   this->new_type(c, true, FloatParsingError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = FloatParsingErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(BuiltInSymbolProtectionError,
+                   this->new_type(c, true, BuiltInSymbolProtectionError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = BuiltInSymbolProtectionErrorInitialize(false)
+                                  }
+                   )
+    );
+    c->master->set(ObjectNotCallableError,
+                   this->new_type(c, true, ObjectNotCallableError, std::vector<value *>(), constructor{
+                                          .isBuiltIn = true,
+                                          .callback = ObjectNotCallableErrorInitialize(false)
+                                  }
+                   )
+    );
     //// Functions
     c->master->set(
             "println",
@@ -274,7 +373,6 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
             this->new_bool(c, true, false)
     );
 }
-
 
 uint64_t plasma::vm::virtual_machine::next_id() {
     uint64_t result = this->currentId;

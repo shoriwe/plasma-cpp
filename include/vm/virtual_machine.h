@@ -575,7 +575,32 @@ namespace plasma::vm {
         struct value *get_boolean(context *c, bool condition);
 
         // Object Initializers
-        struct value *RuntimeErrorInitialize(context *c, struct value *errorObject);
+        constructor_callback RuntimeErrorInitialize(bool isBuiltIn);
+
+        constructor_callback FloatParsingErrorInitialize(bool isBuiltIn);
+
+        constructor_callback IntegerParsingErrorInitialize(bool isBuiltIn);
+
+        constructor_callback KeyNotFoundErrorInitialize(bool isBuiltIn);
+
+        constructor_callback IndexOutOfRangeErrorInitialize(bool isBuiltIn);
+
+        constructor_callback UnhashableTypeErrorInitialize(bool isBuiltIn);
+
+        constructor_callback NotImplementedCallableErrorInitialize(bool isBuiltIn);
+
+        constructor_callback InvalidNumberOfArgumentsErrorInitialize(bool isBuiltIn);
+
+        constructor_callback ObjectWithNameNotFoundErrorInitialize(bool isBuiltIn);
+
+        constructor_callback InvalidTypeErrorInitialize(bool isBuiltIn);
+
+        constructor_callback ObjectConstructionErrorInitialize(bool isBuiltIn);
+
+        constructor_callback BuiltInSymbolProtectionErrorInitialize(bool isBuiltIn);
+
+        constructor_callback ObjectNotCallableErrorInitialize(bool isBuiltIn);
+
 
         constructor_callback CallableInitialize(bool isBuiltIn);
 
