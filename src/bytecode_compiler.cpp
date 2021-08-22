@@ -104,13 +104,17 @@ static bool compile_body(const std::vector<std::any> &body,
 static bool compile_to_array(const plasma::ast::Program &parsedProgram, std::vector<plasma::vm::instruction> *result,
                              plasma::error::error *compilationError) {
     if (!parsedProgram.Begin.Body.empty()) {
-        // ToDo: Compile Begin
+        if (!compile_body(parsedProgram.Begin.Body, result, compilationError)) {
+            return false;
+        }
     }
     if (!compile_body(parsedProgram.Body, result, compilationError)) {
         return false;
     }
     if (!parsedProgram.End.Body.empty()) {
-        // ToDo: Compile End
+        if (!compile_body(parsedProgram.End.Body, result, compilationError)) {
+            return false;
+        }
     }
     return true;
 }
@@ -1335,6 +1339,71 @@ compilePassStatement(std::vector<plasma::vm::instruction> *result) {
     return true;
 }
 
+static bool
+compileRaiseStatement(const plasma::ast::RaiseStatement &raiseStatement, std::vector<plasma::vm::instruction> *result,
+                      plasma::error::error *compilationError) {
+    if (!compile_expression(raiseStatement.X, true, result, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::RaiseOP
+            }
+    );
+    return true;
+}
+
+static bool compileModuleStatement(const plasma::ast::ModuleStatement &moduleStatement,
+                                   std::vector<plasma::vm::instruction> *result,
+                                   plasma::error::error *compilationError) {
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(moduleStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::NewModuleOP,
+                    .value = plasma::vm::ClassInformation{
+                            .name = moduleStatement.Name.Token.string,
+                            .bodyLength = body.size()
+                    }
+            }
+    );
+    result->insert(result->end(), body.begin(), body.end());
+    return true;
+}
+
+static bool compileInterfaceStatement(const plasma::ast::InterfaceStatement &interfaceStatement,
+                                      std::vector<plasma::vm::instruction> *result,
+                                      plasma::error::error *compilationError) {
+    for (const auto &base : interfaceStatement.Bases) {
+        if (!compile_expression(base, true, result, compilationError)) {
+            return false;
+        }
+    }
+    std::vector<plasma::vm::instruction> body;
+    for (const auto &function : interfaceStatement.MethodDefinitions) {
+        if (!compile_class_function_definition(function, &body, compilationError)) {
+            return false;
+        }
+    }
+
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::NewInterfaceOP,
+                    .value = plasma::vm::ClassInformation{
+                            .name = interfaceStatement.Name.Token.string,
+                            .bodyLength = body.size(),
+                            .numberOfBases = interfaceStatement.Bases.size()
+                    }
+            }
+    );
+
+    result->insert(result->end(), body.begin(), body.end());
+
+    return true;
+}
+
 static bool compile_statement(std::any node, std::vector<plasma::vm::instruction> *result,
                               plasma::error::error *compilationError) {
     if (node.type() == typeid(plasma::ast::AssignStatement)) {
@@ -1368,16 +1437,15 @@ static bool compile_statement(std::any node, std::vector<plasma::vm::instruction
         return compilePassStatement(result);
     } /*else if (node.type() == typeid(plasma::ast::TryStatement)) {
         return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
+    } */ else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
         return compileModuleStatement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
         return compileRaiseStatement(std::any_cast<plasma::ast::RaiseStatement>(node), result, compilationError);
-    }*/else if (node.type() == typeid(plasma::ast::ClassStatement)) {
+    } else if (node.type() == typeid(plasma::ast::ClassStatement)) {
         return compile_class_statement(std::any_cast<plasma::ast::ClassStatement>(node), result, compilationError);
-    }/* else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
+    } else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
         return compileInterfaceStatement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
                                          compilationError);
     }
-    */
     return true;
 }

@@ -124,6 +124,15 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                            }
             )
     );
+    c->master->set(
+            ModuleName,
+            this->new_type(c, true, HashTableName, std::vector<value *>(),
+                           constructor{
+                                   .isBuiltIn = true,
+                                   .callback = this->ObjectInitialize(false)
+                           }
+            )
+    );
     //// Functions
     c->master->set(
             "println",

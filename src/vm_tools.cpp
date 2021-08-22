@@ -133,7 +133,12 @@ plasma::vm::value *plasma::vm::virtual_machine::content_to_string(context *c, va
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, value *source) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     value *iterator = this->new_iterator(c, false);
+    c->protect_value(iterator);
+
     iterator->integer = 0;
     iterator->source = source;
     iterator->set(HasNext,
@@ -346,7 +351,12 @@ std::vector<plasma::vm::value *> plasma::vm::virtual_machine::bytes_to_integer_c
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value *bytes) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     value *iterator = this->new_iterator(c, false);
+    c->protect_value(iterator);
+
     iterator->integer = 0;
     iterator->source = bytes;
     iterator->set(HasNext,
@@ -501,7 +511,12 @@ std::vector<plasma::vm::value *> plasma::vm::virtual_machine::string_to_integer_
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, value *string) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     value *iterator = this->new_iterator(c, false);
+    c->protect_value(iterator);
+
     iterator->integer = 0;
     iterator->source = string;
     iterator->set(HasNext,
@@ -645,7 +660,12 @@ plasma::vm::virtual_machine::hashtable_assign(context *c, value *source, value *
 
 
 plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, value *hashtable) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
     value *result = this->new_iterator(c, false);
+    c->protect_value(result);
+
     result->source = hashtable;
     result->integer = 0;
 
@@ -926,7 +946,7 @@ plasma::vm::value *plasma::vm::virtual_machine::interpret_as_iterator(context *c
         (*success) = false;
         return iterFunc;
     }
-    return this->call_function(c, iterFunc, std::vector<value*>{}, success);
+    return this->call_function(c, iterFunc, std::vector<value *>{}, success);
 }
 
 plasma::vm::value *

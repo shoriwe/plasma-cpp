@@ -106,6 +106,7 @@ namespace plasma::vm {
 
         NewModuleOP,
         NewClassOP,
+        NewInterfaceOP,
         NewClassFunctionOP,
 
         RaiseOP,
@@ -724,7 +725,7 @@ namespace plasma::vm {
 
         value *newIteratorOP(context *c, bytecode *bc, instruction instruct, value *);
 
-        value *newModuleOP(context *c, bytecode *bc, instruction instruct);
+        value *newModuleOP(context *c, bytecode *bc, const ClassInformation &moduleInformation);
 
         value *newClassOP(context *c, bytecode *bc, const ClassInformation &classInformation);
 
@@ -755,11 +756,9 @@ namespace plasma::vm {
 
         value *tryJumpOP(context *c, bytecode *bc);
 
-        value *raiseOP(context *c, value *);
+        value *raiseOP(context *c);
 
         //// Conditions (if, unless and switch)
-        value *caseOP(context *c, bytecode *bc, instruction instruct, value *);
-
         value *ifJumpOP(context *c, bytecode *bc, size_t jump);
 
         value *unlessJumpOP(context *c, bytecode *bc, size_t jump);

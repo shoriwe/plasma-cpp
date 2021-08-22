@@ -682,6 +682,48 @@ plasma::vm::value *plasma::vm::virtual_machine::newGeneratorOP(context *c, bytec
     return nullptr;
 }
 
+plasma::vm::value *plasma::vm::virtual_machine::raiseOP(context *c) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto raisedError = c->pop_value();
+    c->protect_value(raisedError);
+
+    if (!raisedError->implements(c, this, this->force_any_from_master(c, RuntimeError))) {
+        // Raise that the output is not and RuntimeError
+        return this->NewInvalidTypeError(c, raisedError->get_type(c, this), std::vector<std::string>{RuntimeError});
+    }
+    return raisedError;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::newModuleOP(context *c, bytecode *bc,
+                                                            const ClassInformation &moduleInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto moduleBody = bc->nextN(moduleInformation.bodyLength);
+    bytecode moduleCode = {
+            .instructions = moduleBody,
+            .index = 0
+    };
+
+    auto result = this->new_module(c, false);
+    c->protect_value(result);
+
+    c->push_symbol_table(result->symbols);
+
+    bool success = false;
+    auto executionError = this->execute(c, &moduleCode, &success);
+    c->pop_symbol_table();
+
+    if (!success) {
+        return executionError;
+    }
+
+    c->peek_symbol_table()->set(moduleInformation.name, result);
+    return nullptr;
+}
+
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
     while (bc->has_next()) {
@@ -751,6 +793,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case AssignIndexOP:
                 executionError = this->assignIndexOP(c);
                 break;
+            case NewInterfaceOP:
             case NewClassOP:
                 executionError = this->newClassOP(c, bc, std::any_cast<ClassInformation>(instruct.value));
                 break;
@@ -792,6 +835,12 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case ReturnOP:
                 (*success) = true;
                 return this->returnOP(c, std::any_cast<size_t>(instruct.value));
+            case RaiseOP:
+                executionError = this->raiseOP(c);
+                break;
+            case NewModuleOP:
+                executionError = this->newModuleOP(c, bc, std::any_cast<ClassInformation>(instruct.value));
+                break;
             default:
                 // FixMe: Do something when
                 break;
