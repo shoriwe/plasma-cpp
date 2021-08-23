@@ -733,7 +733,7 @@ plasma::vm::value *plasma::vm::virtual_machine::new_module_op(context *c, byteco
 plasma::vm::value *
 plasma::vm::virtual_machine::prepare_for_loop_op(context *c) {
     bool success = false;
-    auto asIter = this->interpret_as_iterator(c,c->pop_value(), &success);
+    auto asIter = this->interpret_as_iterator(c, c->pop_value(), &success);
     if (success) {
         c->push_value(asIter);
         return nullptr;

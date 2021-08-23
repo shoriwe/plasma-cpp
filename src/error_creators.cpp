@@ -15,7 +15,8 @@ plasma::vm::value *plasma::vm::virtual_machine::new_integer_parsing_error(plasma
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::new_key_not_found_error(plasma::vm::context *c, plasma::vm::value *key) {
+plasma::vm::value *
+plasma::vm::virtual_machine::new_key_not_found_error(plasma::vm::context *c, plasma::vm::value *key) {
     value *errorType = this->force_any_from_master(c, KeyNotFoundError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{key});
@@ -23,7 +24,8 @@ plasma::vm::value *plasma::vm::virtual_machine::new_key_not_found_error(plasma::
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::new_index_out_of_range_error(plasma::vm::context *c, size_t length, size_t requestedIndex) {
+plasma::vm::virtual_machine::new_index_out_of_range_error(plasma::vm::context *c, size_t length,
+                                                          size_t requestedIndex) {
     value *errorType = this->force_any_from_master(c, IndexOutOfRangeError);
     value *result = this->force_construction(c, errorType);
     this->force_initialization(c, result, std::vector<value *>{

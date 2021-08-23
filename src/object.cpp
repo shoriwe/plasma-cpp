@@ -724,7 +724,8 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::object_initialize(
                                         if (argument->typeId != HashTable) {
                                             (*success) = false;
                                             return this->new_invalid_type_error(c, argument->get_type(c, this),
-                                                                                std::vector<std::string>{HashTableName});
+                                                                                std::vector<std::string>{
+                                                                                        HashTableName});
 
                                         }
                                         self->keyValues = argument->keyValues;
