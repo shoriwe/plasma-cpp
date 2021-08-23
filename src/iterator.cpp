@@ -45,7 +45,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::iterator_initializ
                             isBuiltIn, object,
                             new_builtin_callable(
                                     0,
-                                    [this, c](value *self, const std::vector<value *> &arguments,
+                                    [](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
                                         (*success) = true;
                                         return self;

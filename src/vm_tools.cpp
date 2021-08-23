@@ -139,7 +139,7 @@ plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, val
     value *iterator = this->new_iterator(c, false);
     c->protect_value(iterator);
 
-    iterator->integer = 0;
+    iterator->iterIndex = 0;
     iterator->source = source;
     iterator->set(HasNext,
                   this->new_function(
@@ -152,7 +152,7 @@ plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, val
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
                                       (*success) = true;
-                                      return this->get_boolean(c, self->integer < iterator->source->content.size());
+                                      return this->get_boolean(c, self->iterIndex < iterator->source->content.size());
                                   }
                           )
                   )
@@ -167,15 +167,8 @@ plasma::vm::value *plasma::vm::virtual_machine::content_iterator(context *c, val
                                   [=](value *self,
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
-                                      if (self->integer >= iterator->source->content.size()) {
-                                          (*success) = false;
-                                          return this->new_index_out_of_range_error(c, iterator->source->content.size(),
-                                                                                    self->integer);
-                                      }
                                       (*success) = true;
-                                      value *result = iterator->source->content[self->integer];
-                                      self->integer++;
-                                      return result;
+                                      return iterator->source->content[self->iterIndex++];
                                   }
                           )
                   )
@@ -357,7 +350,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
     value *iterator = this->new_iterator(c, false);
     c->protect_value(iterator);
 
-    iterator->integer = 0;
+    iterator->iterIndex = 0;
     iterator->source = bytes;
     iterator->set(HasNext,
                   this->new_function(
@@ -370,7 +363,7 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
                                       (*success) = true;
-                                      return this->get_boolean(c, self->integer < iterator->source->bytes.size());
+                                      return this->get_boolean(c, self->iterIndex < iterator->source->bytes.size());
                                   }
                           )
                   )
@@ -385,16 +378,9 @@ plasma::vm::value *plasma::vm::virtual_machine::bytes_iterator(context *c, value
                                   [=](value *self,
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
-                                      if (self->integer >= iterator->source->bytes.size()) {
-                                          (*success) = false;
-                                          return this->new_index_out_of_range_error(c, iterator->source->bytes.size(),
-                                                                                    self->integer);
-                                      }
                                       (*success) = true;
-                                      value *result = this->new_integer(c, false,
-                                                                        iterator->source->bytes[self->integer]);
-                                      self->integer++;
-                                      return result;
+                                      return this->new_integer(c, false,
+                                                               iterator->source->bytes[self->iterIndex++]);
                                   }
                           )
                   )
@@ -517,7 +503,7 @@ plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, valu
     value *iterator = this->new_iterator(c, false);
     c->protect_value(iterator);
 
-    iterator->integer = 0;
+    iterator->iterIndex = 0;
     iterator->source = string;
     iterator->set(HasNext,
                   this->new_function(
@@ -530,7 +516,7 @@ plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, valu
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
                                       (*success) = true;
-                                      return this->get_boolean(c, self->integer < iterator->source->string.size());
+                                      return this->get_boolean(c, self->iterIndex < iterator->source->string.size());
                                   }
                           )
                   )
@@ -545,16 +531,9 @@ plasma::vm::value *plasma::vm::virtual_machine::string_iterator(context *c, valu
                                   [=](value *self,
                                       const std::vector<value *> &arguments,
                                       bool *success) -> value * {
-                                      if (self->integer >= iterator->source->string.size()) {
-                                          (*success) = false;
-                                          return this->new_index_out_of_range_error(c, iterator->source->string.size(),
-                                                                                    self->integer);
-                                      }
                                       (*success) = true;
-                                      value *result = this->new_string(c, false, std::string(1,
-                                                                                             iterator->source->string[self->integer]));
-                                      self->integer++;
-                                      return result;
+                                      return this->new_string(c, false, std::string(1,
+                                                                                    iterator->source->string[self->iterIndex++]));
                                   }
                           )
                   )
@@ -663,11 +642,13 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, v
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
+    c->protect_value(hashtable);
+
     value *result = this->new_iterator(c, false);
     c->protect_value(result);
 
     result->source = hashtable;
-    result->integer = 0;
+    result->iterIndex = 0;
 
     /*
      * Nasty code here, find a way to just iterate over the existing map and not iterate over a new vector
@@ -681,10 +662,10 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, v
                     result,
                     new_builtin_callable(
                             0,
-                            [=](value *self, const std::vector<value *> &arguments,
-                                bool *success) -> value * {
+                            [this, c, content](value *self, const std::vector<value *> &arguments,
+                                               bool *success) -> value * {
                                 (*success) = true;
-                                return this->get_boolean(c, self->integer < content.size());
+                                return this->get_boolean(c, self->iterIndex < content.size());
                             }
                     )
             )
@@ -697,13 +678,10 @@ plasma::vm::value *plasma::vm::virtual_machine::hashtable_iterator(context *c, v
                     result,
                     new_builtin_callable(
                             0,
-                            [=](value *self, const std::vector<value *> &arguments,
-                                bool *success) -> value * {
-                                if (self->integer >= content.size()) {
-                                    (*success) = false;
-                                    return this->new_index_out_of_range_error(c, content.size(), self->integer);
-                                }
-                                return this->hashtable_index(c, self->source, content[self->integer], success);
+                            [this, c, content](value *self, const std::vector<value *> &arguments,
+                                               bool *success) -> value * {
+                                (*success) = true;
+                                return content[self->iterIndex++];
                             }
                     )
             )

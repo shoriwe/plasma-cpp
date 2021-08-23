@@ -1404,6 +1404,63 @@ static bool compile_interface_statement(const plasma::ast::InterfaceStatement &i
     return true;
 }
 
+static bool compile_for_loop_statement(const plasma::ast::ForStatement &forStatement,
+                                       std::vector<plasma::vm::instruction> *result,
+                                       plasma::error::error *compilationError) {
+    if (!compile_expression(forStatement.Source, true, result, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::PrepareForLoopOP
+            }
+    );
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(forStatement.Body, &body, compilationError)) {
+        return false;
+    }
+    for (size_t index = 0; index < body.size(); index++) {
+        switch (body[index].op_code) {
+            case plasma::vm::RedoOP:
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = body.size() - index;
+                break;
+            case plasma::vm::ContinueOP:
+                body[index].op_code = plasma::vm::RJumpOP;
+                body[index].value = body.size() - index + 1;
+                break;
+            case plasma::vm::BreakOP:
+                body[index].op_code = plasma::vm::JumpOP;
+                body[index].value = body.size() - index;
+                break;
+            default:
+                break;
+        }
+    }
+    std::vector<std::string> receivers;
+    receivers.reserve(forStatement.Receivers.size());
+    for (const auto &receiver : forStatement.Receivers) {
+        receivers.push_back(receiver.Token.string);
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UnpackForLoopOP,
+                    .value = plasma::vm::for_loop_information{
+                            .receivers = receivers,
+                            .onFinishJump = body.size() + 1
+                    }
+            }
+    );
+    result->insert(result->end(), body.begin(), body.end());
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::RJumpOP,
+                    .value = 1 + body.size() + 1
+            }
+    );
+    return true;
+}
+
 static bool compile_statement(std::any node, std::vector<plasma::vm::instruction> *result,
                               plasma::error::error *compilationError) {
     if (node.type() == typeid(plasma::ast::AssignStatement)) {
@@ -1425,9 +1482,9 @@ static bool compile_statement(std::any node, std::vector<plasma::vm::instruction
         return compile_until_statement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
     } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
         return compile_do_while_statement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
-    } /* else if (node.type() == typeid(plasma::ast::ForStatement)) {
-        return compileForLoopStatement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
-    }*/ else if (node.type() == typeid(plasma::ast::RedoStatement)) {
+    } else if (node.type() == typeid(plasma::ast::ForStatement)) {
+        return compile_for_loop_statement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
+    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
         return compile_redo_statement(result);
     } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
         return compile_break_statement(result);

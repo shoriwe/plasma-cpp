@@ -1,8 +1,9 @@
 reference = ("Antonio", "Juan")
 names = {"Antonio": "Developer", "Juan": "Analyst"}
 index = 0
+
 for name in names
-    println(reference[index] == name)
+    println(name in reference)
     index += 1
 end
 

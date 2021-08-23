@@ -359,6 +359,89 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                     )
             )
     );
+    c->master->set(
+            "range",
+            this->new_function(
+                    c,
+                    true,
+                    nullptr,
+                    new_builtin_callable(
+                            3,
+                            [this, c](value *self, const std::vector<value *> &arguments, bool *success) {
+                                auto state = c->protected_values_state();
+                                defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+                                auto start = arguments[0];
+                                auto end = arguments[1];
+                                auto step = arguments[2];
+                                c->protect_value(start);
+                                c->protect_value(end);
+                                c->protect_value(step);
+                                auto result = this->new_iterator(c, false);
+                                result->content = std::vector<value *>{start, end, step};
+                                c->protect_value(result);
+
+                                if (start->typeId == Integer) {
+                                    result->integer = start->integer;
+                                } else {
+                                    (*success) = false;
+                                    return this->new_invalid_type_error(c, start->get_type(c, this),
+                                                                        std::vector<std::string>{IntegerName});
+                                }
+                                if (end->typeId != Integer) {
+                                    (*success) = false;
+                                    return this->new_invalid_type_error(c, end->get_type(c, this),
+                                                                        std::vector<std::string>{IntegerName});
+                                }
+                                if (step->typeId != Integer) {
+                                    (*success) = false;
+                                    return this->new_invalid_type_error(c, step->get_type(c, this),
+                                                                        std::vector<std::string>{IntegerName});
+                                }
+
+                                result->set(
+                                        HasNext,
+                                        this->new_function(
+                                                c, false, result,
+                                                callable{
+                                                        .isBuiltIn = true,
+                                                        .numberOfArguments = 0,
+                                                        .callback = [this, c, end](value *self,
+                                                                                   const std::vector<value *> &arguments,
+                                                                                   bool *success) -> value * {
+                                                            (*success) = true;
+                                                            return this->get_boolean(c, self->integer < end->integer);
+                                                        }
+                                                }
+                                        )
+
+                                );
+                                result->set(
+                                        Next,
+                                        this->new_function(
+                                                c, false, result,
+                                                callable{
+                                                        .isBuiltIn = true,
+                                                        .numberOfArguments = 0,
+                                                        .callback = [this, c, step](value *self,
+                                                                                    const std::vector<value *> &arguments,
+                                                                                    bool *success) -> value * {
+                                                            auto yieldResult = this->new_integer(c, false,
+                                                                                                 self->integer);
+                                                            self->integer += step->integer;
+                                                            (*success) = true;
+                                                            return yieldResult;
+                                                        }
+                                                }
+                                        )
+
+                                );
+                                (*success) = true;
+                                return result;
+                            }
+                    )
+            )
+    );
     //// Objects
     c->master->set(
             None,

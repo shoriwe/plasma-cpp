@@ -3,10 +3,11 @@
 
 
 plasma::vm::value *plasma::vm::virtual_machine::new_tuple_op(context *c, size_t numberOfElements) {
-    std::vector<value *> elements;
-    elements.reserve(numberOfElements);
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    std::vector<value *> elements;
+    elements.reserve(numberOfElements);
     for (size_t index = 0; index < numberOfElements; index++) {
         if (c->value_stack.empty()) {
             return this->new_invalid_number_of_arguments_error(c, numberOfElements, index + 1);
@@ -19,10 +20,12 @@ plasma::vm::value *plasma::vm::virtual_machine::new_tuple_op(context *c, size_t 
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_array_op(context *c, size_t numberOfElements) {
-    std::vector<value *> elements;
-    elements.reserve(numberOfElements);
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    std::vector<value *> elements;
+    elements.reserve(numberOfElements);
+
     for (size_t index = 0; index < numberOfElements; index++) {
         if (c->value_stack.empty()) {
             return this->new_invalid_number_of_arguments_error(c, numberOfElements, index + 1);
@@ -35,10 +38,12 @@ plasma::vm::value *plasma::vm::virtual_machine::new_array_op(context *c, size_t 
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_hash_op(context *c, size_t numberOfElements) {
-    std::unordered_map<value *, value *> elements;
-    elements.reserve(numberOfElements);
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    std::unordered_map<value *, value *> elements;
+    elements.reserve(numberOfElements);
+
     for (size_t index = 0; index < numberOfElements; index++) {
         value *key = c->pop_value();
         value *v = c->pop_value();
@@ -725,6 +730,63 @@ plasma::vm::value *plasma::vm::virtual_machine::new_module_op(context *c, byteco
     return nullptr;
 }
 
+plasma::vm::value *
+plasma::vm::virtual_machine::prepare_for_loop_op(context *c) {
+    bool success = false;
+    auto asIter = this->interpret_as_iterator(c,c->pop_value(), &success);
+    if (success) {
+        c->push_value(asIter);
+        return nullptr;
+    }
+    return asIter;
+}
+
+plasma::vm::value *
+plasma::vm::virtual_machine::unpack_for_loop_op(context *c,
+                                                bytecode *bc,
+                                                const for_loop_information &forLoopInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto source = c->peek_value();
+
+    bool symbolFound = false;
+    auto hasNext = source->get(c, this, HasNext, &symbolFound);
+    if (!symbolFound) {
+        return hasNext;
+    }
+    c->protect_value(hasNext);
+
+    bool callSuccess = false;
+    auto hasNextRawResult = this->call_function(c, hasNext, std::vector<value *>{}, &callSuccess);
+    if (!callSuccess) {
+        return hasNextRawResult;
+    }
+    c->protect_value(hasNextRawResult);
+
+    bool hasNextResult = false;
+    auto interpretationError = this->interpret_as_boolean(c, hasNextRawResult, &hasNextResult);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    if (!hasNextResult) {
+        // Do the jump to the end and return
+        bc->jump(forLoopInformation.onFinishJump);
+        return nullptr;
+    }
+
+    std::vector<value *> values;
+    values.reserve(forLoopInformation.receivers.size());
+    auto unpackError = this->unpack_values(c, source, forLoopInformation.receivers.size(), &values);
+    if (unpackError == nullptr) {
+        for (size_t index = 0; index < forLoopInformation.receivers.size(); index++) {
+            c->peek_symbol_table()->set(forLoopInformation.receivers[index], values[index]);
+        }
+        return nullptr;
+    }
+    return unpackError;
+}
+
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
     while (bc->has_next()) {
@@ -799,7 +861,8 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->new_class_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
             case NewClassFunctionOP:
-                executionError = this->new_class_function_op(c, bc, std::any_cast<function_information>(instruct.value));
+                executionError = this->new_class_function_op(c, bc,
+                                                             std::any_cast<function_information>(instruct.value));
                 break;
             case LoadFunctionArgumentsOP:
                 executionError = this->load_function_arguments_op(c,
@@ -843,6 +906,12 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 break;
             case NewModuleOP:
                 executionError = this->new_module_op(c, bc, std::any_cast<class_information>(instruct.value));
+                break;
+            case PrepareForLoopOP:
+                executionError = this->prepare_for_loop_op(c);
+                break;
+            case UnpackForLoopOP:
+                executionError = this->unpack_for_loop_op(c, bc, std::any_cast<for_loop_information>(instruct.value));
                 break;
             default:
                 // FixMe: Do something when

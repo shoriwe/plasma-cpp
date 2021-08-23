@@ -79,7 +79,7 @@ namespace plasma::vm {
         AssignIndexOP,
         IfJumpOP,
         RIfJumpOP,
-        LoadForReloadOP,
+        PrepareForLoopOP,
         UnlessJumpOP,
         RUnlessJumpOP,
         SetupLoopOP,
@@ -279,6 +279,11 @@ namespace plasma::vm {
         size_t numberOfBases;
     };
 
+    struct for_loop_information {
+        std::vector<std::string> receivers;
+        size_t onFinishJump;
+    };
+
     struct instruction {
         uint8_t op_code;
         std::any value;
@@ -389,6 +394,7 @@ namespace plasma::vm {
         bool boolean = false;
         double floating = 0;
         int64_t integer = 0;
+        size_t iterIndex = 0;
         // Symbols
         symbol_table *symbols;
         std::unordered_map<std::string, on_demand_loader> onDemandSymbols;
@@ -762,14 +768,12 @@ namespace plasma::vm {
                                 const generator_information &generatorInformation);
 
         //// Loop setup and operation
-        value *setup_for_loop(context *c, instruction instruct, value *);
 
-        value *load_for_loop_names(context *c, value *);
+        value *prepare_for_loop_op(context *c);
 
-        // FixMe:
-        // value *unpackForArguments(context *c, loopSettings *LoopSettings, result Value, value *);
-
-        value *unpack_for_loop(context *c, bytecode *bc, value *);
+        value *unpack_for_loop_op(context *c,
+                                  bytecode *bc,
+                                  const for_loop_information &forLoopInformation);
 
         //// Try blocks
         value *setup_try_block(context *c, bytecode *bc, instruction instruct);
