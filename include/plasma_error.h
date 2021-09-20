@@ -17,7 +17,7 @@ namespace plasma::error {
     const std::string NameNotFoundMessage = "Name not found";
     const std::string UnknownVmOperationMessage = "unknown operation with value ";
 
-    struct error {
+    struct error : std::exception {
         std::string type;
         std::string message;
         int line;

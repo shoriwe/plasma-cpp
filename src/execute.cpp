@@ -787,6 +787,139 @@ plasma::vm::virtual_machine::unpack_for_loop_op(context *c,
     return unpackError;
 }
 
+struct except_block_code {
+    std::vector<plasma::vm::instruction> targets;
+    std::vector<plasma::vm::instruction> body;
+    std::string captureName;
+};
+
+plasma::vm::value *
+plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
+                                               const try_block_information &tryBlockInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    bool success = false;
+    bytecode bodyByteCode{
+            .instructions = bc->nextN(tryBlockInformation.bodySize),
+            .index = 0
+    };
+    std::vector<except_block_code> exceptBlocksCode;
+    for (const auto &exceptBlock : tryBlockInformation.exceptBlocks) {
+        exceptBlocksCode.push_back(
+                except_block_code{
+                        .targets = bc->nextN(exceptBlock.targetsSize),
+                        .body = bc->nextN(exceptBlock.bodySize),
+                        .captureName = exceptBlock.captureName
+                }
+        );
+    }
+    bytecode finallyCode{
+            .instructions = bc->nextN(tryBlockInformation.finallySize),
+            .index = 0
+    };
+    value *finallyExecutionError;
+    auto executionError = this->execute(c, &bodyByteCode, &success);
+    c->protect_value(executionError);
+
+    if (success) {
+        if (executionError->typeId != NoneType) {
+            std::cout << "RETURNING RESULT FROM EXCEPT\n";
+            c->push_value(executionError);
+            return nullptr;
+        }
+        // Execute finally block
+        if (finallyCode.instructions.empty()) {
+            return nullptr;
+        }
+        success = false;
+        finallyExecutionError = this->execute(c, &finallyCode, &success);
+        if (!success) {
+            return finallyExecutionError;
+        }
+        if (finallyExecutionError->typeId != NoneType) {
+            c->push_value(finallyExecutionError);
+        }
+        return nullptr;
+    }
+    // Execute except blocks
+    for (const auto &exceptBlock : exceptBlocksCode) {
+        success = false;
+        bytecode targetsCode{
+                .instructions = exceptBlock.targets,
+                .index = 0
+        };
+        auto targets = this->execute(c, &targetsCode, &success);
+        if (!success) {
+            return targets;
+        }
+        c->protect_value(targets);
+
+        bool containsErrorResult = false;
+        if (targets->content.empty()) {
+            std::cout << "EMPTY\n";
+            containsErrorResult = true;
+        } else {
+            std::cout << "CHECKING\n";
+            auto containsError = this->content_contains(
+                    c,
+                    targets,
+                    executionError->get_type(c, this),
+                    &containsErrorResult
+            );
+            if (containsError != nullptr) {
+                std::cout << "ERROR\n";
+                return containsError;
+            }
+        }
+        std::cout << "HERE\n";
+        if (containsErrorResult) {
+            std::cout << "EXISTS\n";
+            if (!exceptBlock.captureName.empty()) {
+                std::cout << "ASSIGNED\n";
+                c->peek_symbol_table()->set(exceptBlock.captureName, executionError);
+            }
+            // Execute body
+            bytecode exceptBody{
+                    .instructions = exceptBlock.body,
+                    .index = 0
+            };
+            success = false;
+            auto exceptExecutionError = this->execute(c, &exceptBody, &success);
+            if (!success) {
+                std::cout << "EXCEPT FAILED TOO\n";
+                return exceptExecutionError;
+            }
+            c->protect_value(exceptExecutionError);
+
+            if (exceptExecutionError->typeId != NoneType) {
+                std::cout << "RETURNING RESULT FROM EXCEPT\n";
+                c->push_value(exceptExecutionError);
+                return nullptr;
+            }
+
+            // Execute finally
+            std::cout << "EXECUTING FINALLY FROM EXCEPT\n";
+            if (finallyCode.instructions.empty()) {
+                return nullptr;
+            }
+            success = false;
+            finallyExecutionError = this->execute(c, &finallyCode, &success);
+            c->protect_value(finallyExecutionError);
+
+            if (!success) {
+                return finallyExecutionError;
+            }
+            if (finallyExecutionError->typeId != NoneType) {
+                c->push_value(finallyExecutionError);
+            }
+            return nullptr;
+        }
+    }
+    std::cout << "FAILED\n";
+    return executionError;
+}
+
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
     while (bc->has_next()) {
@@ -912,6 +1045,9 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 break;
             case UnpackForLoopOP:
                 executionError = this->unpack_for_loop_op(c, bc, std::any_cast<for_loop_information>(instruct.value));
+                break;
+            case TryOP:
+                executionError = this->execute_try_block(c, bc, std::any_cast<try_block_information>(instruct.value));
                 break;
             default:
                 // FixMe: Do something when

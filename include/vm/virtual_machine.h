@@ -82,8 +82,6 @@ namespace plasma::vm {
         PrepareForLoopOP,
         UnlessJumpOP,
         RUnlessJumpOP,
-        SetupLoopOP,
-        PopLoopOP,
         UnpackForLoopOP,
         BreakOP, // 50
         RedoOP,
@@ -97,21 +95,16 @@ namespace plasma::vm {
         JumpOP,
         RJumpOP,
         PushOP,
-        PopOP,
         NOP,
-        NewIteratorOP, // 60
 
-        SetupTryOP,
-        PopTryOP,
-        ExceptOP,
+        TryOP,
 
         NewModuleOP,
-        NewClassOP,
+        NewClassOP, // 60
         NewInterfaceOP,
         NewClassFunctionOP,
 
         RaiseOP,
-        CaseOP,
     };
     typedef std::function<struct value *()> on_demand_loader;
     // typedef struct value *(*on_demand_loader)();
@@ -284,6 +277,18 @@ namespace plasma::vm {
         size_t onFinishJump;
     };
 
+    struct except_block_information {
+        std::string captureName;
+        size_t bodySize;
+        size_t targetsSize;
+    };
+
+    struct try_block_information {
+        size_t bodySize;
+        std::vector<except_block_information> exceptBlocks;
+        size_t finallySize;
+    };
+
     struct instruction {
         uint8_t op_code;
         std::any value;
@@ -436,8 +441,6 @@ namespace plasma::vm {
         std::vector<value *> value_stack;
         std::vector<symbol_table *> symbol_table_stack;
         symbol_table *master = nullptr;
-        // LoopStack   *LoopStack // ToDo:
-        // TryStack    *TryStack // ToDo:
 
         explicit context(size_t initialPageLength);
 
@@ -776,15 +779,7 @@ namespace plasma::vm {
                                   const for_loop_information &forLoopInformation);
 
         //// Try blocks
-        value *setup_try_block(context *c, bytecode *bc, instruction instruct);
-
-        value *pop_try_context(context *c);
-
-        value *except_op(context *c, bytecode *bc, instruction instruct);
-
-        value *try_jump_op(context *c, bytecode *bc);
-
-        value *reverse_try_jump_op(context *c, bytecode *bc);
+        value *execute_try_block(context *c, bytecode *bc, const try_block_information &tryBlockInformation);
 
         value *raise_op(context *c);
 

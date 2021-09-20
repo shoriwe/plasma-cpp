@@ -1,100 +1,37 @@
 #include "compiler/bytecode_compiler.h"
 #include "tools.h"
 
-static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &basicLiteralExpression,
-                                  std::vector<plasma::vm::instruction> *result,
-                                  plasma::error::error *compilationError);
-
-static bool compile_tuple(const plasma::ast::TupleExpression &tupleExpression,
-                          std::vector<plasma::vm::instruction> *result,
-                          plasma::error::error *compilationError);
-
-static bool compile_array(const plasma::ast::ArrayExpression &arrayExpression,
-                          std::vector<plasma::vm::instruction> *result,
-                          plasma::error::error *compilationError);
-
-static bool compile_expression(std::any node, bool push, std::vector<plasma::vm::instruction> *result,
-                               plasma::error::error *compilationError);
-
-static bool compile_statement(std::any node, std::vector<plasma::vm::instruction> *result,
-                              plasma::error::error *compilationError);
-
-static bool compile_hash(const plasma::ast::HashExpression &hashExpression,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError);
-
-static bool compile_binary_expression(const plasma::ast::BinaryExpression &binaryExpression,
-                                      std::vector<plasma::vm::instruction> *result,
-                                      plasma::error::error *compilationError);
-
-static bool compile_unary_expression(const plasma::ast::UnaryExpression &unaryExpression,
-                                     std::vector<plasma::vm::instruction> *result,
-                                     plasma::error::error *compilationError);
-
-static bool
-compile_identifier_expression(const plasma::ast::Identifier &identifier, std::vector<plasma::vm::instruction> *result);
-
-static bool
-compile_selector_expression(const plasma::ast::SelectorExpression &selector,
-                            std::vector<plasma::vm::instruction> *result,
-                            plasma::error::error *compilationError);
-
-
-static bool
-compile_index_expression(const plasma::ast::IndexExpression &indexExpression,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError);
-
-static bool
-compile_method_invocation(const plasma::ast::MethodInvocationExpression &methodInvocationExpression,
-                          std::vector<plasma::vm::instruction> *result,
-                          plasma::error::error *compilationError);
-
-static bool
-compile_return_statement(const plasma::ast::ReturnStatement &returnStatement,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError);
-
 plasma::bytecode_compiler::compiler::compiler(plasma::parser::parser *p) {
     this->parser = p;
 }
 
-static bool compile_node(std::any node, std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError) {
-
-    if (plasma::ast::isExpression(&node)) {
-        return compile_expression(node, false, result, compilationError);
-    }
-    return compile_statement(node, result, compilationError);
-}
-
 static bool
-compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
+compile_class_function_definition(plasma::ast::FunctionDefinitionStatement *functionDefinitionStatement,
                                   std::vector<plasma::vm::instruction> *result,
                                   plasma::error::error *compilationError);
 
-static bool compile_class_body(const std::vector<std::any> &body,
+static bool compile_class_body(const std::vector<plasma::ast::Node *> &body,
                                std::vector<plasma::vm::instruction> *result,
                                plasma::error::error *compilationError) {
-    for (const auto &node : body) {
-        if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
+    for (plasma::ast::Node *node : body) {
+        if (node->TypeID == plasma::ast::FunctionDefinitionID) {
             // Do something to compile interfaces and class functions
-            if (!compile_class_function_definition(
-                    std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result, compilationError)) {
+            if (!compile_class_function_definition(dynamic_cast<plasma::ast::FunctionDefinitionStatement *>(node),
+                                                   result, compilationError)) {
                 return false;
             }
-        } else if (!compile_node(node, result, compilationError)) {
+        } else if (!node->compile(result, compilationError)) {
             return false;
         }
     }
     return true;
 }
 
-static bool compile_body(const std::vector<std::any> &body,
+static bool compile_body(std::vector<plasma::ast::Node *> body,
                          std::vector<plasma::vm::instruction> *result,
                          plasma::error::error *compilationError) {
-    for (const auto &node : body) {
-        if (!compile_node(node, result, compilationError)) {
+    for (plasma::ast::Node *node : body) {
+        if (!node->compile(result, compilationError)) {
             return false;
         }
     }
@@ -103,16 +40,16 @@ static bool compile_body(const std::vector<std::any> &body,
 
 static bool compile_to_array(const plasma::ast::Program &parsedProgram, std::vector<plasma::vm::instruction> *result,
                              plasma::error::error *compilationError) {
-    if (!parsedProgram.Begin.Body.empty()) {
-        if (!compile_body(parsedProgram.Begin.Body, result, compilationError)) {
+    if (!parsedProgram.Begin->Body.empty()) {
+        if (!compile_body(parsedProgram.Begin->Body, result, compilationError)) {
             return false;
         }
     }
     if (!compile_body(parsedProgram.Body, result, compilationError)) {
         return false;
     }
-    if (!parsedProgram.End.Body.empty()) {
-        if (!compile_body(parsedProgram.End.Body, result, compilationError)) {
+    if (!parsedProgram.End->Body.empty()) {
+        if (!compile_body(parsedProgram.End->Body, result, compilationError)) {
             return false;
         }
     }
@@ -120,10 +57,7 @@ static bool compile_to_array(const plasma::ast::Program &parsedProgram, std::vec
 }
 
 bool plasma::bytecode_compiler::compiler::compile(vm::bytecode *result, error::error *compilationError) const {
-    plasma::ast::Program parsedProgram;
-    if (!this->parser->parse(&parsedProgram, compilationError)) {
-        return false;
-    }
+    plasma::ast::Program *parsedProgram = this->parser->parse();
     std::vector<plasma::vm::instruction> arrayResult;
     bool success = compile_to_array(parsedProgram, &arrayResult, compilationError);
     if (!success) {
@@ -136,20 +70,19 @@ bool plasma::bytecode_compiler::compiler::compile(vm::bytecode *result, error::e
     return true;
 }
 
-static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &basicLiteralExpression,
-                                  std::vector<plasma::vm::instruction> *result,
-                                  plasma::error::error *compilationError) {
+bool plasma::ast::BasicLiteralExpression::compile(std::vector<vm::instruction> *result,
+                                                  plasma::error::error *compilationError) {
     int64_t integerValue;
     double floatValue;
     bool parsingSuccess;
-    switch (basicLiteralExpression.DirectValue) {
+    switch (this->Token.directValue) {
         case plasma::lexer::SingleQuoteString:
         case plasma::lexer::DoubleQuoteString:
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::NewStringOP,
-                            .value = plasma::general_tooling::replace_escaped(basicLiteralExpression.Token.string),
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .value = plasma::general_tooling::replace_escaped(this->Token.string),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
@@ -157,8 +90,8 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::NewBytesOP,
-                            .value = plasma::general_tooling::replace_escaped(basicLiteralExpression.Token.string),
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .value = plasma::general_tooling::replace_escaped(this->Token.string),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
@@ -166,32 +99,32 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
         case plasma::lexer::HexadecimalInteger:
         case plasma::lexer::BinaryInteger:
         case plasma::lexer::OctalInteger:
-            integerValue = plasma::general_tooling::parse_integer(basicLiteralExpression.Token.string,
+            integerValue = plasma::general_tooling::parse_integer(this->Token.string,
                                                                   &parsingSuccess);
             if (!parsingSuccess) {
-                plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
+                plasma::error::new_unknown_vm_operation_error(compilationError, this->Token.directValue);
                 return false;
             }
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::NewIntegerOP,
                             .value = integerValue,
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
         case plasma::lexer::Float:
         case plasma::lexer::ScientificFloat:
-            floatValue = plasma::general_tooling::parse_float(basicLiteralExpression.Token.string, &parsingSuccess);
+            floatValue = plasma::general_tooling::parse_float(this->Token.string, &parsingSuccess);
             if (!parsingSuccess) {
-                plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
+                plasma::error::new_unknown_vm_operation_error(compilationError, this->Token.directValue);
                 return false;
             }
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::NewFloatOP,
                             .value = floatValue,
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
@@ -199,7 +132,7 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::GetTrueOP,
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
@@ -207,7 +140,7 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::GetFalseOP,
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
@@ -215,86 +148,79 @@ static bool compile_basic_literal(const plasma::ast::BasicLiteralExpression &bas
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::GetNoneOP,
-                            .line = static_cast<size_t>(basicLiteralExpression.Token.line),
+                            .line = static_cast<size_t>(this->Token.line),
                     }
             );
             break;
         default:
-            plasma::error::new_unknown_vm_operation_error(compilationError, basicLiteralExpression.DirectValue);
+            plasma::error::new_unknown_vm_operation_error(compilationError, this->Token.directValue);
             return false;
     }
     return true;
 }
 
-static bool compile_tuple(const plasma::ast::TupleExpression &tupleExpression,
-                          std::vector<plasma::vm::instruction> *result,
-                          plasma::error::error *compilationError) {
-    for (auto tupleValue = tupleExpression.Values.rbegin();
-         tupleValue != tupleExpression.Values.rend();
+bool plasma::ast::TupleExpression::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
+    for (auto tupleValue = this->Values.rbegin();
+         tupleValue != this->Values.rend();
          tupleValue++) {
-        if (!compile_expression((*tupleValue), true, result, compilationError)) {
+        if (!(*tupleValue)->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewTupleOP,
-                    .value = tupleExpression.Values.size()
+                    .value = this->Values.size()
             }
     );
     return true;
 }
 
-static bool compile_array(const plasma::ast::ArrayExpression &arrayExpression,
-                          std::vector<plasma::vm::instruction> *result,
-                          plasma::error::error *compilationError) {
-    for (auto argument = arrayExpression.Values.rbegin();
-         argument != arrayExpression.Values.rend();
+bool plasma::ast::ArrayExpression::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
+    for (auto argument = this->Values.rbegin();
+         argument != this->Values.rend();
          argument++) {
-
-        if (!compile_expression((*argument), true, result, compilationError)) {
+        if (!(*argument)->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewArrayOP,
-                    .value = arrayExpression.Values.size()
+                    .value = this->Values.size()
             }
     );
     return true;
 }
 
-static bool compile_hash(const plasma::ast::HashExpression &hashExpression,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError) {
-    for (const auto &keyValue : hashExpression.Values) {
-        std::any key = keyValue.Key;
-        std::any value = keyValue.Value;
-        if (!compile_expression(value, true, result, compilationError)) {
+bool plasma::ast::HashExpression::compile(std::vector<vm::instruction> *result,
+                                          plasma::error::error *compilationError) {
+    for (KeyValue *keyValue : this->KeyValues) {
+        if (!keyValue->Value->compile_and_push(true, result, compilationError)) {
             return false;
         }
-        if (!compile_expression(key, true, result, compilationError)) {
+        if (!keyValue->Key->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewHashOP,
-                    .value = hashExpression.Values.size()
+                    .value = this->KeyValues.size()
             }
     );
     return true;
 }
 
-static bool compile_unary_expression(const plasma::ast::UnaryExpression &unaryExpression,
-                                     std::vector<plasma::vm::instruction> *result,
-                                     plasma::error::error *compilationError) {
-    if (!compile_expression(unaryExpression.X, true, result, compilationError)) {
+bool plasma::ast::UnaryExpression::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
+    if (!this->X->compile_and_push(true, result, compilationError)) {
         return false;
     }
     uint8_t instruction;
-    switch (unaryExpression.Operator.directValue) {
+    switch (this->Operator.directValue) {
         case plasma::lexer::NegateBits:
             instruction = plasma::vm::NegateBitsOP;
             break;
@@ -309,7 +235,7 @@ static bool compile_unary_expression(const plasma::ast::UnaryExpression &unaryEx
             //    instruction = plasma::vm::PositiveOP;
             //    break;
         default:
-            plasma::error::new_unknown_vm_operation_error(compilationError, unaryExpression.Operator.directValue);
+            plasma::error::new_unknown_vm_operation_error(compilationError, this->Operator.directValue);
             return false;
     }
     result->push_back(
@@ -321,19 +247,18 @@ static bool compile_unary_expression(const plasma::ast::UnaryExpression &unaryEx
     return true;
 }
 
-static bool compile_binary_expression(const plasma::ast::BinaryExpression &binaryExpression,
-                                      std::vector<plasma::vm::instruction> *result,
-                                      plasma::error::error *compilationError) {
-    auto rightHandSide = binaryExpression.RightHandSide;
-    if (!compile_expression(rightHandSide, true, result, compilationError)) {
+bool plasma::ast::BinaryExpression::compile(std::vector<vm::instruction> *result,
+                                            plasma::error::error *compilationError) {
+    auto rightHandSide = this->RightHandSide;
+    if (!rightHandSide->compile_and_push(true, result, compilationError)) {
         return false;
     }
-    auto leftHandSide = binaryExpression.LeftHandSide;
-    if (!compile_expression(leftHandSide, true, result, compilationError)) {
+    auto leftHandSide = this->LeftHandSide;
+    if (!leftHandSide->compile_and_push(true, result, compilationError)) {
         return false;
     }
     uint8_t instruction;
-    switch (binaryExpression.Operator.directValue) {
+    switch (this->Operator.directValue) {
         case plasma::lexer::Add:
             instruction = plasma::vm::AddOP;
             break;
@@ -401,7 +326,7 @@ static bool compile_binary_expression(const plasma::ast::BinaryExpression &binar
             instruction = plasma::vm::ContainsOP;
             break;
         default:
-            plasma::error::new_unknown_vm_operation_error(compilationError, binaryExpression.Operator.directValue);
+            plasma::error::new_unknown_vm_operation_error(compilationError, this->Operator.directValue);
             return false;
     }
     result->push_back(
@@ -413,43 +338,38 @@ static bool compile_binary_expression(const plasma::ast::BinaryExpression &binar
     return true;
 }
 
-static bool
-compile_identifier_expression(const plasma::ast::Identifier &identifier, std::vector<plasma::vm::instruction> *result) {
+bool plasma::ast::Identifier::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code  = plasma::vm::GetIdentifierOP,
-                    .value = identifier.Token.string,
-                    .line = static_cast<size_t>(identifier.Token.line)
+                    .value = this->Token.string,
+                    .line = static_cast<size_t>(this->Token.line)
             }
     );
     return true;
 }
 
-static bool
-compile_selector_expression(const plasma::ast::SelectorExpression &selector,
-                            std::vector<plasma::vm::instruction> *result,
-                            plasma::error::error *compilationError) {
-    std::any expression = selector.X;
-    if (!compile_expression(expression, true, result, compilationError)) {
+bool plasma::ast::SelectorExpression::compile(std::vector<vm::instruction> *result,
+                                              plasma::error::error *compilationError) {
+    ;
+    if (!this->X->compile_and_push(true, result, compilationError)) {
         return false;
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::SelectNameFromObjectOP,
-                    .value = selector.Identifier.Token.string
+                    .value = this->Identifier->Token.string
             }
     );
     return true;
 }
 
-static bool
-compile_index_expression(const plasma::ast::IndexExpression &indexExpression,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError) {
-    if (!compile_expression(indexExpression.Source, true, result, compilationError)) {
+bool plasma::ast::IndexExpression::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
+    if (!this->Source->compile_and_push(true, result, compilationError)) {
         return false;
     }
-    if (!compile_expression(indexExpression.Index, true, result, compilationError)) {
+    if (!this->Index->compile_and_push(true, result, compilationError)) {
         return false;
     }
     result->push_back(
@@ -460,67 +380,48 @@ compile_index_expression(const plasma::ast::IndexExpression &indexExpression,
     return true;
 }
 
-static bool compile_method_invocation(
-        const plasma::ast::MethodInvocationExpression &methodInvocationExpression,
-        std::vector<plasma::vm::instruction> *result,
-        plasma::error::error *compilationError
-) {
-    for (auto argument = methodInvocationExpression.Arguments.rbegin();
-         argument != methodInvocationExpression.Arguments.rend();
+bool plasma::ast::MethodInvocationExpression::compile(std::vector<vm::instruction> *result,
+                                                      plasma::error::error *compilationError) {
+    for (auto argument = this->Arguments.rbegin();
+         argument != this->Arguments.rend();
          argument++) {
 
-        if (!compile_expression((*argument), true, result, compilationError)) {
+        if (!(*argument)->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
-    if (!compile_expression(methodInvocationExpression.Function, true, result, compilationError)) {
+    if (!this->Function->compile_and_push(true, result, compilationError)) {
         return false;
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::MethodInvocationOP,
-                    .value = methodInvocationExpression.Arguments.size()
+                    .value = this->Arguments.size()
             }
     );
     return true;
 }
 
-static bool compile_parentheses_expression(
-        const plasma::ast::ParenthesesExpression &parenthesesExpression,
-        std::vector<plasma::vm::instruction> *result,
-        plasma::error::error *compilationError) {
-    return compile_expression(parenthesesExpression.X, false, result, compilationError);
+bool plasma::ast::ParenthesesExpression::compile(std::vector<vm::instruction> *result,
+                                                 plasma::error::error *compilationError) {
+    return this->X->compile(result, compilationError);
 }
 
-static bool compile_if_one_liner_expression(
-        const plasma::ast::IfOneLinerExpression &ifOneLinerExpression,
-        bool push,
-        std::vector<plasma::vm::instruction> *result,
-        plasma::error::error *compilationError) {
+bool plasma::ast::IfOneLinerExpression::compile(std::vector<vm::instruction> *result,
+                                                plasma::error::error *compilationError) {
 
     std::vector<plasma::vm::instruction> condition;
-    if (!compile_expression(ifOneLinerExpression.Condition, true, &condition, compilationError)) {
+    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
         return false;
     }
 
     std::vector<plasma::vm::instruction> ifResult;
-    if (!compile_expression(ifOneLinerExpression.Result, push, &ifResult, compilationError)) {
+    if (!this->Result->compile_and_push(true, &ifResult, compilationError)) {
         return false;
     }
 
-    std::any elseResultAST;
-    if (ifOneLinerExpression.ElseResult.has_value()) {
-        elseResultAST = ifOneLinerExpression.ElseResult;
-    } else {
-        elseResultAST = plasma::ast::Identifier{
-                .Token= plasma::lexer::token{
-                        .string = plasma::vm::None,
-                        .kind = plasma::lexer::IdentifierKind
-                }
-        };
-    }
     std::vector<plasma::vm::instruction> elseResult;
-    if (!compile_expression(elseResultAST, push, &elseResult, compilationError)) {
+    if (!this->ElseResult->compile_and_push(true, &elseResult, compilationError)) {
         return false;
     }
 
@@ -542,34 +443,20 @@ static bool compile_if_one_liner_expression(
     return true;
 }
 
-static bool compile_unless_one_liner_expression(
-        const plasma::ast::UnlessOneLinerExpression &unlessOneLinerExpression,
-        bool push,
-        std::vector<plasma::vm::instruction> *result,
-        plasma::error::error *compilationError) {
+bool plasma::ast::UnlessOneLinerExpression::compile(std::vector<vm::instruction> *result,
+                                                    plasma::error::error *compilationError) {
     std::vector<plasma::vm::instruction> condition;
-    if (!compile_expression(unlessOneLinerExpression.Condition, true, &condition, compilationError)) {
+    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
         return false;
     }
 
     std::vector<plasma::vm::instruction> unlessResult;
-    if (!compile_expression(unlessOneLinerExpression.Result, push, &unlessResult, compilationError)) {
+    if (!this->Result->compile_and_push(true, &unlessResult, compilationError)) {
         return false;
     }
 
-    std::any elseResultAST;
     std::vector<plasma::vm::instruction> elseResult;
-    if (unlessOneLinerExpression.ElseResult.has_value()) {
-        elseResultAST = unlessOneLinerExpression.ElseResult;
-    } else {
-        elseResultAST = plasma::ast::Identifier{
-                .Token= plasma::lexer::token{
-                        .string = plasma::vm::None,
-                        .kind = plasma::lexer::IdentifierKind
-                }
-        };
-    }
-    if (!compile_expression(elseResultAST, push, &elseResult, compilationError)) {
+    if (!this->ElseResult->compile_and_push(true, &elseResult, compilationError)) {
         return false;
     }
 
@@ -591,12 +478,11 @@ static bool compile_unless_one_liner_expression(
     return true;
 }
 
-static bool compile_lambda_expression(const plasma::ast::LambdaExpression &lambdaExpression,
-                                      std::vector<plasma::vm::instruction> *result,
-                                      plasma::error::error *compilationError) {
+bool plasma::ast::LambdaExpression::compile(std::vector<vm::instruction> *result,
+                                            plasma::error::error *compilationError) {
     std::vector<std::string> arguments;
-    for (const auto &argument : lambdaExpression.Arguments) {
-        arguments.push_back(argument.Token.string);
+    for (Identifier *argument : this->Arguments) {
+        arguments.push_back(argument->Token.string);
     }
     std::vector<plasma::vm::instruction> body;
     body.push_back(
@@ -605,7 +491,7 @@ static bool compile_lambda_expression(const plasma::ast::LambdaExpression &lambd
                     .value = arguments
             }
     );
-    if (!compile_return_statement(lambdaExpression.Output, &body, compilationError)) {
+    if (!this->Output->compile(&body, compilationError)) {
         return false;
     }
     result->push_back(
@@ -621,19 +507,16 @@ static bool compile_lambda_expression(const plasma::ast::LambdaExpression &lambd
     return true;
 }
 
-static bool compile_generator_expression(
-        const plasma::ast::GeneratorExpression &generatorExpression,
-        std::vector<plasma::vm::instruction> *result,
-        plasma::error::error *compilationError
-) {
-    if (!compile_expression(generatorExpression.Source, true, result, compilationError)) {
+bool plasma::ast::GeneratorExpression::compile(std::vector<vm::instruction> *result,
+                                               plasma::error::error *compilationError) {
+    if (!this->Source->compile_and_push(true, result, compilationError)) {
         return false;
     }
 
     std::vector<plasma::vm::instruction> operation;
     std::vector<std::string> receivers;
-    for (const auto &receiver : generatorExpression.Receivers) {
-        receivers.push_back(receiver.Token.string);
+    for (Identifier *receiver : this->Receivers) {
+        receivers.push_back(receiver->Token.string);
     }
     operation.push_back(
             plasma::vm::instruction{
@@ -642,16 +525,9 @@ static bool compile_generator_expression(
             }
     );
 
-    std::vector<std::any> generatorOperation;
-    generatorOperation.push_back(generatorExpression.Operation);
-    if (
-            !compile_return_statement(
-                    plasma::ast::ReturnStatement{
-                            .Results = generatorOperation
-                    },
-                    &operation,
-                    compilationError)
-            ) {
+    std::vector<plasma::ast::Expression *> generatorOperation;
+    generatorOperation.push_back(this->Operation);
+    if (!(new ReturnStatement(generatorOperation))->compile(&operation, compilationError)) {
         return false;
     }
     result->push_back(
@@ -667,94 +543,18 @@ static bool compile_generator_expression(
     return true;
 }
 
-static bool compile_expression(std::any node, bool push, std::vector<plasma::vm::instruction> *result,
-                               plasma::error::error *compilationError) {
-    bool success = false;
-    if (node.type() == typeid(plasma::ast::BasicLiteralExpression)) {
-        success = compile_basic_literal(std::any_cast<plasma::ast::BasicLiteralExpression>(node), result,
-                                        compilationError);
-    } else if (node.type() == typeid(plasma::ast::TupleExpression)) {
-        success = compile_tuple(std::any_cast<plasma::ast::TupleExpression>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::ArrayExpression)) {
-        success = compile_array(std::any_cast<plasma::ast::ArrayExpression>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::HashExpression)) {
-        success = compile_hash(std::any_cast<plasma::ast::HashExpression>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::UnaryExpression)) {
-        success = compile_unary_expression(std::any_cast<plasma::ast::UnaryExpression>(node), result,
-                                           compilationError);
-    } else if (node.type() == typeid(plasma::ast::BinaryExpression)) {
-        success = compile_binary_expression(std::any_cast<plasma::ast::BinaryExpression>(node), result,
-                                            compilationError);
-    } else if (node.type() == typeid(plasma::ast::ParenthesesExpression)) {
-        success = compile_parentheses_expression(std::any_cast<plasma::ast::ParenthesesExpression>(node),
-                                                 result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::IfOneLinerExpression)) {
-        return compile_if_one_liner_expression(
-                std::any_cast<plasma::ast::IfOneLinerExpression>(node),
-                push,
-                result,
-                compilationError
-        );
-    } else if (node.type() == typeid(plasma::ast::UnlessOneLinerExpression)) {
-        return compile_unless_one_liner_expression(
-                std::any_cast<plasma::ast::UnlessOneLinerExpression>(node),
-                push,
-                result,
-                compilationError
-        );
-    } else if (node.type() == typeid(plasma::ast::IndexExpression)) {
-        success = compile_index_expression(std::any_cast<plasma::ast::IndexExpression>(node), result,
-                                           compilationError);
-    } else if (node.type() == typeid(plasma::ast::SelectorExpression)) {
-        success = compile_selector_expression(std::any_cast<plasma::ast::SelectorExpression>(node), result,
-                                              compilationError);
-    } else if (node.type() == typeid(plasma::ast::MethodInvocationExpression)) {
-        success = compile_method_invocation(
-                std::any_cast<plasma::ast::MethodInvocationExpression>(node), result, compilationError
-        );
-    } else if (node.type() == typeid(plasma::ast::Identifier)) {
-        success = compile_identifier_expression(std::any_cast<plasma::ast::Identifier>(node), result);
-    } else if (node.type() == typeid(plasma::ast::LambdaExpression)) {
-        success = compile_lambda_expression(
-                std::any_cast<plasma::ast::LambdaExpression>(node),
-                result,
-                compilationError
-        );
-    } else if (node.type() == typeid(plasma::ast::GeneratorExpression)) {
-        success = compile_generator_expression(
-                std::any_cast<plasma::ast::GeneratorExpression>(node),
-                result,
-                compilationError
-        );
-    } else {
-        // FIXME
-    }
-    if (!success) {
-        return false;
-    }
-    if (push) {
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::PushOP,
-                }
-        );
-    }
-    return true;
-}
-
 // Statements
 
-static bool compile_assignment(const plasma::ast::AssignStatement &assignStatement,
-                               std::vector<plasma::vm::instruction> *result,
-                               plasma::error::error *compilationError) {
+bool plasma::ast::AssignStatement::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
     // Pre-assignment
-    if (assignStatement.AssignOperator.directValue == plasma::lexer::Assign) { // Basic Assign
-        if (!compile_expression(assignStatement.RightHandSide, true, result, compilationError)) {
+    if (this->AssignOperator.directValue == plasma::lexer::Assign) { // Basic Assign
+        if (!this->RightHandSide->compile_and_push(true, result, compilationError)) {
             return false;
         }
     } else { // AddAssign, SubAssign...
         uint8_t preOperation;
-        switch (assignStatement.AssignOperator.directValue) {
+        switch (this->AssignOperator.directValue) {
             case plasma::lexer::AddAssign:
                 preOperation = plasma::lexer::Add;
                 break;
@@ -792,74 +592,74 @@ static bool compile_assignment(const plasma::ast::AssignStatement &assignStateme
                 // Fixme
                 break;
         }
-        if (
-                !compile_expression(
-                        plasma::ast::BinaryExpression{
-                                .LeftHandSide = assignStatement.LeftHandSide,
-                                .Operator = plasma::lexer::token{
-                                        .directValue = preOperation,
-                                        .kind = plasma::lexer::Operator,
-                                        .line = assignStatement.AssignOperator.line
-                                },
-                                .RightHandSide = assignStatement.RightHandSide
-                        }, true, result, compilationError
-                )
-                ) {
+        if (!(new plasma::ast::BinaryExpression(this->LeftHandSide, plasma::lexer::token{
+                .directValue = preOperation,
+                .kind = plasma::lexer::Operator,
+                .line = this->AssignOperator.line
+        }, this->RightHandSide))->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     //
     // Determine the assignment target
-    if (assignStatement.LeftHandSide.type() == typeid(plasma::ast::Identifier)) {
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::AssignIdentifierOP,
-                        .value = std::any_cast<plasma::ast::Identifier>(assignStatement.LeftHandSide).Token.string
-                }
-        );
-    } else if (assignStatement.LeftHandSide.type() == typeid(plasma::ast::SelectorExpression)) {
-        // Push owner
-        if (!compile_expression(std::any_cast<plasma::ast::SelectorExpression>(assignStatement.LeftHandSide).X, true,
-                                result, compilationError)) {
-            return false;
-        }
-        //
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::AssignSelectorOP,
-                        .value = std::any_cast<plasma::ast::SelectorExpression>(
-                                assignStatement.LeftHandSide).Identifier.Token.string
-                }
-        );
-    } else { // Index assign
-        // Push source
-        if (!compile_expression(std::any_cast<plasma::ast::IndexExpression>(assignStatement.LeftHandSide).Source, true,
-                                result, compilationError)) {
-            return false;
-        }
-        // Push Index
-        if (!compile_expression(std::any_cast<plasma::ast::IndexExpression>(assignStatement.LeftHandSide).Index, true,
-                                result, compilationError)) {
-            return false;
-        }
-        //
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::AssignIndexOP,
-                }
-        );
+    switch (this->LeftHandSide->TypeID) {
+        case plasma::ast::IdentifierID:
+            result->push_back(
+                    plasma::vm::instruction{
+                            .op_code = plasma::vm::AssignIdentifierOP,
+                            .value = dynamic_cast<plasma::ast::Identifier *>(this->LeftHandSide)->Token.string
+                    }
+            );
+            break;
+        case plasma::ast::SelectorID:
+            // Push owner
+            if (!dynamic_cast<plasma::ast::SelectorExpression *>(this->LeftHandSide)->X->compile_and_push(true,
+                                                                                                              result,
+                                                                                                              compilationError)) {
+                return false;
+            }
+            //
+            result->push_back(
+                    plasma::vm::instruction{
+                            .op_code = plasma::vm::AssignSelectorOP,
+                            .value = std::any_cast<plasma::ast::SelectorExpression>(
+                                    this->LeftHandSide).Identifier->Token.string
+                    }
+            );
+            break;
+        case plasma::ast::IndexID:
+            // Push source
+            if (!dynamic_cast<IndexExpression *>(this->LeftHandSide)->Source->compile_and_push(true,
+                                                                                                   result,
+                                                                                                   compilationError)) {
+                return false;
+            }
+            // Push Index
+            if (!dynamic_cast<IndexExpression *>(this->LeftHandSide)->Index->compile_and_push(true,
+                                                                                                  result,
+                                                                                                  compilationError)) {
+                return false;
+            }
+            //
+            result->push_back(
+                    plasma::vm::instruction{
+                            .op_code = plasma::vm::AssignIndexOP,
+                    }
+            );
+            break;
+        default:
+            // ToDo: Throw error
+            break;
     }
     return true;
 }
 
-static bool
-compile_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
-                            std::vector<plasma::vm::instruction> *result,
-                            plasma::error::error *compilationError) {
+bool plasma::ast::FunctionDefinitionStatement::compile(std::vector<vm::instruction> *result,
+                                                       plasma::error::error *compilationError) {
     // ImplementMe:
     std::vector<std::string> arguments;
-    for (const auto &argument : functionDefinitionStatement.Arguments) {
-        arguments.push_back(argument.Token.string);
+    for (Identifier *argument : this->Arguments) {
+        arguments.push_back(argument->Token.string);
     }
 
     std::vector<plasma::vm::instruction> body;
@@ -871,7 +671,7 @@ compile_function_definition(const plasma::ast::FunctionDefinitionStatement &func
             }
     );
 
-    if (!compile_body(functionDefinitionStatement.Body, &body, compilationError)) {
+    if (!compile_body(this->Body, &body, compilationError)) {
         return false;
     }
 
@@ -879,7 +679,7 @@ compile_function_definition(const plasma::ast::FunctionDefinitionStatement &func
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewFunctionOP,
                     .value = plasma::vm::function_information{
-                            .name = functionDefinitionStatement.Name.Token.string,
+                            .name = this->Name->Token.string,
                             .bodyLength = body.size(),
                             .numberOfArguments = arguments.size()
                     }
@@ -892,13 +692,13 @@ compile_function_definition(const plasma::ast::FunctionDefinitionStatement &func
 }
 
 static bool
-compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement &functionDefinitionStatement,
+compile_class_function_definition(plasma::ast::FunctionDefinitionStatement *functionDefinitionStatement,
                                   std::vector<plasma::vm::instruction> *result,
                                   plasma::error::error *compilationError) {
     // ImplementMe:
     std::vector<std::string> arguments;
-    for (const auto &argument : functionDefinitionStatement.Arguments) {
-        arguments.push_back(argument.Token.string);
+    for (plasma::ast::Identifier *argument : functionDefinitionStatement->Arguments) {
+        arguments.push_back(argument->Token.string);
     }
 
     std::vector<plasma::vm::instruction> body;
@@ -910,7 +710,7 @@ compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement
             }
     );
 
-    if (!compile_body(functionDefinitionStatement.Body, &body, compilationError)) {
+    if (!compile_body(functionDefinitionStatement->Body, &body, compilationError)) {
         return false;
     }
 
@@ -918,7 +718,7 @@ compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewClassFunctionOP,
                     .value = plasma::vm::function_information{
-                            .name = functionDefinitionStatement.Name.Token.string,
+                            .name = functionDefinitionStatement->Name->Token.string,
                             .bodyLength = body.size(),
                             .numberOfArguments = arguments.size()
                     }
@@ -930,16 +730,15 @@ compile_class_function_definition(const plasma::ast::FunctionDefinitionStatement
     return true;
 }
 
-static bool
-compile_class_statement(const plasma::ast::ClassStatement &classStatement, std::vector<plasma::vm::instruction> *result,
-                        plasma::error::error *compilationError) {
-    for (const auto &base : classStatement.Bases) {
-        if (!compile_expression(base, true, result, compilationError)) {
+bool plasma::ast::ClassStatement::compile(std::vector<vm::instruction> *result,
+                                          plasma::error::error *compilationError) {
+    for (Expression *base : this->Bases) {
+        if (!base->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     std::vector<plasma::vm::instruction> body;
-    if (!compile_class_body(classStatement.Body, &body, compilationError)) {
+    if (!compile_class_body(this->Body, &body, compilationError)) {
         return false;
     }
 
@@ -947,9 +746,9 @@ compile_class_statement(const plasma::ast::ClassStatement &classStatement, std::
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewClassOP,
                     .value = plasma::vm::class_information{
-                            .name = classStatement.Name.Token.string,
+                            .name = this->Name->Token.string,
                             .bodyLength = body.size(),
-                            .numberOfBases = classStatement.Bases.size()
+                            .numberOfBases = this->Bases.size()
                     }
             }
     );
@@ -959,21 +758,19 @@ compile_class_statement(const plasma::ast::ClassStatement &classStatement, std::
     return true;
 }
 
-static bool
-compile_return_statement(const plasma::ast::ReturnStatement &returnStatement,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError) {
-    for (auto returnValue = returnStatement.Results.rbegin();
-         returnValue != returnStatement.Results.rend();
+bool plasma::ast::ReturnStatement::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
+    for (auto returnValue = this->Results.rbegin();
+         returnValue != this->Results.rend();
          returnValue++) {
-        if (!compile_expression((*returnValue), true, result, compilationError)) {
+        if (!(*returnValue)->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::ReturnOP,
-                    .value = returnStatement.Results.size()
+                    .value = this->Results.size()
             }
     );
     return true;
@@ -984,323 +781,35 @@ struct elif_information {
     std::vector<plasma::vm::instruction> body;
 };
 
-static bool
-compile_if_statement(const plasma::ast::IfStatement &ifStatement,
-                     std::vector<plasma::vm::instruction> *result,
-                     plasma::error::error *compilationError) {
+bool plasma::ast::IfStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
 
-    if (!compile_expression(ifStatement.Condition, true, result, compilationError)) {
-        return false;
-    }
-    std::vector<plasma::vm::instruction> body;
-    if (!compile_body(ifStatement.Body, &body, compilationError)) {
-        return false;
-    }
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::IfJumpOP,
-                    .value = body.size() + 1
-            }
-    );
-    result->insert(result->end(), body.begin(), body.end());
-
-    size_t jump = 0;
-    std::vector<elif_information> elifBlocks;
-    for (auto const &elifBlock : ifStatement.ElifBlocks) {
-        elif_information elifInformation;
-        if (!compile_expression(elifBlock.Condition, true, &elifInformation.condition, compilationError)) {
-            return false;
-        }
-        if (!compile_body(elifBlock.Body, &elifInformation.body, compilationError)) {
-            return false;
-        }
-        elifBlocks.push_back(elifInformation);
-        jump += elifInformation.condition.size() + 1 + elifInformation.body.size() + 1;
-    }
-    std::vector<plasma::vm::instruction> elseBody;
-    if (!ifStatement.Else.empty()) {
-        if (!compile_body(ifStatement.Else, &elseBody, compilationError)) {
-            return false;
-        }
-    }
-    jump += elseBody.size();
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = jump
-            }
-    );
-    for (const auto &elifBlock : elifBlocks) {
-        jump -= elifBlock.condition.size() + 1 + elifBlock.body.size() + 1;
-        result->insert(result->end(), elifBlock.condition.begin(), elifBlock.condition.end());
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::IfJumpOP,
-                        .value = elifBlock.body.size() + 1
-                }
-        );
-        result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::JumpOP,
-                        .value = jump
-                }
-        );
-    }
-    if (!elseBody.empty()) {
-        result->insert(result->end(), elseBody.begin(), elseBody.end());
-    }
-    return true;
 }
 
-static bool
-compile_unless_statement(const plasma::ast::UnlessStatement &unlessStatement,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError) {
+bool plasma::ast::UnlessStatement::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
 
-    if (!compile_expression(unlessStatement.Condition, true, result, compilationError)) {
-        return false;
-    }
-    std::vector<plasma::vm::instruction> body;
-    if (!compile_body(unlessStatement.Body, &body, compilationError)) {
-        return false;
-    }
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::UnlessJumpOP,
-                    .value = body.size() + 1
-            }
-    );
-    result->insert(result->end(), body.begin(), body.end());
-
-    size_t jump = 0;
-    std::vector<elif_information> elifBlocks;
-    for (auto const &elifBlock : unlessStatement.ElifBlocks) {
-        elif_information elifInformation;
-        if (!compile_expression(elifBlock.Condition, true, &elifInformation.condition, compilationError)) {
-            return false;
-        }
-        if (!compile_body(elifBlock.Body, &elifInformation.body, compilationError)) {
-            return false;
-        }
-        elifBlocks.push_back(elifInformation);
-        jump += elifInformation.condition.size() + 1 + elifInformation.body.size() + 1;
-    }
-    std::vector<plasma::vm::instruction> elseBody;
-    if (!unlessStatement.Else.empty()) {
-        if (!compile_body(unlessStatement.Else, &elseBody, compilationError)) {
-            return false;
-        }
-    }
-    jump += elseBody.size();
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = jump
-            }
-    );
-    for (const auto &elifBlock : elifBlocks) {
-        jump -= elifBlock.condition.size() + 1 + elifBlock.body.size() + 1;
-        result->insert(result->end(), elifBlock.condition.begin(), elifBlock.condition.end());
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::UnlessJumpOP,
-                        .value = elifBlock.body.size() + 1
-                }
-        );
-        result->insert(result->end(), elifBlock.body.begin(), elifBlock.body.end());
-        result->push_back(
-                plasma::vm::instruction{
-                        .op_code = plasma::vm::JumpOP,
-                        .value = jump
-                }
-        );
-    }
-    if (!elseBody.empty()) {
-        result->insert(result->end(), elseBody.begin(), elseBody.end());
-    }
-    return true;
 }
 
-static bool
-compile_switch_statement(const plasma::ast::SwitchStatement &switchStatement,
-                         std::vector<plasma::vm::instruction> *result,
-                         plasma::error::error *compilationError) {
-    plasma::ast::IfStatement ifEquivalent;
-    bool first = true;
-    for (const auto &switchCase : switchStatement.CaseBlocks) {
-        if (first) {
-            ifEquivalent.Condition = plasma::ast::BinaryExpression{
-                    .LeftHandSide = switchStatement.Target,
-                    .Operator = plasma::lexer::token{
-                            .directValue = plasma::lexer::In,
-                            .kind = plasma::lexer::Operator
-                    },
-                    .RightHandSide = plasma::ast::TupleExpression{
-                            .Values = switchCase.Cases
-                    }
-            };
-            ifEquivalent.Body = switchCase.Body;
-            first = false;
-        } else {
-            plasma::ast::ElifBlock elifBlock;
-            elifBlock.Condition = plasma::ast::BinaryExpression{
-                    .LeftHandSide = switchStatement.Target,
-                    .Operator = plasma::lexer::token{
-                            .directValue = plasma::lexer::In,
-                            .kind = plasma::lexer::Operator
-                    },
-                    .RightHandSide = plasma::ast::TupleExpression{
-                            .Values = switchCase.Cases
-                    }
-            };
-            elifBlock.Body = switchCase.Body;
-            ifEquivalent.ElifBlocks.push_back(elifBlock);
-        }
-    }
-    if (!switchStatement.Default.empty()) {
-        ifEquivalent.Else = switchStatement.Default;
-    }
-    return compile_if_statement(ifEquivalent, result, compilationError);
+bool plasma::ast::SwitchStatement::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
+
 }
 
-static bool
-compile_while_statement(const plasma::ast::WhileStatement &whileStatement,
-                        std::vector<plasma::vm::instruction> *result,
-                        plasma::error::error *compilationError) {
-    std::vector<plasma::vm::instruction> condition;
-    if (!compile_expression(whileStatement.Condition, true, &condition, compilationError)) {
-        return false;
-    }
-    std::vector<plasma::vm::instruction> body;
-    if (!compile_body(whileStatement.Body, &body, compilationError)) {
-        return false;
-    }
-    for (size_t index = 0; index < body.size(); index++) {
-        switch (body[index].op_code) {
-            case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = index + 1;
-                break;
-            case plasma::vm::ContinueOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = index + 1 + 1 + condition.size();
-                break;
-            case plasma::vm::BreakOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = body.size() - index;
-                break;
-            default:
-                break;
-        }
-    }
-    result->insert(result->end(), condition.begin(), condition.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::IfJumpOP,
-                    .value = body.size() + 1
-            }
-    );
-    result->insert(result->end(), body.begin(), body.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::RJumpOP,
-                    .value = 1 + body.size() + condition.size() + 1
-            }
-    );
-    return true;
+bool plasma::ast::WhileStatement::compile(std::vector<vm::instruction> *result,
+                                          plasma::error::error *compilationError) {
 }
 
-static bool
-compile_until_statement(const plasma::ast::UntilStatement &untilStatement,
-                        std::vector<plasma::vm::instruction> *result,
-                        plasma::error::error *compilationError) {
-    std::vector<plasma::vm::instruction> condition;
-    if (!compile_expression(untilStatement.Condition, true, &condition, compilationError)) {
-        return false;
-    }
-    std::vector<plasma::vm::instruction> body;
-    if (!compile_body(untilStatement.Body, &body, compilationError)) {
-        return false;
-    }
-    for (size_t index = 0; index < body.size(); index++) {
-        switch (body[index].op_code) {
-            case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = index + 1;
-                break;
-            case plasma::vm::ContinueOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = index + 1 + 1 + condition.size();
-                break;
-            case plasma::vm::BreakOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = body.size() - index;
-                break;
-            default:
-                break;
-        }
-    }
-    result->insert(result->end(), condition.begin(), condition.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::UnlessJumpOP,
-                    .value = body.size() + 1
-            }
-    );
-    result->insert(result->end(), body.begin(), body.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::RJumpOP,
-                    .value = 1 + body.size() + condition.size() + 1
-            }
-    );
-    return true;
+bool plasma::ast::UntilStatement::compile(std::vector<vm::instruction> *result,
+                                          plasma::error::error *compilationError) {
+
 }
 
-static bool
-compile_do_while_statement(const plasma::ast::DoWhileStatement &doWhileStatement,
-                           std::vector<plasma::vm::instruction> *result,
-                           plasma::error::error *compilationError) {
-    std::vector<plasma::vm::instruction> condition;
-    if (!compile_expression(doWhileStatement.Condition, true, &condition, compilationError)) {
-        return false;
-    }
-    std::vector<plasma::vm::instruction> body;
-    if (!compile_body(doWhileStatement.Body, &body, compilationError)) {
-        return false;
-    }
-    for (size_t index = 0; index < body.size(); index++) {
-        switch (body[index].op_code) {
-            case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = index + 1;
-                break;
-            case plasma::vm::ContinueOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = body.size() - index - 1;
-                break;
-            case plasma::vm::BreakOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = body.size() - 1 - index + condition.size() + 1;
-                break;
-            default:
-                break;
-        }
-    }
-    result->insert(result->end(), body.begin(), body.end());
-    result->insert(result->end(), condition.begin(), condition.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::RUnlessJumpOP,
-                    .value = 1 + condition.size() + body.size()
-            }
-    );
-    return true;
+bool plasma::ast::DoWhileStatement::compile(std::vector<vm::instruction> *result,
+                                            plasma::error::error *compilationError) {
+
 }
 
-static bool
-compile_redo_statement(std::vector<plasma::vm::instruction> *result) {
+bool plasma::ast::RedoStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::RedoOP,
@@ -1309,8 +818,8 @@ compile_redo_statement(std::vector<plasma::vm::instruction> *result) {
     return true;
 }
 
-static bool
-compile_continue_statement(std::vector<plasma::vm::instruction> *result) {
+bool plasma::ast::ContinueStatement::compile(std::vector<vm::instruction> *result,
+                                             plasma::error::error *compilationError) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::ContinueOP,
@@ -1319,8 +828,8 @@ compile_continue_statement(std::vector<plasma::vm::instruction> *result) {
     return true;
 }
 
-static bool
-compile_break_statement(std::vector<plasma::vm::instruction> *result) {
+bool plasma::ast::BreakStatement::compile(std::vector<vm::instruction> *result,
+                                          plasma::error::error *compilationError) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::BreakOP,
@@ -1329,8 +838,7 @@ compile_break_statement(std::vector<plasma::vm::instruction> *result) {
     return true;
 }
 
-static bool
-compile_pass_statement(std::vector<plasma::vm::instruction> *result) {
+bool plasma::ast::PassStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NOP,
@@ -1339,10 +847,9 @@ compile_pass_statement(std::vector<plasma::vm::instruction> *result) {
     return true;
 }
 
-static bool
-compile_raise_statement(const plasma::ast::RaiseStatement &raiseStatement, std::vector<plasma::vm::instruction> *result,
-                        plasma::error::error *compilationError) {
-    if (!compile_expression(raiseStatement.X, true, result, compilationError)) {
+bool plasma::ast::RaiseStatement::compile(std::vector<vm::instruction> *result,
+                                          plasma::error::error *compilationError) {
+    if (!this->X->compile_and_push(true, result, compilationError)) {
         return false;
     }
     result->push_back(
@@ -1353,18 +860,17 @@ compile_raise_statement(const plasma::ast::RaiseStatement &raiseStatement, std::
     return true;
 }
 
-static bool compile_module_statement(const plasma::ast::ModuleStatement &moduleStatement,
-                                     std::vector<plasma::vm::instruction> *result,
-                                     plasma::error::error *compilationError) {
+bool plasma::ast::ModuleStatement::compile(std::vector<vm::instruction> *result,
+                                           plasma::error::error *compilationError) {
     std::vector<plasma::vm::instruction> body;
-    if (!compile_body(moduleStatement.Body, &body, compilationError)) {
+    if (!compile_body(this->Body, &body, compilationError)) {
         return false;
     }
     result->push_back(
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewModuleOP,
                     .value = plasma::vm::class_information{
-                            .name = moduleStatement.Name.Token.string,
+                            .name = this->Name->Token.string,
                             .bodyLength = body.size()
                     }
             }
@@ -1373,16 +879,15 @@ static bool compile_module_statement(const plasma::ast::ModuleStatement &moduleS
     return true;
 }
 
-static bool compile_interface_statement(const plasma::ast::InterfaceStatement &interfaceStatement,
-                                        std::vector<plasma::vm::instruction> *result,
-                                        plasma::error::error *compilationError) {
-    for (const auto &base : interfaceStatement.Bases) {
-        if (!compile_expression(base, true, result, compilationError)) {
+bool plasma::ast::InterfaceStatement::compile(std::vector<vm::instruction> *result,
+                                              plasma::error::error *compilationError) {
+    for (Expression *base : this->Bases) {
+        if (!base->compile_and_push(true, result, compilationError)) {
             return false;
         }
     }
     std::vector<plasma::vm::instruction> body;
-    for (const auto &function : interfaceStatement.MethodDefinitions) {
+    for (FunctionDefinitionStatement *function : this->MethodDefinitions) {
         if (!compile_class_function_definition(function, &body, compilationError)) {
             return false;
         }
@@ -1392,117 +897,56 @@ static bool compile_interface_statement(const plasma::ast::InterfaceStatement &i
             plasma::vm::instruction{
                     .op_code = plasma::vm::NewInterfaceOP,
                     .value = plasma::vm::class_information{
-                            .name = interfaceStatement.Name.Token.string,
+                            .name = this->Name->Token.string,
                             .bodyLength = body.size(),
-                            .numberOfBases = interfaceStatement.Bases.size()
+                            .numberOfBases = this->Bases.size()
                     }
             }
     );
-
     result->insert(result->end(), body.begin(), body.end());
-
     return true;
 }
 
-static bool compile_for_loop_statement(const plasma::ast::ForStatement &forStatement,
-                                       std::vector<plasma::vm::instruction> *result,
-                                       plasma::error::error *compilationError) {
-    if (!compile_expression(forStatement.Source, true, result, compilationError)) {
-        return false;
-    }
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::PrepareForLoopOP
-            }
-    );
+bool plasma::ast::ForStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+
+}
+
+struct except_block {
+    std::string captureName;
+    std::vector<plasma::vm::instruction> targets;
     std::vector<plasma::vm::instruction> body;
-    if (!compile_body(forStatement.Body, &body, compilationError)) {
-        return false;
-    }
-    for (size_t index = 0; index < body.size(); index++) {
-        switch (body[index].op_code) {
-            case plasma::vm::RedoOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = body.size() - index;
-                break;
-            case plasma::vm::ContinueOP:
-                body[index].op_code = plasma::vm::RJumpOP;
-                body[index].value = body.size() - index + 1;
-                break;
-            case plasma::vm::BreakOP:
-                body[index].op_code = plasma::vm::JumpOP;
-                body[index].value = body.size() - index;
-                break;
-            default:
-                break;
+};
+
+bool plasma::ast::TryStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+
+}
+
+bool
+plasma::ast::BeginStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+}
+
+bool
+plasma::ast::EndStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+}
+
+bool
+plasma::ast::Program::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+    if (this->Begin != nullptr) {
+        if (!this->Begin->compile(result, compilationError)) {
+            return false;
         }
     }
-    std::vector<std::string> receivers;
-    receivers.reserve(forStatement.Receivers.size());
-    for (const auto &receiver : forStatement.Receivers) {
-        receivers.push_back(receiver.Token.string);
-    }
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::UnpackForLoopOP,
-                    .value = plasma::vm::for_loop_information{
-                            .receivers = receivers,
-                            .onFinishJump = body.size() + 1
-                    }
-            }
-    );
-    result->insert(result->end(), body.begin(), body.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::RJumpOP,
-                    .value = 1 + body.size() + 1
-            }
-    );
-    return true;
-}
 
-static bool compile_statement(std::any node, std::vector<plasma::vm::instruction> *result,
-                              plasma::error::error *compilationError) {
-    if (node.type() == typeid(plasma::ast::AssignStatement)) {
-        return compile_assignment(std::any_cast<plasma::ast::AssignStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
-        return compile_function_definition(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node), result,
-                                           compilationError);
-    } else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
-        return compile_return_statement(std::any_cast<plasma::ast::ReturnStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::IfStatement)) {
-        return compile_if_statement(std::any_cast<plasma::ast::IfStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
-        return compile_unless_statement(std::any_cast<plasma::ast::UnlessStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
-        return compile_switch_statement(std::any_cast<plasma::ast::SwitchStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
-        return compile_while_statement(std::any_cast<plasma::ast::WhileStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
-        return compile_until_statement(std::any_cast<plasma::ast::UntilStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
-        return compile_do_while_statement(std::any_cast<plasma::ast::DoWhileStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::ForStatement)) {
-        return compile_for_loop_statement(std::any_cast<plasma::ast::ForStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
-        return compile_redo_statement(result);
-    } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
-        return compile_break_statement(result);
-    } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
-        return compile_continue_statement(result);
-    } else if (node.type() == typeid(plasma::ast::PassStatement)) {
-        return compile_pass_statement(result);
-    } /*else if (node.type() == typeid(plasma::ast::TryStatement)) {
-        return compileTryStatement(std::any_cast<plasma::ast::TryStatement>(node), result, compilationError);
-    } */ else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
-        return compile_module_statement(std::any_cast<plasma::ast::ModuleStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
-        return compile_raise_statement(std::any_cast<plasma::ast::RaiseStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::ClassStatement)) {
-        return compile_class_statement(std::any_cast<plasma::ast::ClassStatement>(node), result, compilationError);
-    } else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
-        return compile_interface_statement(std::any_cast<plasma::ast::InterfaceStatement>(node), result,
-                                           compilationError);
+    for (Node *node : this->Body) {
+        if (!node->compile(result, compilationError)) {
+            return false;
+        }
+    }
+
+    if (this->End != nullptr) {
+        if (!this->End->compile(result, compilationError)) {
+            return false;
+        }
     }
     return true;
 }
