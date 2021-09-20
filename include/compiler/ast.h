@@ -543,14 +543,17 @@ namespace plasma::ast {
     };
 
     struct IfStatement : public Node {
-        IfStatement(std::vector<Node *> body, std::vector<ElifBlock *> elifBlocks, std::vector<Node *> elseBody) {
+        IfStatement(Expression *condition, std::vector<Node *> body, std::vector<ElifBlock *> elifBlocks,
+                    std::vector<Node *> elseBody) {
             this->TypeID = IfID;
+            this->Condition = condition;
             this->Body = body;
             this->ElifBlocks = elifBlocks;
             this->Else = elseBody;
         }
 
         ~IfStatement() {
+            delete this->Condition;
             for (Node *node: this->Body) {
                 delete node;
             }
@@ -576,14 +579,18 @@ namespace plasma::ast {
     };
 
     struct UnlessStatement : public Node {
-        UnlessStatement(std::vector<Node *> body, std::vector<ElifBlock *> elifBlocks, std::vector<Node *> elseBody) {
+        UnlessStatement(Expression *condition, std::vector<Node *> body, std::vector<ElifBlock *> elifBlocks,
+                        std::vector<Node *> elseBody) {
             this->TypeID = UnlessID;
+            this->Condition = condition;
             this->Body = body;
             this->ElifBlocks = elifBlocks;
             this->Else = elseBody;
         }
 
         ~UnlessStatement() {
+            delete this->Condition;
+
             for (Node *node: this->Body) {
                 delete node;
             }

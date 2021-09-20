@@ -91,21 +91,18 @@ plasma::parser::parser::parseAssignStatement(ast::Expression *leftHandSide) {
     );
 }
 
-bool plasma::parser::parser::parseForStatement() {
+plasma::ast::ForStatement *plasma::parser::parser::parseForStatement() {
     this->next();
     this->removeNewLines();
-    std::vector<ast::Identifier> receivers;
+    std::vector<ast::Identifier *> receivers;
     while (this->hasNext()) {
         if (this->directValueMatch(lexer::In)) {
             break;
         } else if (!this->kindMatch(lexer::IdentifierKind)) {
-            newSyntaxError(this->currentLine(), ForStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), ForStatement);
         }
         this->removeNewLines();
-        receivers.push_back(ast::Identifier{
-                .Token = this->currentToken
-        });
+        receivers.push_back(new ast::Identifier(this->currentToken));
         this->next();
         this->removeNewLines();
         if (this->directValueMatch(lexer::Comma)) {
@@ -113,32 +110,24 @@ bool plasma::parser::parser::parseForStatement() {
         } else if (this->directValueMatch(lexer::In)) {
             break;
         } else {
-            newSyntaxError(this->currentLine(), ForStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), ForStatement);
         }
     }
     this->removeNewLines();
     if (!this->directValueMatch(lexer::In)) {
-        newSyntaxError(this->currentLine(), ForStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), ForStatement);
     }
     this->next();
     this->removeNewLines();
-    std::any source;
-    if (!this->parseBinaryExpression(0, &source)) {
-        return false;
-    }
-    if (!ast::isExpression(&source)) {
-        newNonExpressionReceivedError(this->currentLine(), ForStatement);
-        return false;
+    ast::Node *source = this->parseBinaryExpression(0);
+    if (!ast::isExpression(source)) {
+        throw newNonExpressionReceivedError(this->currentLine(), ForStatement);
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), ForStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), ForStatement);
     }
     this->next();
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -147,39 +136,27 @@ bool plasma::parser::parser::parseForStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), ForStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), ForStatement);
     }
     this->next();
-    (*result) = ast::ForStatement{receivers, source, body};
-    return true;
+    return new ast::ForStatement(receivers, dynamic_cast<ast::Expression *>(source), body);
 }
 
-bool plasma::parser::parser::parseUntilStatement() {
+plasma::ast::UntilStatement *plasma::parser::parser::parseUntilStatement() {
     this->next();
     this->removeNewLines();
-    std::any condition;
-    if (!this->parseBinaryExpression(0, &condition)) {
-        return false;
-    }
-    if (!ast::isExpression(&condition)) {
-        newSyntaxError(this->currentLine(), UntilStatement);
-        return false;
+    ast::Node *condition = this->parseBinaryExpression(0);
+    if (!ast::isExpression(condition)) {
+        throw newSyntaxError(this->currentLine(), UntilStatement);
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), UntilStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), UntilStatement);
     }
     this->next();
-    std::vector<std::any> body;
-    std::any bodyNode;
-
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -188,39 +165,27 @@ bool plasma::parser::parser::parseUntilStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), UntilStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), UntilStatement);
     }
     this->next();
-    (*result) = ast::UntilStatement{condition, body};
-    return true;
+    return new ast::UntilStatement(dynamic_cast<ast::Expression *>(condition), body);
 }
 
-bool plasma::parser::parser::parseWhileStatement() {
+plasma::ast::WhileStatement *plasma::parser::parser::parseWhileStatement() {
     this->next();
     this->removeNewLines();
-    std::any condition;
-    if (!this->parseBinaryExpression(0, &condition)) {
-        return false;
-    }
-    if (!ast::isExpression(&condition)) {
-        newSyntaxError(this->currentLine(), WhileStatement);
-        return false;
+    ast::Node *condition = this->parseBinaryExpression(0);
+    if (!ast::isExpression(condition)) {
+        throw newSyntaxError(this->currentLine(), WhileStatement);
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), WhileStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), WhileStatement);
     }
     this->next();
-    std::vector<std::any> body;
-    std::any bodyNode;
-
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -229,27 +194,20 @@ bool plasma::parser::parser::parseWhileStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), WhileStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), WhileStatement);
     }
     this->next();
-    (*result) = ast::WhileStatement{condition, body};
-    return true;
+    return new ast::WhileStatement(dynamic_cast<ast::Expression *>(condition), body);
 }
 
-bool plasma::parser::parser::parseDoWhileStatement() {
+plasma::ast::DoWhileStatement *plasma::parser::parser::parseDoWhileStatement() {
     this->next();
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), DoWhileStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), DoWhileStatement);
     }
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
@@ -259,49 +217,35 @@ bool plasma::parser::parser::parseDoWhileStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::While)) {
-        newSyntaxError(this->currentLine(), DoWhileStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), DoWhileStatement);
     }
     this->next();
     this->removeNewLines();
-    std::any condition;
-    if (!this->parseBinaryExpression(0, &condition)) {
-        return false;
+    ast::Node *condition = this->parseBinaryExpression(0);
+    if (!ast::isExpression(condition)) {
+        throw newNonExpressionReceivedError(this->currentLine(), DoWhileStatement);
     }
-    if (!ast::isExpression(&condition)) {
-        newNonExpressionReceivedError(this->currentLine(), DoWhileStatement);
-        return false;
-    }
-    (*result) = ast::DoWhileStatement{
-            .Condition = condition,
-            .Body = body,
-    };
-    return true;
+    return new ast::DoWhileStatement(
+            dynamic_cast<ast::Expression *>(condition),
+            body
+    );
 }
 
-bool plasma::parser::parser::parseModuleStatement() {
+plasma::ast::ModuleStatement *plasma::parser::parser::parseModuleStatement() {
     this->next();
     this->removeNewLines();
     if (!this->kindMatch(lexer::IdentifierKind)) {
-        newSyntaxError(this->currentLine(), ModuleStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), ModuleStatement);
     }
-    ast::Identifier name{
-            .Token = this->currentToken
-    };
+    ast::Identifier *name = new ast::Identifier(this->currentToken);
     this->next();
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), ModuleStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), ModuleStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -310,53 +254,41 @@ bool plasma::parser::parser::parseModuleStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), ModuleStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), ModuleStatement);
     }
     this->next();
-    (*result) = ast::ModuleStatement{
-            .Name = name,
-            .Body = body
-    };
-    return true;
+    return new ast::ModuleStatement(
+            name,
+            body
+    );
 }
 
-bool plasma::parser::parser::parseFunctionDefinitionStatement() {
+plasma::ast::FunctionDefinitionStatement *plasma::parser::parser::parseFunctionDefinitionStatement() {
     this->next();
     this->removeNewLines();
     if (!this->kindMatch(lexer::IdentifierKind)) {
-        newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
     }
-    ast::Identifier name{
-            .Token = this->currentToken
-    };
+    ast::Identifier *name = new ast::Identifier(this->currentToken);
     this->next();
     this->removeNewLines();
     if (!this->directValueMatch(lexer::OpenParentheses)) {
-        newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
     }
     this->next();
-    std::vector<ast::Identifier> arguments;
+    std::vector<ast::Identifier *> arguments;
     while (this->hasNext()) {
         if (this->directValueMatch(lexer::CloseParentheses)) {
             break;
         }
         this->removeNewLines();
         if (!this->kindMatch(lexer::IdentifierKind)) {
-            newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
         }
-        arguments.push_back(ast::Identifier{
-                .Token = this->currentToken
-        });
+        arguments.push_back(new ast::Identifier(this->currentToken));
         this->next();
         this->removeNewLines();
         if (this->directValueMatch(lexer::Comma)) {
@@ -364,21 +296,17 @@ bool plasma::parser::parser::parseFunctionDefinitionStatement() {
         } else if (this->directValueMatch(lexer::CloseParentheses)) {
             break;
         } else {
-            newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
         }
     }
     if (!this->directValueMatch(lexer::CloseParentheses)) {
-        newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
     }
     this->next();
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), FunctionDefinitionStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -387,42 +315,30 @@ bool plasma::parser::parser::parseFunctionDefinitionStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), FunctionDefinitionStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), FunctionDefinitionStatement);
     }
     this->next();
-    (*result) = ast::FunctionDefinitionStatement{name, arguments, body};
-    return true;
+    return new ast::FunctionDefinitionStatement(name, arguments, body);
 }
 
-bool plasma::parser::parser::parseRaiseStatement() {
+plasma::ast::RaiseStatement *plasma::parser::parser::parseRaiseStatement() {
     this->next();
-    std::any x;
-    if (!this->parseBinaryExpression(0, &x)) {
-        return false;
+    ast::Node *x = this->parseBinaryExpression(0);
+    if (!ast::isExpression(x)) {
+        throw newNonExpressionReceivedError(this->currentLine(), RaiseStatement);
     }
-    if (!ast::isExpression(&x)) {
-        newNonExpressionReceivedError(this->currentLine(), RaiseStatement);
-        return false;
-    }
-    (*result) = ast::RaiseStatement{x};
-    return true;
+    return new ast::RaiseStatement(dynamic_cast<ast::Expression *>(x));
 }
 
-bool plasma::parser::parser::parseTryStatement() {
+plasma::ast::TryStatement *plasma::parser::parser::parseTryStatement() {
     this->next();
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), TryStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), TryStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -434,53 +350,44 @@ bool plasma::parser::parser::parseTryStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
-    std::vector<ast::ExceptBlock> exceptBlocks;
+    std::vector<ast::ExceptBlock *> exceptBlocks;
     while (this->hasNext()) {
         if (!this->directValueMatch(lexer::Except)) {
             break;
         }
         this->next();
-        std::vector<std::any> targets;
-        std::any target;
+        std::vector<ast::Expression *> targets;
+        ast::Node *target;
         while (this->hasNext()) {
             if (this->directValueMatch(lexer::NewLine) ||
                 this->directValueMatch(lexer::As)) {
                 break;
             }
-            if (!this->parseBinaryExpression(0, &target)) {
-                return false;
+            target = this->parseBinaryExpression(0);
+            if (!ast::isExpression(target)) {
+                throw newSyntaxError(this->currentLine(), ExceptBlock);
             }
-            if (!ast::isExpression(&target)) {
-                newSyntaxError(this->currentLine(), ExceptBlock);
-                return false;
-            }
-            targets.push_back(target);
+            targets.push_back(dynamic_cast<ast::Expression *>(target));
             if (this->directValueMatch(lexer::Comma)) {
                 this->next();
             }
         }
-        ast::Identifier captureName;
+        ast::Identifier *captureName = nullptr;
         if (this->directValueMatch(lexer::As)) {
             this->next();
             this->removeNewLines();
             if (!this->kindMatch(lexer::IdentifierKind)) {
-                newSyntaxError(this->currentLine(), ExceptBlock);
-                return false;
+                throw newSyntaxError(this->currentLine(), ExceptBlock);
             }
-            captureName.Token = this->currentToken;
+            captureName = new ast::Identifier(this->currentToken);
             this->next();
         }
         if (!this->directValueMatch(lexer::NewLine)) {
-            newSyntaxError(this->currentLine(), ExceptBlock);
-            return false;
+            throw newSyntaxError(this->currentLine(), ExceptBlock);
         }
-        std::vector<std::any> exceptBody;
-        std::any exceptBodyNode;
+        std::vector<ast::Node *> exceptBody;
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
                 this->next();
@@ -492,20 +399,15 @@ bool plasma::parser::parser::parseTryStatement() {
                 }
                 continue;
             }
-            if (!this->parseBinaryExpression(0, &exceptBodyNode)) {
-                return false;
-            }
-            exceptBody.push_back(exceptBodyNode);
+            exceptBody.push_back(this->parseBinaryExpression(0));
         }
-        exceptBlocks.push_back(ast::ExceptBlock{targets, captureName, exceptBody});
+        exceptBlocks.push_back(new ast::ExceptBlock(targets, captureName, exceptBody));
     }
-    std::vector<std::any> elseBody;
-    std::any elseBodyNode;
+    std::vector<ast::Node *> elseBody;
     if (this->directValueMatch(lexer::Else)) {
         this->next();
         if (!this->directValueMatch(lexer::NewLine)) {
-            newSyntaxError(this->currentLine(), TryStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), TryStatement);
         }
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -515,19 +417,14 @@ bool plasma::parser::parser::parseTryStatement() {
                 }
                 continue;
             }
-            if (!this->parseBinaryExpression(0, &elseBodyNode)) {
-                return false;
-            }
-            elseBody.push_back(elseBodyNode);
+            elseBody.push_back(this->parseBinaryExpression(0));
         }
     }
-    std::vector<std::any> finallyBody;
-    std::any finallyBodyNode;
+    std::vector<ast::Node *> finallyBody;
     if (this->directValueMatch(lexer::Finally)) {
         this->next();
         if (!this->directValueMatch(lexer::NewLine)) {
-            newSyntaxError(this->currentLine(), FinallyBlock);
-            return false;
+            throw newSyntaxError(this->currentLine(), FinallyBlock);
         }
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -537,29 +434,22 @@ bool plasma::parser::parser::parseTryStatement() {
                 }
                 continue;
             }
-            if (!this->parseBinaryExpression(0, &finallyBodyNode)) {
-                return false;
-            }
-            finallyBody.push_back(finallyBodyNode);
+            finallyBody.push_back(this->parseBinaryExpression(0));
         }
     }
     if (!this->directValueMatch(lexer::End)) {
-        newSyntaxError(this->currentLine(), TryStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), TryStatement);
     }
     this->next();
-    (*result) = ast::TryStatement{body, exceptBlocks, elseBody, finallyBody};
-    return true;
+    return new ast::TryStatement(body, exceptBlocks, elseBody, finallyBody);
 }
 
-bool plasma::parser::parser::parseBeginStatement() {
+plasma::ast::BeginStatement *plasma::parser::parser::parseBeginStatement() {
     this->next();
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), BeginStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), BeginStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -568,28 +458,21 @@ bool plasma::parser::parser::parseBeginStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), BeginStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), BeginStatement);
     }
     this->next();
-    (*result) = ast::BeginStatement{body};
-    return true;
+    return new ast::BeginStatement(body);
 }
 
-bool plasma::parser::parser::parseEndStatement() {
+plasma::ast::EndStatement *plasma::parser::parser::parseEndStatement() {
     this->next();
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), EndStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), EndStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -598,68 +481,53 @@ bool plasma::parser::parser::parseEndStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), EndStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), EndStatement);
     }
     this->next();
-    (*result) = ast::EndStatement{body};
-    return true;
+    return new ast::EndStatement(body);
 }
 
-bool plasma::parser::parser::parseClassStatement() {
+plasma::ast::ClassStatement *plasma::parser::parser::parseClassStatement() {
     this->next();
     this->removeNewLines();
     if (!this->kindMatch(lexer::IdentifierKind)) {
-        newSyntaxError(this->currentLine(), ClassStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), ClassStatement);
     }
-    ast::Identifier name{
-            .Token = this->currentToken
-    };
+    ast::Identifier *name = new ast::Identifier(this->currentToken);
     this->next();
-    std::vector<std::any> bases;
-    std::any base;
+    std::vector<ast::Expression *> bases;
+    ast::Node *base;
     if (this->directValueMatch(lexer::OpenParentheses)) {
         this->next();
         while (this->hasNext()) {
             this->removeNewLines();
-            if (!this->parseBinaryExpression(0, &base)) {
-                return false;
+            base = this->parseBinaryExpression(0);
+            if (!ast::isExpression(base)) {
+                throw newNonExpressionReceivedError(this->currentLine(), ClassStatement);
             }
-            if (!ast::isExpression(&base)) {
-                newNonExpressionReceivedError(this->currentLine(), ClassStatement);
-                return false;
-            }
-            bases.push_back(base);
+            bases.push_back(dynamic_cast<ast::Expression *>(base));
             this->removeNewLines();
             if (this->directValueMatch(lexer::Comma)) {
                 this->next();
             } else if (this->directValueMatch(lexer::CloseParentheses)) {
                 break;
             } else {
-                newSyntaxError(this->currentLine(), ClassStatement);
-                return false;
+                throw newSyntaxError(this->currentLine(), ClassStatement);
             }
         }
         if (!this->directValueMatch(lexer::CloseParentheses)) {
-            newSyntaxError(this->currentLine(), ClassStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), ClassStatement);
         }
         this->next();
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), ClassStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), ClassStatement);
     }
     this->next();
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->directValueMatch(lexer::End)) {
             break;
@@ -668,72 +536,58 @@ bool plasma::parser::parser::parseClassStatement() {
             this->next();
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), ClassStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), ClassStatement);
     }
     this->next();
-    (*result) = ast::ClassStatement{
-            .Name = name,
-            .Bases = bases,
-            .Body = body
-    };
-    return true;
+    return new ast::ClassStatement(
+            name,
+            bases,
+            body
+    );
 }
 
-bool plasma::parser::parser::parseInterfaceStatement() {
+plasma::ast::InterfaceStatement *plasma::parser::parser::parseInterfaceStatement() {
     this->next();
     this->removeNewLines();
     if (!this->kindMatch(lexer::IdentifierKind)) {
-        newSyntaxError(this->currentLine(), InterfaceStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), InterfaceStatement);
     }
-    ast::Identifier name{
-            .Token = this->currentToken
-    };
+    ast::Identifier *name = new ast::Identifier(this->currentToken);
     this->next();
-    std::vector<std::any> bases;
-    std::any base;
+    std::vector<ast::Expression *> bases;
+    ast::Node *base;
     if (this->directValueMatch(lexer::OpenParentheses)) {
         this->next();
         while (this->hasNext()) {
             this->removeNewLines();
-            if (!this->parseBinaryExpression(0, &base)) {
-                return false;
+            base = this->parseBinaryExpression(0);
+            if (!ast::isExpression(base)) {
+                throw newNonExpressionReceivedError(this->currentLine(), InterfaceStatement);
             }
-            if (!ast::isExpression(&base)) {
-                newNonExpressionReceivedError(this->currentLine(), InterfaceStatement);
-                return false;
-            }
-            bases.push_back(base);
+            bases.push_back(dynamic_cast<ast::Expression *>(base));
             this->removeNewLines();
             if (this->directValueMatch(lexer::Comma)) {
                 this->next();
             } else if (this->directValueMatch(lexer::CloseParentheses)) {
                 break;
             } else {
-                newSyntaxError(this->currentLine(), InterfaceStatement);
-                return false;
+                throw newSyntaxError(this->currentLine(), InterfaceStatement);
             }
         }
         if (!this->directValueMatch(lexer::CloseParentheses)) {
-            newSyntaxError(this->currentLine(), InterfaceStatement);
-            return false;
+            throw newSyntaxError(this->currentLine(), InterfaceStatement);
         }
         this->next();
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), InterfaceStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), InterfaceStatement);
     }
     this->removeNewLines();
-    std::vector<ast::FunctionDefinitionStatement> methods;
-    std::any node;
+    std::vector<ast::FunctionDefinitionStatement *> methods;
+    ast::Node *node;
     while (this->hasNext()) {
         if (this->directValueMatch(lexer::End)) {
             break;
@@ -742,43 +596,32 @@ bool plasma::parser::parser::parseInterfaceStatement() {
             this->next();
             continue;
         }
-        if (!this->parseBinaryExpression(0, &node)) {
-            return false;
+        node = this->parseBinaryExpression(0);
+        if (node->TypeID != ast::FunctionDefinitionID) {
+            throw newNonFunctionDefinitionReceived(this->currentLine(), InterfaceStatement);
         }
-        if (node.type() != typeid(ast::FunctionDefinitionStatement)) {
-            newNonFunctionDefinitionReceived(this->currentLine(), InterfaceStatement);
-            return false;
-        }
-        methods.push_back(std::any_cast<ast::FunctionDefinitionStatement>(node));
+        methods.push_back(dynamic_cast<ast::FunctionDefinitionStatement *>(node));
     }
     this->removeNewLines();
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), InterfaceStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), InterfaceStatement);
     }
     this->next();
-    (*result) = ast::InterfaceStatement{name, bases, methods};
-    return true;
+    return new ast::InterfaceStatement(name, bases, methods);
 }
 
-bool plasma::parser::parser::parseIfStatement() {
+plasma::ast::IfStatement *plasma::parser::parser::parseIfStatement() {
     this->next();
     this->removeNewLines();
     int line = this->currentLine();
-    std::any condition;
-    if (!this->parseBinaryExpression(0, &condition)) {
-        return false;
-    }
-    if (!ast::isExpression(&condition)) {
-        newNonExpressionReceivedError(this->currentLine(), IfStatement);
-        return false;
+    ast::Node *condition = this->parseBinaryExpression(0);
+    if (!ast::isExpression(condition)) {
+        throw newNonExpressionReceivedError(this->currentLine(), IfStatement);
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), IfStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), IfStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
@@ -789,12 +632,9 @@ bool plasma::parser::parser::parseIfStatement() {
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
-    std::vector<ast::ElifBlock> elifBlocks;
+    std::vector<ast::ElifBlock *> elifBlocks;
     if (this->directValueMatch(lexer::Elif)) {
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -806,25 +646,18 @@ bool plasma::parser::parser::parseIfStatement() {
                 continue;
             }
             if (!this->directValueMatch(lexer::Elif)) {
-                newSyntaxError(this->currentLine(), IfStatement);
-                return false;
+                throw newSyntaxError(this->currentLine(), IfStatement);
             }
             this->next();
             this->removeNewLines();
-            std::any elifCondition;
-            if (!this->parseBinaryExpression(0, &elifCondition)) {
-                return false;
-            }
-            if (!ast::isExpression(&elifCondition)) {
-                newNonExpressionReceivedError(this->currentLine(), ElifBlock);
-                return false;
+            ast::Node *elifCondition = this->parseBinaryExpression(0);
+            if (!ast::isExpression(elifCondition)) {
+                throw newNonExpressionReceivedError(this->currentLine(), ElifBlock);
             }
             if (!this->directValueMatch(lexer::NewLine)) {
-                newSyntaxError(this->currentLine(), ElifBlock);
-                return false;
+                throw newSyntaxError(this->currentLine(), ElifBlock);
             }
-            std::vector<std::any> elifBody;
-            std::any elifBodyNode;
+            std::vector<ast::Node *> elifBody;
             while (this->hasNext()) {
                 if (this->kindMatch(lexer::Separator)) {
                     this->next();
@@ -835,16 +668,13 @@ bool plasma::parser::parser::parseIfStatement() {
                     }
                     continue;
                 }
-                if (!this->parseBinaryExpression(0, &elifBodyNode)) {
-                    return false;
-                }
-                elifBody.push_back(elifBodyNode);
+                elifBody.push_back(this->parseBinaryExpression(0));
             }
             elifBlocks.push_back(
-                    ast::ElifBlock{
-                            .Condition = elifCondition,
-                            .Body = elifBody
-                    }
+                    new ast::ElifBlock(
+                            dynamic_cast<ast::Expression *>(elifCondition),
+                            elifBody
+                    )
             );
             if (this->directValueMatch(lexer::Else) ||
                 this->directValueMatch(lexer::End)) {
@@ -852,13 +682,11 @@ bool plasma::parser::parser::parseIfStatement() {
             }
         }
     }
-    std::vector<std::any> elseBody;
-    std::any elseBodyNode;
+    std::vector<ast::Node *> elseBody;
     if (this->directValueMatch(lexer::Else)) {
         this->next();
         if (!this->directValueMatch(lexer::NewLine)) {
-            newSyntaxError(this->currentLine(), ElseBlock);
-            return false;
+            throw newSyntaxError(this->currentLine(), ElseBlock);
         }
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -868,116 +696,99 @@ bool plasma::parser::parser::parseIfStatement() {
                 }
                 continue;
             }
-            if (!this->parseBinaryExpression(0, &elseBodyNode)) {
-                return false;
-            }
-            elseBody.push_back(elseBodyNode);
+            elseBody.push_back(this->parseBinaryExpression(0));
         }
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), IfStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), IfStatement);
     }
     this->next();
-    (*result) = ast::IfStatement{
-            .Condition = condition,
-            .Body = body,
-            .ElifBlocks = elifBlocks,
-            .Else = elseBody
-    };
-    return true;
+    return new ast::IfStatement(
+            dynamic_cast<ast::Expression *>(condition),
+            body,
+            elifBlocks,
+            elseBody
+    );
 }
 
 
-bool plasma::parser::parser::parseUnlessStatement() {
+plasma::ast::UnlessStatement *plasma::parser::parser::parseUnlessStatement() {
     this->next();
     this->removeNewLines();
     int line = this->currentLine();
-    std::any condition;
-    if (!this->parseBinaryExpression(0, &condition)) {
-        return false;
-    }
-    if (!ast::isExpression(&condition)) {
-        newNonExpressionReceivedError(this->currentLine(), UnlessStatement);
-        return false;
+    ast::Node *condition = this->parseBinaryExpression(0);
+    if (!ast::isExpression(condition)) {
+        throw newNonExpressionReceivedError(this->currentLine(), IfStatement);
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        newSyntaxError(this->currentLine(), UnlessStatement);
-        return false;
+        throw newSyntaxError(this->currentLine(), IfStatement);
     }
-    std::vector<std::any> body;
-    std::any bodyNode;
+    std::vector<ast::Node *> body;
     while (this->hasNext()) {
         if (this->kindMatch(lexer::Separator)) {
             this->next();
-            if (this->directValueMatch(lexer::Elif) || this->directValueMatch(lexer::Else) ||
+            if (this->directValueMatch(lexer::Elif) ||
+                this->directValueMatch(lexer::Else) ||
                 this->directValueMatch(lexer::End)) {
                 break;
             }
             continue;
         }
-        if (!this->parseBinaryExpression(0, &bodyNode)) {
-            return false;
-        }
-        body.push_back(bodyNode);
+        body.push_back(this->parseBinaryExpression(0));
     }
-    std::vector<ast::ElifBlock> elifBlocks;
+    std::vector<ast::ElifBlock *> elifBlocks;
     if (this->directValueMatch(lexer::Elif)) {
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
                 this->next();
-                if (this->directValueMatch(lexer::Else) || this->directValueMatch(lexer::End)) {
+                if (this->directValueMatch(lexer::Else) ||
+                    this->directValueMatch(lexer::End)) {
                     break;
                 }
                 continue;
             }
             if (!this->directValueMatch(lexer::Elif)) {
-                newSyntaxError(this->currentLine(), UnlessStatement);
-                return false;
+                throw newSyntaxError(this->currentLine(), IfStatement);
             }
             this->next();
             this->removeNewLines();
-            std::any elifCondition;
-            if (!this->parseBinaryExpression(0, &elifCondition)) {
-                return false;
-            }
-            if (!ast::isExpression(&elifCondition)) {
-                newNonExpressionReceivedError(this->currentLine(), ElifBlock);
-                return false;
+            ast::Node *elifCondition = this->parseBinaryExpression(0);
+            if (!ast::isExpression(elifCondition)) {
+                throw newNonExpressionReceivedError(this->currentLine(), ElifBlock);
             }
             if (!this->directValueMatch(lexer::NewLine)) {
-                newSyntaxError(this->currentLine(), ElifBlock);
-                return false;
+                throw newSyntaxError(this->currentLine(), ElifBlock);
             }
-            std::vector<std::any> elifBody;
-            std::any elifBodyNode;
+            std::vector<ast::Node *> elifBody;
             while (this->hasNext()) {
                 if (this->kindMatch(lexer::Separator)) {
                     this->next();
-                    if (this->directValueMatch(lexer::Elif) || this->directValueMatch(lexer::Else) ||
+                    if (this->directValueMatch(lexer::Elif) ||
+                        this->directValueMatch(lexer::Else) ||
                         this->directValueMatch(lexer::End)) {
                         break;
                     }
                     continue;
                 }
-                if (!this->parseBinaryExpression(0, &elifBodyNode)) {
-                    return false;
-                }
-                elifBody.push_back(elifBodyNode);
+                elifBody.push_back(this->parseBinaryExpression(0));
             }
-            elifBlocks.push_back(ast::ElifBlock{elifCondition, elifBody});
-            if (this->directValueMatch(lexer::Else) || this->directValueMatch(lexer::End)) {
+            elifBlocks.push_back(
+                    new ast::ElifBlock(
+                            dynamic_cast<ast::Expression *>(elifCondition),
+                            elifBody
+                    )
+            );
+            if (this->directValueMatch(lexer::Else) ||
+                this->directValueMatch(lexer::End)) {
                 break;
             }
         }
     }
-    std::vector<std::any> elseBody;
-    std::any elseBodyNode;
+    std::vector<ast::Node *> elseBody;
     if (this->directValueMatch(lexer::Else)) {
         this->next();
         if (!this->directValueMatch(lexer::NewLine)) {
-            newSyntaxError(this->currentLine(), ElseBlock);
-            return false;
+            throw newSyntaxError(this->currentLine(), ElseBlock);
         }
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -987,19 +798,19 @@ bool plasma::parser::parser::parseUnlessStatement() {
                 }
                 continue;
             }
-            if (!this->parseBinaryExpression(0, &elseBodyNode)) {
-                return false;
-            }
-            elseBody.push_back(elseBodyNode);
+            elseBody.push_back(this->parseBinaryExpression(0));
         }
     }
     if (!this->directValueMatch(lexer::End)) {
-        newStatementNeverEndedError(this->currentLine(), UnlessStatement);
-        return false;
+        throw newStatementNeverEndedError(this->currentLine(), IfStatement);
     }
     this->next();
-    (*result) = ast::UnlessStatement{condition, body, elifBlocks, elseBody};
-    return true;
+    return new ast::UnlessStatement(
+            dynamic_cast<ast::Expression *>(condition),
+            body,
+            elifBlocks,
+            elseBody
+    );
 }
 
 plasma::ast::SwitchStatement *plasma::parser::parser::parseSwitchStatement() {
@@ -1491,8 +1302,7 @@ plasma::parser::parser::parseSelectorExpression(ast::Expression *source) {
         this->next();
         identifier = this->currentToken;
         if (identifier.kind != lexer::IdentifierKind) {
-            newSyntaxError(this->currentLine(), SelectorExpression);
-            return false;
+            throw newSyntaxError(this->currentLine(), SelectorExpression);
         }
         selector = new ast::SelectorExpression(selector, new ast::Identifier(identifier));
         this->next();

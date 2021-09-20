@@ -59,8 +59,7 @@ static bool compile_to_array(const plasma::ast::Program &parsedProgram, std::vec
 bool plasma::bytecode_compiler::compiler::compile(vm::bytecode *result, error::error *compilationError) const {
     plasma::ast::Program *parsedProgram = this->parser->parse();
     std::vector<plasma::vm::instruction> arrayResult;
-    bool success = compile_to_array(parsedProgram, &arrayResult, compilationError);
-    if (!success) {
+    if (!parsedProgram->compile(&arrayResult, compilationError)) {
         return false;
     }
     (*result) = vm::bytecode{
@@ -614,8 +613,8 @@ bool plasma::ast::AssignStatement::compile(std::vector<vm::instruction> *result,
         case plasma::ast::SelectorID:
             // Push owner
             if (!dynamic_cast<plasma::ast::SelectorExpression *>(this->LeftHandSide)->X->compile_and_push(true,
-                                                                                                              result,
-                                                                                                              compilationError)) {
+                                                                                                          result,
+                                                                                                          compilationError)) {
                 return false;
             }
             //
@@ -630,14 +629,14 @@ bool plasma::ast::AssignStatement::compile(std::vector<vm::instruction> *result,
         case plasma::ast::IndexID:
             // Push source
             if (!dynamic_cast<IndexExpression *>(this->LeftHandSide)->Source->compile_and_push(true,
-                                                                                                   result,
-                                                                                                   compilationError)) {
+                                                                                               result,
+                                                                                               compilationError)) {
                 return false;
             }
             // Push Index
             if (!dynamic_cast<IndexExpression *>(this->LeftHandSide)->Index->compile_and_push(true,
-                                                                                                  result,
-                                                                                                  compilationError)) {
+                                                                                              result,
+                                                                                              compilationError)) {
                 return false;
             }
             //
