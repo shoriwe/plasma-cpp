@@ -14,8 +14,6 @@ void plasma::lexer::lexer::guessKind(const std::string &pattern, uint8_t *kind, 
     (*kind) = Keyboard;
     if (pattern == PassString) {
         (*directValue) = Pass;
-    } else if (pattern == SuperString) {
-        (*directValue) = Super;
     } else if (pattern == EndString) {
         (*directValue) = End;
     } else if (pattern == IfString) {
@@ -40,8 +38,6 @@ void plasma::lexer::lexer::guessKind(const std::string &pattern, uint8_t *kind, 
         (*directValue) = Case;
     } else if (pattern == DefaultString) {
         (*directValue) = Default;
-    } else if (pattern == YieldString) {
-        (*directValue) = Yield;
     } else if (pattern == ReturnString) {
         (*directValue) = Return;
     } else if (pattern == ContinueString) {

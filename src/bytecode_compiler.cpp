@@ -781,31 +781,33 @@ struct elif_information {
 };
 
 bool plasma::ast::IfStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-
+    return false;
 }
 
 bool plasma::ast::UnlessStatement::compile(std::vector<vm::instruction> *result,
                                            plasma::error::error *compilationError) {
-
+    return false;
 }
 
 bool plasma::ast::SwitchStatement::compile(std::vector<vm::instruction> *result,
                                            plasma::error::error *compilationError) {
-
+    return false;
 }
 
 bool plasma::ast::WhileStatement::compile(std::vector<vm::instruction> *result,
                                           plasma::error::error *compilationError) {
+    return false;
 }
 
 bool plasma::ast::UntilStatement::compile(std::vector<vm::instruction> *result,
                                           plasma::error::error *compilationError) {
+    return false;
 
 }
 
 bool plasma::ast::DoWhileStatement::compile(std::vector<vm::instruction> *result,
                                             plasma::error::error *compilationError) {
-
+    return false;
 }
 
 bool plasma::ast::RedoStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
@@ -907,7 +909,7 @@ bool plasma::ast::InterfaceStatement::compile(std::vector<vm::instruction> *resu
 }
 
 bool plasma::ast::ForStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-
+    return false;
 }
 
 struct except_block {
@@ -917,15 +919,17 @@ struct except_block {
 };
 
 bool plasma::ast::TryStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-
+    return false;
 }
 
 bool
 plasma::ast::BeginStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+    return false;
 }
 
 bool
 plasma::ast::EndStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
+    return false;
 }
 
 bool

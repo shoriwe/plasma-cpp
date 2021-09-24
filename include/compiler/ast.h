@@ -150,7 +150,7 @@ namespace plasma::ast {
         std::vector<KeyValue *> KeyValues;
     };
 
-    struct Identifier : public Node {
+    struct Identifier : public Expression {
         explicit Identifier(lexer::token token) : Token(std::move(token)) { this->TypeID = IdentifierID; }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
@@ -205,7 +205,7 @@ namespace plasma::ast {
     struct ReturnStatement : public Node {
         explicit ReturnStatement(std::vector<Expression *> results) {
             this->TypeID = ReturnID;
-            this->Results = std::move(Results);
+            this->Results = std::move(results);
         }
 
         ~ReturnStatement() {
@@ -279,7 +279,7 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
-        Expression *X;
+        Expression *X = nullptr;
         Identifier *Identifier;
     };
 

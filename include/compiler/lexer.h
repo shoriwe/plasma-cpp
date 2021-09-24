@@ -40,7 +40,6 @@ namespace plasma::lexer {
     const char CommentChar = '#';
     const char BackSlashChar = '\\';
     const char PassString[] = "pass";
-    const char SuperString[] = "super";
     const char EndString[] = "end";
     const char IfString[] = "if";
     const char UnlessString[] = "unless";
@@ -53,7 +52,6 @@ namespace plasma::lexer {
     const char SwitchString[] = "switch";
     const char CaseString[] = "case";
     const char DefaultString[] = "default";
-    const char YieldString[] = "yield";
     const char ReturnString[] = "return";
     const char ContinueString[] = "continue";
     const char BreakString[] = "break";
@@ -115,7 +113,6 @@ namespace plasma::lexer {
         SemiColon,
         NewLine,
         Pass,
-        Super,
         End,
         If,
         Unless,
@@ -130,7 +127,6 @@ namespace plasma::lexer {
         Switch,
         Case,
         Default,
-        Yield,
         Return,
         Continue,
         Break,
