@@ -408,13 +408,76 @@ bool plasma::ast::ParenthesesExpression::compile(std::vector<vm::instruction> *r
 
 bool plasma::ast::IfOneLinerExpression::compile(std::vector<vm::instruction> *result,
                                                 plasma::error::error *compilationError) {
-
-    return false;
+    if (!this->Condition->compile_and_push(true, result, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> ifResult;
+    if (!this->Result->compile_and_push(true, &ifResult, compilationError)) {
+        return false;
+    }
+    ifResult.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1),
+            }
+    );
+    std::vector<plasma::vm::instruction> elseResult;
+    if (!this->ElseResult->compile_and_push(true, &elseResult, compilationError)) {
+        return false;
+    }
+    elseResult.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1),
+            }
+    );
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::IfOneLinerOP,
+                    .value = plasma::vm::condition_information{
+                            .body = ifResult,
+                            .elseBody = elseResult
+                    }
+            }
+    );
+    return true;
 }
 
 bool plasma::ast::UnlessOneLinerExpression::compile(std::vector<vm::instruction> *result,
                                                     plasma::error::error *compilationError) {
-    return false;
+    if (!this->Condition->compile_and_push(true, result, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> unlessResult;
+    if (!this->Result->compile_and_push(true, &unlessResult, compilationError)) {
+        return false;
+    }
+    unlessResult.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1),
+            }
+    );
+    std::vector<plasma::vm::instruction> elseResult;
+    if (!this->ElseResult->compile_and_push(true, &elseResult, compilationError)) {
+        return false;
+    }
+    elseResult.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1),
+            }
+    );
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UnlessOneLinerOP,
+                    .value = plasma::vm::condition_information{
+                            .body = unlessResult,
+                            .elseBody = elseResult
+                    }
+            }
+    );
+    return true;
 }
 
 bool plasma::ast::LambdaExpression::compile(std::vector<vm::instruction> *result,

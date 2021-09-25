@@ -220,6 +220,7 @@ plasma::vm::value *plasma::vm::virtual_machine::binary_op(context *c, uint8_t in
             break;
         default:
             // Fixme
+            throw std::exception("OP NOT IMPLEMENTED");
             break;
     }
     auto leftHandSide = c->pop_value();
@@ -482,16 +483,16 @@ plasma::vm::value *plasma::vm::virtual_machine::return_op(context *c, size_t num
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::if_op(context *c, condition_information conditionInformation) {
+plasma::vm::virtual_machine::if_op(context *c, const condition_information& conditionInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
-    auto bc = bytecode{
+    auto conditionBytecode = bytecode{
             .instructions = conditionInformation.condition,
             .index = 0
     };
     bool success = false;
-    auto condition = this->execute(c, &bc, &success);
+    auto condition = this->execute(c, &conditionBytecode, &success);
     if (!success) {
         return condition;
     }
@@ -501,7 +502,6 @@ plasma::vm::virtual_machine::if_op(context *c, condition_information conditionIn
     if (interpretationError != nullptr) {
         return interpretationError;
     }
-
     success = false;
     value *result;
     if (isTrue) {
@@ -525,7 +525,7 @@ plasma::vm::virtual_machine::if_op(context *c, condition_information conditionIn
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::unless_op(context *c, condition_information conditionInformation) {
+plasma::vm::virtual_machine::unless_op(context *c, const condition_information& conditionInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
@@ -567,16 +567,52 @@ plasma::vm::virtual_machine::unless_op(context *c, condition_information conditi
     return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::reverse_if_jump_op(context *c, bytecode *bc, size_t jump) {
-
+plasma::vm::value *
+plasma::vm::virtual_machine::if_one_liner_op(context *c, const condition_information& conditionInformation) {
+    bool asBool = false;
+    auto interpretationError = this->interpret_as_boolean(c, c->pop_value(), &asBool);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    bytecode toExecute{
+            .index = 0
+    };
+    if (asBool) {
+        toExecute.instructions = conditionInformation.body;
+    } else {
+        toExecute.instructions = conditionInformation.elseBody;
+    }
+    bool success;
+    auto result = this->execute(c, &toExecute, &success);
+    if (!success) {
+        return result;
+    }
+    c->lastObject = result;
+    return nullptr;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::unless_jump_op(context *c, bytecode *bc, size_t jump) {
-
-}
-
-plasma::vm::value *plasma::vm::virtual_machine::reverse_unless_jump_op(context *c, bytecode *bc, size_t jump) {
-
+plasma::vm::value *
+plasma::vm::virtual_machine::unless_one_liner_op(context *c, const condition_information& conditionInformation) {
+    bool asBool = false;
+    auto interpretationError = this->interpret_as_boolean(c, c->pop_value(), &asBool);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+    bytecode toExecute{
+            .index = 0
+    };
+    if (!asBool) {
+        toExecute.instructions = conditionInformation.body;
+    } else {
+        toExecute.instructions = conditionInformation.elseBody;
+    }
+    bool success;
+    auto result = this->execute(c, &toExecute, &success);
+    if (!success) {
+        return result;
+    }
+    c->lastObject = result;
+    return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_lambda_function_op(context *c, bytecode *bc,
@@ -747,63 +783,6 @@ plasma::vm::value *plasma::vm::virtual_machine::new_module_op(context *c, byteco
 
     c->peek_symbol_table()->set(moduleInformation.name, result);
     return nullptr;
-}
-
-plasma::vm::value *
-plasma::vm::virtual_machine::prepare_for_loop_op(context *c) {
-    bool success = false;
-    auto asIter = this->interpret_as_iterator(c, c->pop_value(), &success);
-    if (success) {
-        c->push_value(asIter);
-        return nullptr;
-    }
-    return asIter;
-}
-
-plasma::vm::value *
-plasma::vm::virtual_machine::unpack_for_loop_op(context *c,
-                                                bytecode *bc,
-                                                const for_loop_information &forLoopInformation) {
-    auto state = c->protected_values_state();
-    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
-
-    auto source = c->peek_value();
-
-    bool symbolFound = false;
-    auto hasNext = source->get(c, this, HasNext, &symbolFound);
-    if (!symbolFound) {
-        return hasNext;
-    }
-    c->protect_value(hasNext);
-
-    bool callSuccess = false;
-    auto hasNextRawResult = this->call_function(c, hasNext, std::vector<value *>{}, &callSuccess);
-    if (!callSuccess) {
-        return hasNextRawResult;
-    }
-    c->protect_value(hasNextRawResult);
-
-    bool hasNextResult = false;
-    auto interpretationError = this->interpret_as_boolean(c, hasNextRawResult, &hasNextResult);
-    if (interpretationError != nullptr) {
-        return interpretationError;
-    }
-    if (!hasNextResult) {
-        // Do the jump to the end and return
-        bc->jump(forLoopInformation.onFinishJump);
-        return nullptr;
-    }
-
-    std::vector<value *> values;
-    values.reserve(forLoopInformation.receivers.size());
-    auto unpackError = this->unpack_values(c, source, forLoopInformation.receivers.size(), &values);
-    if (unpackError == nullptr) {
-        for (size_t index = 0; index < forLoopInformation.receivers.size(); index++) {
-            c->peek_symbol_table()->set(forLoopInformation.receivers[index], values[index]);
-        }
-        return nullptr;
-    }
-    return unpackError;
 }
 
 struct except_block_code {
@@ -1008,7 +987,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->new_class_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
             case IfOP:
-                executionError = this->if_op(c, std::any_cast<condition_information *>(instruct.value));
+                executionError = this->if_op(c, std::any_cast<condition_information>(instruct.value));
                 if (executionError != nullptr) {
                     (*success) = false;
                     return executionError;
@@ -1024,8 +1003,9 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                         c->lastObject = nullptr;
                         return c->lastObject;
                 }
+                break;
             case UnlessOP:
-                executionError = this->unless_op(c, std::any_cast<condition_information *>(instruct.value));
+                executionError = this->unless_op(c, std::any_cast<condition_information>(instruct.value));
                 if (executionError != nullptr) {
                     (*success) = false;
                     return executionError;
@@ -1041,6 +1021,13 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                         c->lastObject = nullptr;
                         return c->lastObject;
                 }
+                break;
+            case IfOneLinerOP:
+                executionError = this->if_one_liner_op(c, std::any_cast<condition_information>(instruct.value));
+                break;
+            case UnlessOneLinerOP:
+                executionError = this->unless_one_liner_op(c, std::any_cast<condition_information>(instruct.value));
+                break;
             case NewClassFunctionOP:
                 executionError = this->new_class_function_op(c, bc,
                                                              std::any_cast<function_information>(instruct.value));
@@ -1081,6 +1068,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 break;
             default:
                 // FixMe: Do something when
+                throw std::exception("OP NOT IMPLEMENTED");
                 break;
         }
         if (executionError != nullptr) {
