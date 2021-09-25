@@ -483,40 +483,26 @@ plasma::vm::value *plasma::vm::virtual_machine::return_op(context *c, size_t num
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::if_op(context *c, const condition_information& conditionInformation) {
+plasma::vm::virtual_machine::if_op(context *c, const condition_information &conditionInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
-    auto conditionBytecode = bytecode{
-            .instructions = conditionInformation.condition,
-            .index = 0
-    };
-    bool success = false;
-    auto condition = this->execute(c, &conditionBytecode, &success);
-    if (!success) {
-        return condition;
-    }
-    c->protect_value(condition);
     bool isTrue = false;
-    auto interpretationError = this->interpret_as_boolean(c, condition, &isTrue);
+    auto interpretationError = this->interpret_as_boolean(c, c->pop_value(), &isTrue);
     if (interpretationError != nullptr) {
         return interpretationError;
     }
-    success = false;
+    bool success = false;
     value *result;
+    auto code = bytecode{
+            .index = 0
+    };
     if (isTrue) {
-        auto body = bytecode{
-                .instructions = conditionInformation.body,
-                .index = 0
-        };
-        result = this->execute(c, &body, &success);
+        code.instructions = conditionInformation.body;
     } else {
-        auto elseBody = bytecode{
-                .instructions = conditionInformation.body,
-                .index = 0
-        };
-        result = this->execute(c, &elseBody, &success);
+        code.instructions = conditionInformation.elseBody;
     }
+    result = this->execute(c, &code, &success);
     if (!success) {
         return result;
     }
@@ -525,41 +511,27 @@ plasma::vm::virtual_machine::if_op(context *c, const condition_information& cond
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::unless_op(context *c, const condition_information& conditionInformation) {
+plasma::vm::virtual_machine::unless_op(context *c, const condition_information &conditionInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
-    auto bc = bytecode{
-            .instructions = conditionInformation.condition,
-            .index = 0
-    };
-    bool success = false;
-    auto condition = this->execute(c, &bc, &success);
-    if (!success) {
-        return condition;
-    }
-    c->protect_value(condition);
     bool isTrue = false;
-    auto interpretationError = this->interpret_as_boolean(c, condition, &isTrue);
+    auto interpretationError = this->interpret_as_boolean(c, c->pop_value(), &isTrue);
     if (interpretationError != nullptr) {
         return interpretationError;
     }
 
-    success = false;
+    bool success = false;
     value *result;
+    auto code = bytecode{
+            .index = 0
+    };
     if (!isTrue) {
-        auto body = bytecode{
-                .instructions = conditionInformation.body,
-                .index = 0
-        };
-        result = this->execute(c, &body, &success);
+        code.instructions = conditionInformation.body;
     } else {
-        auto elseBody = bytecode{
-                .instructions = conditionInformation.body,
-                .index = 0
-        };
-        result = this->execute(c, &elseBody, &success);
+        code.instructions = conditionInformation.elseBody;
     }
+    result = this->execute(c, &code, &success);
     if (!success) {
         return result;
     }
@@ -568,7 +540,7 @@ plasma::vm::virtual_machine::unless_op(context *c, const condition_information& 
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::if_one_liner_op(context *c, const condition_information& conditionInformation) {
+plasma::vm::virtual_machine::if_one_liner_op(context *c, const condition_information &conditionInformation) {
     bool asBool = false;
     auto interpretationError = this->interpret_as_boolean(c, c->pop_value(), &asBool);
     if (interpretationError != nullptr) {
@@ -592,7 +564,7 @@ plasma::vm::virtual_machine::if_one_liner_op(context *c, const condition_informa
 }
 
 plasma::vm::value *
-plasma::vm::virtual_machine::unless_one_liner_op(context *c, const condition_information& conditionInformation) {
+plasma::vm::virtual_machine::unless_one_liner_op(context *c, const condition_information &conditionInformation) {
     bool asBool = false;
     auto interpretationError = this->interpret_as_boolean(c, c->pop_value(), &asBool);
     if (interpretationError != nullptr) {
@@ -1001,7 +973,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                         // Leave alone so it get propagated
                         result = c->lastObject;
                         c->lastObject = nullptr;
-                        return c->lastObject;
+                        return result;
                 }
                 break;
             case UnlessOP:
@@ -1019,7 +991,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                         // Leave alone so it get propagated
                         result = c->lastObject;
                         c->lastObject = nullptr;
-                        return c->lastObject;
+                        return result;
                 }
                 break;
             case IfOneLinerOP:

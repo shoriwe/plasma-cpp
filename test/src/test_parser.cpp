@@ -351,16 +351,18 @@ static std::string reconstruct_if_statement(plasma::ast::IfStatement *x) {
     for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
-    for (plasma::ast::ElifBlock *elif : x->ElifBlocks) {
-        result += "\nelif " + replace(reconstruct_node(elif->Condition), "\n", "\n\t");
-        for (plasma::ast::Node *node : elif->Body) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
-        }
-    }
     if (!x->Else.empty()) {
-        result += "\nelse";
-        for (plasma::ast::Node *node : x->Else) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        if (x->Else.size() == 1 && x->Else[0]->TypeID == plasma::ast::IfID) {
+            auto elif = dynamic_cast<plasma::ast::IfStatement *>(x->Else[0]);
+            result += "\nelif " + replace(reconstruct_node(elif->Condition), "\n", "\n\t");
+            for (plasma::ast::Node *node : elif->Body) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
+        } else {
+            result += "\nelse";
+            for (plasma::ast::Node *node : x->Else) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
         }
     }
     result += "\nend";
@@ -372,16 +374,18 @@ static std::string reconstruct_unless_statement(plasma::ast::UnlessStatement *x)
     for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
-    for (plasma::ast::ElifBlock *elif : x->ElifBlocks) {
-        result += "\nelif " + reconstruct_node(elif->Condition);
-        for (plasma::ast::Node *node : elif->Body) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
-        }
-    }
     if (!x->Else.empty()) {
-        result += "\nelse";
-        for (plasma::ast::Node *node : x->Else) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+        if (x->Else.size() == 1 && x->Else[0]->TypeID == plasma::ast::UnlessID) {
+            auto elif = dynamic_cast<plasma::ast::UnlessStatement *>(x->Else[0]);
+            result += "\nelif " + replace(reconstruct_node(elif->Condition), "\n", "\n\t");
+            for (plasma::ast::Node *node : elif->Body) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
+        } else {
+            result += "\nelse";
+            for (plasma::ast::Node *node : x->Else) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
         }
     }
     result += "\nend";

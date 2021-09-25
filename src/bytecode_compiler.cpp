@@ -778,18 +778,53 @@ bool plasma::ast::ReturnStatement::compile(std::vector<vm::instruction> *result,
     return true;
 }
 
-struct elif_information {
-    std::vector<plasma::vm::instruction> condition;
-    std::vector<plasma::vm::instruction> body;
-};
-
 bool plasma::ast::IfStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-    return false;
+    if (!this->Condition->compile_and_push(true, result, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> ifBody;
+    if (!compile_body(this->Body, &ifBody, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> elseBody;
+    if (!compile_body(this->Else, &elseBody, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::IfOP,
+                    .value = plasma::vm::condition_information{
+                            .body = ifBody,
+                            .elseBody = elseBody
+                    }
+            }
+    );
+    return true;
 }
 
 bool plasma::ast::UnlessStatement::compile(std::vector<vm::instruction> *result,
                                            plasma::error::error *compilationError) {
-    return false;
+    if (!this->Condition->compile_and_push(true, result, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> unlessBody;
+    if (!compile_body(this->Body, &unlessBody, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> elseBody;
+    if (!compile_body(this->Else, &elseBody, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UnlessOP,
+                    .value = plasma::vm::condition_information{
+                            .body = unlessBody,
+                            .elseBody = elseBody
+                    }
+            }
+    );
+    return true;
 }
 
 bool plasma::ast::SwitchStatement::compile(std::vector<vm::instruction> *result,

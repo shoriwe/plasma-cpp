@@ -634,7 +634,12 @@ plasma::ast::IfStatement *plasma::parser::parser::parseIfStatement() {
         }
         body.push_back(this->parseBinaryExpression(0));
     }
-    std::vector<ast::ElifBlock *> elifBlocks;
+    auto rootIf = new ast::IfStatement(
+            dynamic_cast<ast::Expression *>(condition),
+            body,
+            std::vector<ast::Node *>()
+    );
+    ast::IfStatement *lastIfBlock = rootIf;
     if (this->directValueMatch(lexer::Elif)) {
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -670,19 +675,19 @@ plasma::ast::IfStatement *plasma::parser::parser::parseIfStatement() {
                 }
                 elifBody.push_back(this->parseBinaryExpression(0));
             }
-            elifBlocks.push_back(
-                    new ast::ElifBlock(
-                            dynamic_cast<ast::Expression *>(elifCondition),
-                            elifBody
-                    )
+            auto newLastIf = new ast::IfStatement(
+                    dynamic_cast<ast::Expression *>(elifCondition),
+                    elifBody,
+                    std::vector<ast::Node *>()
             );
+            lastIfBlock->Else.push_back(newLastIf);
+            lastIfBlock = newLastIf;
             if (this->directValueMatch(lexer::Else) ||
                 this->directValueMatch(lexer::End)) {
                 break;
             }
         }
     }
-    std::vector<ast::Node *> elseBody;
     if (this->directValueMatch(lexer::Else)) {
         this->next();
         if (!this->directValueMatch(lexer::NewLine)) {
@@ -696,19 +701,14 @@ plasma::ast::IfStatement *plasma::parser::parser::parseIfStatement() {
                 }
                 continue;
             }
-            elseBody.push_back(this->parseBinaryExpression(0));
+            lastIfBlock->Else.push_back(this->parseBinaryExpression(0));
         }
     }
     if (!this->directValueMatch(lexer::End)) {
         throw newStatementNeverEndedError(this->currentLine(), IfStatement);
     }
     this->next();
-    return new ast::IfStatement(
-            dynamic_cast<ast::Expression *>(condition),
-            body,
-            elifBlocks,
-            elseBody
-    );
+    return rootIf;
 }
 
 
@@ -718,10 +718,10 @@ plasma::ast::UnlessStatement *plasma::parser::parser::parseUnlessStatement() {
     int line = this->currentLine();
     ast::Node *condition = this->parseBinaryExpression(0);
     if (!ast::isExpression(condition)) {
-        throw newNonExpressionReceivedError(this->currentLine(), IfStatement);
+        throw newNonExpressionReceivedError(this->currentLine(), UnlessStatement);
     }
     if (!this->directValueMatch(lexer::NewLine)) {
-        throw newSyntaxError(this->currentLine(), IfStatement);
+        throw newSyntaxError(this->currentLine(), UnlessStatement);
     }
     std::vector<ast::Node *> body;
     while (this->hasNext()) {
@@ -736,7 +736,12 @@ plasma::ast::UnlessStatement *plasma::parser::parser::parseUnlessStatement() {
         }
         body.push_back(this->parseBinaryExpression(0));
     }
-    std::vector<ast::ElifBlock *> elifBlocks;
+    auto rootUnless = new ast::UnlessStatement(
+            dynamic_cast<ast::Expression *>(condition),
+            body,
+            std::vector<ast::Node *>()
+    );
+    ast::UnlessStatement *lastUnlessBlock = rootUnless;
     if (this->directValueMatch(lexer::Elif)) {
         while (this->hasNext()) {
             if (this->kindMatch(lexer::Separator)) {
@@ -748,7 +753,7 @@ plasma::ast::UnlessStatement *plasma::parser::parser::parseUnlessStatement() {
                 continue;
             }
             if (!this->directValueMatch(lexer::Elif)) {
-                throw newSyntaxError(this->currentLine(), IfStatement);
+                throw newSyntaxError(this->currentLine(), UnlessStatement);
             }
             this->next();
             this->removeNewLines();
@@ -772,19 +777,19 @@ plasma::ast::UnlessStatement *plasma::parser::parser::parseUnlessStatement() {
                 }
                 elifBody.push_back(this->parseBinaryExpression(0));
             }
-            elifBlocks.push_back(
-                    new ast::ElifBlock(
-                            dynamic_cast<ast::Expression *>(elifCondition),
-                            elifBody
-                    )
+            auto newLastUnless = new ast::UnlessStatement(
+                    dynamic_cast<ast::Expression *>(elifCondition),
+                    elifBody,
+                    std::vector<ast::Node *>()
             );
+            lastUnlessBlock->Else.push_back(newLastUnless);
+            lastUnlessBlock = newLastUnless;
             if (this->directValueMatch(lexer::Else) ||
                 this->directValueMatch(lexer::End)) {
                 break;
             }
         }
     }
-    std::vector<ast::Node *> elseBody;
     if (this->directValueMatch(lexer::Else)) {
         this->next();
         if (!this->directValueMatch(lexer::NewLine)) {
@@ -798,19 +803,14 @@ plasma::ast::UnlessStatement *plasma::parser::parser::parseUnlessStatement() {
                 }
                 continue;
             }
-            elseBody.push_back(this->parseBinaryExpression(0));
+            lastUnlessBlock->Else.push_back(this->parseBinaryExpression(0));
         }
     }
     if (!this->directValueMatch(lexer::End)) {
-        throw newStatementNeverEndedError(this->currentLine(), IfStatement);
+        throw newStatementNeverEndedError(this->currentLine(), UnlessStatement);
     }
     this->next();
-    return new ast::UnlessStatement(
-            dynamic_cast<ast::Expression *>(condition),
-            body,
-            elifBlocks,
-            elseBody
-    );
+    return rootUnless;
 }
 
 plasma::ast::SwitchStatement *plasma::parser::parser::parseSwitchStatement() {

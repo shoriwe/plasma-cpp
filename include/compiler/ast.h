@@ -524,31 +524,12 @@ namespace plasma::ast {
         std::vector<Node *> Body;
     };
 
-    struct ElifBlock {
-        ElifBlock(Expression *condition, std::vector<Node *> body) {
-            this->Condition = condition;
-            this->Body = body;
-        }
-
-        ~ElifBlock() {
-            delete this->Condition;
-            for (Node *node : this->Body) {
-                delete node;
-            }
-            this->Body.clear();
-        }
-
-        Expression *Condition;
-        std::vector<Node *> Body;
-    };
-
     struct IfStatement : public Node {
-        IfStatement(Expression *condition, std::vector<Node *> body, std::vector<ElifBlock *> elifBlocks,
+        IfStatement(Expression *condition, std::vector<Node *> body,
                     std::vector<Node *> elseBody) {
             this->TypeID = IfID;
             this->Condition = condition;
             this->Body = body;
-            this->ElifBlocks = elifBlocks;
             this->Else = elseBody;
         }
 
@@ -558,11 +539,6 @@ namespace plasma::ast {
                 delete node;
             }
             this->Body.clear();
-
-            for (ElifBlock *elifBlock: this->ElifBlocks) {
-                delete elifBlock;
-            }
-            this->ElifBlocks.clear();
 
             for (Node *node: this->Else) {
                 delete node;
@@ -574,17 +550,15 @@ namespace plasma::ast {
 
         Expression *Condition;
         std::vector<Node *> Body;
-        std::vector<ElifBlock *> ElifBlocks;
         std::vector<Node *> Else;
     };
 
     struct UnlessStatement : public Node {
-        UnlessStatement(Expression *condition, std::vector<Node *> body, std::vector<ElifBlock *> elifBlocks,
+        UnlessStatement(Expression *condition, std::vector<Node *> body,
                         std::vector<Node *> elseBody) {
             this->TypeID = UnlessID;
             this->Condition = condition;
             this->Body = body;
-            this->ElifBlocks = elifBlocks;
             this->Else = elseBody;
         }
 
@@ -596,11 +570,6 @@ namespace plasma::ast {
             }
             this->Body.clear();
 
-            for (ElifBlock *elifBlock: this->ElifBlocks) {
-                delete elifBlock;
-            }
-            this->ElifBlocks.clear();
-
             for (Node *node: this->Else) {
                 delete node;
             }
@@ -611,7 +580,6 @@ namespace plasma::ast {
 
         Expression *Condition;
         std::vector<Node *> Body;
-        std::vector<ElifBlock *> ElifBlocks;
         std::vector<Node *> Else;
     };
 

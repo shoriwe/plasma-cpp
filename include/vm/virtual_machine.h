@@ -312,7 +312,6 @@ namespace plasma::vm {
     };
 
     struct condition_information {
-        std::vector<instruction> condition;
         std::vector<instruction> body;
         std::vector<instruction> elseBody;
     };
