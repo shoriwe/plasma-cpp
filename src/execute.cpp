@@ -464,7 +464,7 @@ plasma::vm::value *plasma::vm::virtual_machine::return_op(context *c, size_t num
 
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
-
+    c->lastState = Return;
     if (numberOfReturnValues == 0) {
         return this->get_none(c);
     } else if (numberOfReturnValues == 1) {
@@ -481,83 +481,102 @@ plasma::vm::value *plasma::vm::virtual_machine::return_op(context *c, size_t num
     return result;
 }
 
-plasma::vm::value *plasma::vm::virtual_machine::if_jump_op(context *c, bytecode *bc, size_t jump) {
-
+plasma::vm::value *
+plasma::vm::virtual_machine::if_op(context *c, condition_information conditionInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
-    auto condition = c->pop_value();
-
+    auto bc = bytecode{
+            .instructions = conditionInformation.condition,
+            .index = 0
+    };
+    bool success = false;
+    auto condition = this->execute(c, &bc, &success);
+    if (!success) {
+        return condition;
+    }
     c->protect_value(condition);
-
-    bool result = false;
-    auto interpretationError = interpret_as_boolean(c, condition, &result);
+    bool isTrue = false;
+    auto interpretationError = this->interpret_as_boolean(c, condition, &isTrue);
     if (interpretationError != nullptr) {
         return interpretationError;
     }
-    if (!result) {
-        bc->jump(jump);
+
+    success = false;
+    value *result;
+    if (isTrue) {
+        auto body = bytecode{
+                .instructions = conditionInformation.body,
+                .index = 0
+        };
+        result = this->execute(c, &body, &success);
+    } else {
+        auto elseBody = bytecode{
+                .instructions = conditionInformation.body,
+                .index = 0
+        };
+        result = this->execute(c, &elseBody, &success);
     }
+    if (!success) {
+        return result;
+    }
+    c->lastObject = result;
+    return nullptr;
+}
+
+plasma::vm::value *
+plasma::vm::virtual_machine::unless_op(context *c, condition_information conditionInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto bc = bytecode{
+            .instructions = conditionInformation.condition,
+            .index = 0
+    };
+    bool success = false;
+    auto condition = this->execute(c, &bc, &success);
+    if (!success) {
+        return condition;
+    }
+    c->protect_value(condition);
+    bool isTrue = false;
+    auto interpretationError = this->interpret_as_boolean(c, condition, &isTrue);
+    if (interpretationError != nullptr) {
+        return interpretationError;
+    }
+
+    success = false;
+    value *result;
+    if (!isTrue) {
+        auto body = bytecode{
+                .instructions = conditionInformation.body,
+                .index = 0
+        };
+        result = this->execute(c, &body, &success);
+    } else {
+        auto elseBody = bytecode{
+                .instructions = conditionInformation.body,
+                .index = 0
+        };
+        result = this->execute(c, &elseBody, &success);
+    }
+    if (!success) {
+        return result;
+    }
+    c->lastObject = result;
     return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::reverse_if_jump_op(context *c, bytecode *bc, size_t jump) {
 
-    auto state = c->protected_values_state();
-    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
-
-    auto condition = c->pop_value();
-
-    c->protect_value(condition);
-
-    bool result = false;
-    auto interpretationError = interpret_as_boolean(c, condition, &result);
-    if (interpretationError != nullptr) {
-        return interpretationError;
-    }
-    if (!result) {
-        bc->rjump(jump);
-    }
-    return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::unless_jump_op(context *c, bytecode *bc, size_t jump) {
 
-    auto state = c->protected_values_state();
-    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
-
-    auto condition = c->pop_value();
-
-    c->protect_value(condition);
-
-    bool result = false;
-    auto interpretationError = interpret_as_boolean(c, condition, &result);
-    if (interpretationError != nullptr) {
-        return interpretationError;
-    }
-    if (result) {
-        bc->jump(jump);
-    }
-    return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::reverse_unless_jump_op(context *c, bytecode *bc, size_t jump) {
 
-    auto state = c->protected_values_state();
-    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
-
-    auto condition = c->pop_value();
-    c->protect_value(condition);
-
-    bool result = false;
-    auto interpretationError = interpret_as_boolean(c, condition, &result);
-    if (interpretationError != nullptr) {
-        return interpretationError;
-    }
-    if (result) {
-        bc->rjump(jump);
-    }
-    return nullptr;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::new_lambda_function_op(context *c, bytecode *bc,
@@ -824,7 +843,7 @@ plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
 
     if (success) {
         if (executionError->typeId != NoneType) {
-            std::cout << "RETURNING RESULT FROM EXCEPT\n";
+
             c->push_value(executionError);
             return nullptr;
         }
@@ -857,10 +876,10 @@ plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
 
         bool containsErrorResult = false;
         if (targets->content.empty()) {
-            std::cout << "EMPTY\n";
+
             containsErrorResult = true;
         } else {
-            std::cout << "CHECKING\n";
+
             auto containsError = this->content_contains(
                     c,
                     targets,
@@ -868,15 +887,15 @@ plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
                     &containsErrorResult
             );
             if (containsError != nullptr) {
-                std::cout << "ERROR\n";
+
                 return containsError;
             }
         }
-        std::cout << "HERE\n";
+
         if (containsErrorResult) {
-            std::cout << "EXISTS\n";
+
             if (!exceptBlock.captureName.empty()) {
-                std::cout << "ASSIGNED\n";
+
                 c->peek_symbol_table()->set(exceptBlock.captureName, executionError);
             }
             // Execute body
@@ -887,19 +906,18 @@ plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
             success = false;
             auto exceptExecutionError = this->execute(c, &exceptBody, &success);
             if (!success) {
-                std::cout << "EXCEPT FAILED TOO\n";
                 return exceptExecutionError;
             }
             c->protect_value(exceptExecutionError);
 
             if (exceptExecutionError->typeId != NoneType) {
-                std::cout << "RETURNING RESULT FROM EXCEPT\n";
+
                 c->push_value(exceptExecutionError);
                 return nullptr;
             }
 
             // Execute finally
-            std::cout << "EXECUTING FINALLY FROM EXCEPT\n";
+
             if (finallyCode.instructions.empty()) {
                 return nullptr;
             }
@@ -916,15 +934,17 @@ plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
             return nullptr;
         }
     }
-    std::cout << "FAILED\n";
+
     return executionError;
 }
 
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
+    value *result = nullptr;
     while (bc->has_next()) {
+        c->lastState = NoState;
         instruction instruct = bc->next();
-        // std::cout << std::to_string(instruct.op_code) << std::endl;
+        // 
         switch (instruct.op_code) {
             case NewStringOP:
                 executionError = this->new_string_op(c, std::any_cast<std::string>(instruct.value));
@@ -974,12 +994,6 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case MethodInvocationOP:
                 executionError = this->method_invocation_op(c, std::any_cast<size_t>(instruct.value));
                 break;
-            case JumpOP:
-                bc->jump(std::any_cast<size_t>(instruct.value));
-                break;
-            case RJumpOP:
-                bc->rjump(std::any_cast<size_t>(instruct.value));
-                break;
             case AssignIdentifierOP:
                 executionError = this->assign_identifier_op(c, std::any_cast<std::string>(instruct.value));
                 break;
@@ -993,6 +1007,40 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case NewClassOP:
                 executionError = this->new_class_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
+            case IfOP:
+                executionError = this->if_op(c, std::any_cast<condition_information *>(instruct.value));
+                if (executionError != nullptr) {
+                    (*success) = false;
+                    return executionError;
+                }
+                switch (c->lastState) {
+                    case Continue:
+                    case Break:
+                    case Redo:
+                        return this->get_none(c);
+                    case Return:
+                        // Leave alone so it get propagated
+                        result = c->lastObject;
+                        c->lastObject = nullptr;
+                        return c->lastObject;
+                }
+            case UnlessOP:
+                executionError = this->unless_op(c, std::any_cast<condition_information *>(instruct.value));
+                if (executionError != nullptr) {
+                    (*success) = false;
+                    return executionError;
+                }
+                switch (c->lastState) {
+                    case Continue:
+                    case Break:
+                    case Redo:
+                        return this->get_none(c);
+                    case Return:
+                        // Leave alone so it get propagated
+                        result = c->lastObject;
+                        c->lastObject = nullptr;
+                        return c->lastObject;
+                }
             case NewClassFunctionOP:
                 executionError = this->new_class_function_op(c, bc,
                                                              std::any_cast<function_information>(instruct.value));
@@ -1017,18 +1065,6 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                     c->push_value(c->lastObject);
                 }
                 break;
-            case IfJumpOP:
-                executionError = this->if_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
-                break;
-            case UnlessJumpOP:
-                executionError = this->unless_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
-                break;
-            case RIfJumpOP:
-                executionError = this->reverse_if_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
-                break;
-            case RUnlessJumpOP:
-                executionError = this->reverse_unless_jump_op(c, bc, std::any_cast<size_t>(instruct.value));
-                break;
             case NOP:
                 break;
             case ReturnOP:
@@ -1039,12 +1075,6 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 break;
             case NewModuleOP:
                 executionError = this->new_module_op(c, bc, std::any_cast<class_information>(instruct.value));
-                break;
-            case PrepareForLoopOP:
-                executionError = this->prepare_for_loop_op(c);
-                break;
-            case UnpackForLoopOP:
-                executionError = this->unpack_for_loop_op(c, bc, std::any_cast<for_loop_information>(instruct.value));
                 break;
             case TryOP:
                 executionError = this->execute_try_block(c, bc, std::any_cast<try_block_information>(instruct.value));

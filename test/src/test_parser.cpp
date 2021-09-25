@@ -114,9 +114,9 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("(1 if x < 4 else 2)");
     tests.emplace_back("True");
     tests.emplace_back("not True");
-    tests.emplace_back("1 if True");
+    tests.emplace_back("1 if True else None");
     tests.emplace_back("!True");
-    tests.emplace_back("1 unless False");
+    tests.emplace_back("1 unless False else None");
     tests.emplace_back("1 in (1, 2, 3)");
     tests.emplace_back("(1 for a in (3, 4))");
     tests.emplace_back("1\n2\n3\n[4, 5 + 6 != 11]");
@@ -327,7 +327,8 @@ static std::string reconstruct_generator_expression(plasma::ast::GeneratorExpres
  * Reconstruct statements
  */
 static std::string reconstruct_assign_statement(plasma::ast::AssignStatement *s) {
-    return reconstruct_node(s->LeftHandSide) + " " + s->AssignOperator.string + " " + reconstruct_node(s->RightHandSide);
+    return reconstruct_node(s->LeftHandSide) + " " + s->AssignOperator.string + " " +
+           reconstruct_node(s->RightHandSide);
 }
 
 static std::string reconstruct_return_statement(plasma::ast::ReturnStatement *x) {
@@ -684,7 +685,7 @@ static std::string reconstruct_code(plasma::ast::Program *program) {
         }
         result += reconstruct_node(node);
     }
-    if (program->End != nullptr){
+    if (program->End != nullptr) {
         if (!program->End->Body.empty()) {
             result += reconstruct_node(program->End);
         }

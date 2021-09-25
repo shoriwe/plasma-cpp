@@ -409,72 +409,12 @@ bool plasma::ast::ParenthesesExpression::compile(std::vector<vm::instruction> *r
 bool plasma::ast::IfOneLinerExpression::compile(std::vector<vm::instruction> *result,
                                                 plasma::error::error *compilationError) {
 
-    std::vector<plasma::vm::instruction> condition;
-    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
-        return false;
-    }
-
-    std::vector<plasma::vm::instruction> ifResult;
-    if (!this->Result->compile_and_push(true, &ifResult, compilationError)) {
-        return false;
-    }
-
-    std::vector<plasma::vm::instruction> elseResult;
-    if (!this->ElseResult->compile_and_push(true, &elseResult, compilationError)) {
-        return false;
-    }
-
-    result->insert(result->end(), condition.begin(), condition.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::IfJumpOP,
-                    .value = ifResult.size() + 1
-            }
-    );
-    result->insert(result->end(), ifResult.begin(), ifResult.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = elseResult.size()
-            }
-    );
-    result->insert(result->end(), elseResult.begin(), elseResult.end());
-    return true;
+    return false;
 }
 
 bool plasma::ast::UnlessOneLinerExpression::compile(std::vector<vm::instruction> *result,
                                                     plasma::error::error *compilationError) {
-    std::vector<plasma::vm::instruction> condition;
-    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
-        return false;
-    }
-
-    std::vector<plasma::vm::instruction> unlessResult;
-    if (!this->Result->compile_and_push(true, &unlessResult, compilationError)) {
-        return false;
-    }
-
-    std::vector<plasma::vm::instruction> elseResult;
-    if (!this->ElseResult->compile_and_push(true, &elseResult, compilationError)) {
-        return false;
-    }
-
-    result->insert(result->end(), condition.begin(), condition.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::UnlessJumpOP,
-                    .value = unlessResult.size() + 1
-            }
-    );
-    result->insert(result->end(), unlessResult.begin(), unlessResult.end());
-    result->push_back(
-            plasma::vm::instruction{
-                    .op_code = plasma::vm::JumpOP,
-                    .value = elseResult.size()
-            }
-    );
-    result->insert(result->end(), elseResult.begin(), elseResult.end());
-    return true;
+    return false;
 }
 
 bool plasma::ast::LambdaExpression::compile(std::vector<vm::instruction> *result,
@@ -621,8 +561,8 @@ bool plasma::ast::AssignStatement::compile(std::vector<vm::instruction> *result,
             result->push_back(
                     plasma::vm::instruction{
                             .op_code = plasma::vm::AssignSelectorOP,
-                            .value = std::any_cast<plasma::ast::SelectorExpression>(
-                                    this->LeftHandSide).Identifier->Token.string
+                            .value = dynamic_cast<plasma::ast::SelectorExpression *>(
+                                    this->LeftHandSide)->Identifier->Token.string
                     }
             );
             break;

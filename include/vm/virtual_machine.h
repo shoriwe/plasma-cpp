@@ -20,6 +20,15 @@
 using defer = std::shared_ptr<void>;
 
 namespace plasma::vm {
+    // Block states
+    enum {
+        NoState,
+        Return,
+        Break,
+        Continue,
+        Redo,
+    };
+
     // OP Codes
     enum {
         NewStringOP, // 0
@@ -36,6 +45,13 @@ namespace plasma::vm {
         NewArrayOP,
         NewHashOP, // 10
         NewGeneratorOP,
+
+        // If conditions
+        // FixMe:
+        IfOP,
+        UnlessOP,
+        IfOneLinerOP,
+        UnlessOneLinerOP,
 
         // Unary Expressions
         NegateBitsOP,
@@ -77,12 +93,14 @@ namespace plasma::vm {
         AssignIdentifierOP,
         AssignSelectorOP,
         AssignIndexOP,
-        IfJumpOP,
-        RIfJumpOP,
-        PrepareForLoopOP,
-        UnlessJumpOP,
-        RUnlessJumpOP,
-        UnpackForLoopOP,
+
+        // Loops
+        // FixMe:
+        ForLoopOP,
+        WhileLoopOP,
+        DoWhileLoopOP,
+        UntilLoopOP,
+
         BreakOP, // 50
         RedoOP,
         ContinueOP,
@@ -92,8 +110,6 @@ namespace plasma::vm {
         // Special Instructions
         LoadFunctionArgumentsOP,
         NewFunctionOP,
-        JumpOP,
-        RJumpOP,
         PushOP,
         NOP,
 
@@ -295,6 +311,12 @@ namespace plasma::vm {
         size_t line;
     };
 
+    struct condition_information {
+        std::vector<instruction> condition;
+        std::vector<instruction> body;
+        std::vector<instruction> elseBody;
+    };
+
     struct bytecode {
         std::vector<instruction> instructions;
         size_t index = 0;
@@ -432,6 +454,7 @@ namespace plasma::vm {
 
 
     struct context {
+        uint8_t lastState = NoState;
         std::deque<value *> objectsInUse;
         value *lastObject = nullptr;
 
@@ -772,11 +795,19 @@ namespace plasma::vm {
 
         //// Loop setup and operation
 
-        value *prepare_for_loop_op(context *c);
+        value *for_loop_op(context *c);
 
-        value *unpack_for_loop_op(context *c,
+        value *while_loop_op(context *c,
                                   bytecode *bc,
                                   const for_loop_information &forLoopInformation);
+
+        value *do_while_loop_op(context *c,
+                             bytecode *bc,
+                             const for_loop_information &forLoopInformation);
+
+        value *until_loop_op(context *c,
+                             bytecode *bc,
+                             const for_loop_information &forLoopInformation);
 
         //// Try blocks
         value *execute_try_block(context *c, bytecode *bc, const try_block_information &tryBlockInformation);
@@ -784,13 +815,13 @@ namespace plasma::vm {
         value *raise_op(context *c);
 
         //// Conditions (if, unless and switch)
-        value *if_jump_op(context *c, bytecode *bc, size_t jump);
+        value *if_op(context *c, condition_information conditionInformation);
 
-        value *unless_jump_op(context *c, bytecode *bc, size_t jump);
+        value *unless_op(context *c, condition_information conditionInformation);
 
-        value *reverse_if_jump_op(context *c, bytecode *bc, size_t jump);
+        value *if_one_liner_op(context *c, bytecode *bc, size_t jump);
 
-        value *reverse_unless_jump_op(context *c, bytecode *bc, size_t jump);
+        value *unless_one_liner_op(context *c, bytecode *bc, size_t jump);
 
         value *unary_op(context *c, uint8_t instruction);
 
