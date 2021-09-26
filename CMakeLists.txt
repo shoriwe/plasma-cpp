@@ -42,6 +42,7 @@ set(SOURCE_FILES
         src/bytecode_compiler.cpp
         src/tools.cpp
         src/runtime_errors_initialize.cpp
+        src/ast_copy.cpp
         )
 
 set(TEST_SOURCE_FILES

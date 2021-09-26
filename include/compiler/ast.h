@@ -56,10 +56,14 @@ namespace plasma::ast {
         size_t TypeID;
 
         virtual bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) = 0;
+
+        virtual Node *copy() = 0;
     };
 
     struct Expression : Node {
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) { return false; };
+
+        Node *copy() { return nullptr; };
 
         bool
         compile_and_push(bool push, std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
@@ -96,6 +100,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         std::vector<Expression *> Values;
     };
 
@@ -113,6 +119,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         std::vector<Expression *> Values;
     };
@@ -147,6 +155,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         std::vector<KeyValue *> KeyValues;
     };
 
@@ -155,6 +165,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         lexer::token Token;
     };
 
@@ -162,6 +174,8 @@ namespace plasma::ast {
         explicit BasicLiteralExpression(lexer::token token) : Token(std::move(token)) { this->TypeID = BasicLiteralID; }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         lexer::token Token;
     };
@@ -181,6 +195,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *LeftHandSide;
         lexer::token Operator;
         Expression *RightHandSide;
@@ -197,6 +213,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         lexer::token Operator;
         Expression *X;
@@ -217,6 +235,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         std::vector<Expression *> Results;
     };
 
@@ -236,6 +256,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         std::vector<Identifier *> Arguments;
         ReturnStatement *Output;
@@ -260,6 +282,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Operation;
         std::vector<Identifier *> Receivers;
         Expression *Source;
@@ -278,6 +302,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Expression *X = nullptr;
         Identifier *Identifier;
@@ -300,6 +326,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Function;
         std::vector<Expression *> Arguments;
     };
@@ -318,6 +346,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Source;
         Expression *Index;
     };
@@ -327,12 +357,10 @@ namespace plasma::ast {
             this->TypeID = IfOneLinerID;
             this->Result = result;
             this->Condition = condition;
-            this->ElseResult = dynamic_cast<Expression *>(
-                    new Identifier(
-                            lexer::token{
-                                    .string = lexer::NoneString
-                            }
-                    )
+            this->ElseResult = new Identifier(
+                    lexer::token{
+                            .string = lexer::NoneString
+                    }
             );
         }
 
@@ -351,6 +379,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Result;
         Expression *Condition;
         Expression *ElseResult;
@@ -362,12 +392,10 @@ namespace plasma::ast {
             this->TypeID = UnlessOneLinerID;
             this->Result = result;
             this->Condition = condition;
-            this->ElseResult = dynamic_cast<Expression *>(
-                    new Identifier(
-                            lexer::token{
-                                    .string = lexer::NoneString
-                            }
-                    )
+            this->ElseResult = new Identifier(
+                    lexer::token{
+                            .string = lexer::NoneString
+                    }
             );
         }
 
@@ -386,6 +414,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Result;
         Expression *Condition;
         Expression *ElseResult;
@@ -402,6 +432,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Expression *X;
     };
@@ -426,6 +458,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *LeftHandSide;
         lexer::token AssignOperator;
         Expression *RightHandSide;
@@ -447,6 +481,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Expression *Condition;
         std::vector<Node *> Body;
@@ -470,6 +506,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Condition;
         std::vector<Node *> Body;
 
@@ -491,6 +529,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Expression *Condition;
         std::vector<Node *> Body;
@@ -518,6 +558,8 @@ namespace plasma::ast {
 
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         std::vector<Identifier *> Receivers;
         Expression *Source;
@@ -548,6 +590,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Condition;
         std::vector<Node *> Body;
         std::vector<Node *> Else;
@@ -577,6 +621,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Expression *Condition;
         std::vector<Node *> Body;
@@ -628,6 +674,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Expression *Target;
         std::vector<CaseBlock *> CaseBlocks;
         std::vector<Node *> Default;
@@ -649,6 +697,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Identifier *Name;
         std::vector<Node *> Body;
@@ -676,6 +726,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Identifier *Name;
         std::vector<Identifier *> Arguments;
@@ -706,6 +758,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         Identifier *Name;
         std::vector<Expression *> Bases;
         std::vector<FunctionDefinitionStatement *> MethodDefinitions;
@@ -734,6 +788,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Identifier *Name;
         std::vector<Expression *> Bases;
@@ -802,6 +858,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         std::vector<Node *> Body;
         std::vector<ExceptBlock *> ExceptBlocks;
         std::vector<Node *> Else;
@@ -819,6 +877,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         Expression *X;
     };
@@ -838,6 +898,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         std::vector<Node *> Body;
     };
 
@@ -856,6 +918,8 @@ namespace plasma::ast {
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
 
+        Node *copy() override;
+
         std::vector<Node *> Body;
     };
 
@@ -865,6 +929,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
     };
 
     struct BreakStatement : public Node {
@@ -873,6 +939,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
     };
 
     struct RedoStatement : public Node {
@@ -881,6 +949,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
     };
 
     struct PassStatement : public Node {
@@ -889,6 +959,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
     };
 
     /*
@@ -913,6 +985,8 @@ namespace plasma::ast {
         }
 
         bool compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) override;
+
+        Node *copy() override;
 
         BeginStatement *Begin = nullptr;
         EndStatement *End = nullptr;
