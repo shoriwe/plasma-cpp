@@ -163,7 +163,7 @@ namespace plasma::parser {
 
         ast::UnlessOneLinerExpression *parseUnlessOneLinerExpression(ast::Expression *onFalseResult);
 
-        ast::GeneratorExpression *parseGeneratorExpression(ast::Expression* expression);
+        ast::GeneratorExpression *parseGeneratorExpression(ast::Expression *expression);
 
         /*
          * Parse to a Program Object

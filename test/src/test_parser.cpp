@@ -469,7 +469,7 @@ static std::string reconstruct_try_statement(plasma::ast::TryStatement *x) {
     for (plasma::ast::ExceptBlock *node : x->ExceptBlocks) {
         result += "\nexcept";
         bool first = true;
-        for (plasma::ast::Node *node2 : node->Targets) {
+        for (plasma::ast::Node *node2 : node->Targets->Values) {
             if (first) {
                 first = false;
                 result += " ";

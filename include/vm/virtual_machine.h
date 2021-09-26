@@ -266,34 +266,29 @@ namespace plasma::vm {
         size_t numberOfBases;
     };
 
-    struct except_block_information {
-        std::string captureName;
-        size_t bodySize;
-        size_t targetsSize;
-    };
-
-    struct try_block_information {
-        size_t bodySize;
-        std::vector<except_block_information> exceptBlocks;
-        size_t finallySize;
-    };
-
     struct instruction {
         uint8_t op_code;
         std::any value;
         size_t line;
     };
 
+    struct except_block {
+        std::string captureName;
+        std::vector<instruction> targets;
+        std::vector<instruction> body;
+    };
+
+    struct try_information {
+        std::vector<instruction> body;
+        std::vector<except_block> exceptBlocks;
+        std::vector<instruction> elseBody;
+        std::vector<instruction> finally;
+    };
+
     struct loop_information {
         std::vector<instruction> body;
         std::vector<instruction> condition;
         std::vector<std::string> receivers;
-    };
-
-    struct except_block {
-        std::string captureName;
-        std::vector<plasma::vm::instruction> targets;
-        std::vector<plasma::vm::instruction> body;
     };
 
     struct condition_information {
@@ -789,7 +784,7 @@ namespace plasma::vm {
 
 
         //// Try blocks
-        value *execute_try_block(context *c, bytecode *bc, const try_block_information &tryBlockInformation);
+        value *execute_try_block(context *c, const try_information &tryBlockInformation);
 
         value *raise_op(context *c);
 

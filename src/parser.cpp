@@ -401,7 +401,7 @@ plasma::ast::TryStatement *plasma::parser::parser::parseTryStatement() {
             }
             exceptBody.push_back(this->parseBinaryExpression(0));
         }
-        exceptBlocks.push_back(new ast::ExceptBlock(targets, captureName, exceptBody));
+        exceptBlocks.push_back(new ast::ExceptBlock(new ast::TupleExpression(targets), captureName, exceptBody));
     }
     std::vector<ast::Node *> elseBody;
     if (this->directValueMatch(lexer::Else)) {

@@ -797,17 +797,14 @@ namespace plasma::ast {
     };
 
     struct ExceptBlock {
-        ExceptBlock(std::vector<Expression *> targets, Identifier *captureName, std::vector<Node *> body) {
+        ExceptBlock(TupleExpression *targets, Identifier *captureName, std::vector<Node *> body) {
             this->Targets = targets;
             this->CaptureName = captureName;
             this->Body = body;
         }
 
         ~ExceptBlock() {
-            for (Expression *target : this->Targets) {
-                delete target;
-            }
-            this->Targets.clear();
+            delete this->Targets;
 
             if (this->CaptureName != nullptr) {
                 delete this->CaptureName;
@@ -819,7 +816,7 @@ namespace plasma::ast {
             this->Body.clear();
         }
 
-        std::vector<Expression *> Targets;
+        TupleExpression *Targets;
         Identifier *CaptureName;
         std::vector<Node *> Body;
     };

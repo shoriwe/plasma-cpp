@@ -1092,7 +1092,61 @@ bool plasma::ast::ForStatement::compile(std::vector<vm::instruction> *result, pl
 }
 
 bool plasma::ast::TryStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-    return false;
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(this->Body, &body, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> elseBody;
+    if (!compile_body(this->Else, &elseBody, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::instruction> finally;
+    if (!compile_body(this->Finally, &finally, compilationError)) {
+        return false;
+    }
+    std::vector<plasma::vm::except_block> exceptBlocks;
+    for (ExceptBlock *exceptBlock : this->ExceptBlocks) {
+        std::vector<plasma::vm::instruction> exceptTargets;
+        if (!exceptBlock->Targets->compile_and_push(true, &exceptTargets, compilationError)) {
+            return false;
+        }
+        exceptTargets.push_back(
+                plasma::vm::instruction{
+                        .op_code = plasma::vm::ReturnOP,
+                        .value = static_cast<size_t>(1)
+                }
+        );
+        std::vector<plasma::vm::instruction> exceptBody;
+        if (!compile_body(exceptBlock->Body, &exceptBody, compilationError)) {
+            return false;
+        }
+        std::string captureName;
+        if (exceptBlock->CaptureName == nullptr) {
+            captureName = "0x000000000000000";
+        } else {
+            captureName = exceptBlock->CaptureName->Token.string;
+        }
+
+        exceptBlocks.push_back(
+                plasma::vm::except_block{
+                        .captureName = captureName,
+                        .targets = exceptTargets,
+                        .body = exceptBody
+                }
+        );
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code =plasma::vm::TryOP,
+                    .value = plasma::vm::try_information{
+                            .body = body,
+                            .exceptBlocks = exceptBlocks,
+                            .elseBody = elseBody,
+                            .finally = finally
+                    }
+            }
+    );
+    return true;
 }
 
 bool

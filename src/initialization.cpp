@@ -185,7 +185,7 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                            c,
                            true,
                            InvalidTypeError,
-                           std::vector<value *>(),
+                           std::vector<value *>{runtimeError},
                            constructor{
                                    .isBuiltIn = true,
                                    .callback = this->invalid_type_error_initialize(false)
@@ -193,77 +193,79 @@ void plasma::vm::virtual_machine::initialize_builtin_symbols(context *c) {
                    )
     );
     c->master->set(NotImplementedCallableError,
-                   this->new_type(c, true, NotImplementedCallableError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, NotImplementedCallableError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = not_implemented_callable_error_initialize(false)
                                   }
                    )
     );
     c->master->set(ObjectConstructionError,
-                   this->new_type(c, true, ObjectConstructionError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, ObjectConstructionError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = object_construction_error_initialize(false)
                                   }
                    )
     );
     c->master->set(ObjectWithNameNotFoundError,
-                   this->new_type(c, true, ObjectWithNameNotFoundError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, ObjectWithNameNotFoundError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = object_with_name_not_found_error_initialize(false)
                                   }
                    )
     );
     c->master->set(InvalidNumberOfArgumentsError,
-                   this->new_type(c, true, InvalidNumberOfArgumentsError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, InvalidNumberOfArgumentsError, std::vector<value *>{runtimeError},
+                                  constructor{
                                           .isBuiltIn = true,
                                           .callback = invalid_number_of_arguments_error_initialize(false)
                                   }
                    )
     );
     c->master->set(UnhashableTypeError,
-                   this->new_type(c, true, UnhashableTypeError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, UnhashableTypeError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = unhashable_type_error_initialize(false)
                                   }
                    )
     );
     c->master->set(IndexOutOfRangeError,
-                   this->new_type(c, true, IndexOutOfRangeError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, IndexOutOfRangeError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = index_out_of_range_error_initialize(false)
                                   }
                    )
     );
     c->master->set(KeyNotFoundError,
-                   this->new_type(c, true, KeyNotFoundError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, KeyNotFoundError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = key_not_found_error_initialize(false)
                                   }
                    )
     );
     c->master->set(IntegerParsingError,
-                   this->new_type(c, true, IntegerParsingError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, IntegerParsingError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = integer_parsing_error_initialize(false)
                                   }
                    )
     );
     c->master->set(FloatParsingError,
-                   this->new_type(c, true, FloatParsingError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, FloatParsingError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = float_parsing_error_initialize(false)
                                   }
                    )
     );
     c->master->set(BuiltInSymbolProtectionError,
-                   this->new_type(c, true, BuiltInSymbolProtectionError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, BuiltInSymbolProtectionError, std::vector<value *>{runtimeError},
+                                  constructor{
                                           .isBuiltIn = true,
                                           .callback = builtin_symbol_protection_error_initialize(false)
                                   }
                    )
     );
     c->master->set(ObjectNotCallableError,
-                   this->new_type(c, true, ObjectNotCallableError, std::vector<value *>(), constructor{
+                   this->new_type(c, true, ObjectNotCallableError, std::vector<value *>{runtimeError}, constructor{
                                           .isBuiltIn = true,
                                           .callback = object_not_callable_error_initialize(false)
                                   }

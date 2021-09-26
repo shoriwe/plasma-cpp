@@ -283,11 +283,6 @@ plasma::ast::Node *plasma::ast::TryStatement::copy() {
     std::vector<ExceptBlock *> newExceptBlocks;
     newExceptBlocks.reserve(this->ExceptBlocks.size());
     for (ExceptBlock *exceptBlock : this->ExceptBlocks) {
-        std::vector<Expression *> newTargets;
-        newTargets.reserve(exceptBlock->Targets.size());
-        for (Expression *target : exceptBlock->Targets) {
-            newTargets.push_back(dynamic_cast<Expression *>(target->copy()));
-        }
 
         std::vector<Node *> newExceptBody;
         newExceptBody.reserve(exceptBlock->Body.size());
@@ -299,7 +294,9 @@ plasma::ast::Node *plasma::ast::TryStatement::copy() {
         if (exceptBlock->CaptureName != nullptr) {
             newCaptureName = dynamic_cast<Identifier *>(exceptBlock->CaptureName->copy());
         }
-        newExceptBlocks.push_back(new ExceptBlock(newTargets, newCaptureName, newExceptBody));
+        newExceptBlocks.push_back(
+                new ExceptBlock(dynamic_cast<TupleExpression *>(exceptBlock->Targets->copy()), newCaptureName,
+                                newExceptBody));
     }
 
     std::vector<Node *> newElseBody;

@@ -757,135 +757,124 @@ plasma::vm::value *plasma::vm::virtual_machine::new_module_op(context *c, byteco
     return nullptr;
 }
 
-struct except_block_code {
-    std::vector<plasma::vm::instruction> targets;
-    std::vector<plasma::vm::instruction> body;
-    std::string captureName;
-};
-
 plasma::vm::value *
-plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
-                                               const try_block_information &tryBlockInformation) {
+plasma::vm::virtual_machine::execute_try_block(context *c, const try_information &tryBlockInformation) {
     auto state = c->protected_values_state();
     defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
 
+    bytecode bodyBytecode{
+            .instructions = tryBlockInformation.body,
+            .index =0
+    };
     bool success = false;
-    bytecode bodyByteCode{
-            .instructions = bc->nextN(tryBlockInformation.bodySize),
-            .index = 0
-    };
-    std::vector<except_block_code> exceptBlocksCode;
-    for (const auto &exceptBlock : tryBlockInformation.exceptBlocks) {
-        exceptBlocksCode.push_back(
-                except_block_code{
-                        .targets = bc->nextN(exceptBlock.targetsSize),
-                        .body = bc->nextN(exceptBlock.bodySize),
-                        .captureName = exceptBlock.captureName
-                }
-        );
-    }
-    bytecode finallyCode{
-            .instructions = bc->nextN(tryBlockInformation.finallySize),
-            .index = 0
-    };
-    value *finallyExecutionError;
-    auto executionError = this->execute(c, &bodyByteCode, &success);
-    c->protect_value(executionError);
-
+    auto executionError = this->execute(c, &bodyBytecode, &success);
     if (success) {
-        if (executionError->typeId != NoneType) {
-
-            c->push_value(executionError);
+        if (c->lastState == Return) {
+            c->lastObject = executionError;
+        } else {
+            success = false;
+            bytecode finally{
+                    .instructions  = tryBlockInformation.finally,
+                    .index = 0
+            };
+            auto finallyExecutionResult = this->execute(c, &finally, &success);
+            if (!success) {
+                return finallyExecutionResult;
+            }
+            if (c->lastState == Return) {
+                c->lastObject = finallyExecutionResult;
+            }
             return nullptr;
-        }
-        // Execute finally block
-        if (finallyCode.instructions.empty()) {
-            return nullptr;
-        }
-        success = false;
-        finallyExecutionError = this->execute(c, &finallyCode, &success);
-        if (!success) {
-            return finallyExecutionError;
-        }
-        if (finallyExecutionError->typeId != NoneType) {
-            c->push_value(finallyExecutionError);
         }
         return nullptr;
     }
-    // Execute except blocks
-    for (const auto &exceptBlock : exceptBlocksCode) {
+    c->protect_value(executionError);
+
+    for (const except_block &exceptBlock : tryBlockInformation.exceptBlocks) {
         success = false;
-        bytecode targetsCode{
+        bytecode targetsBytecode{
                 .instructions = exceptBlock.targets,
                 .index = 0
         };
-        auto targets = this->execute(c, &targetsCode, &success);
+        auto targets = this->execute(c, &targetsBytecode, &success);
         if (!success) {
             return targets;
         }
         c->protect_value(targets);
 
-        bool containsErrorResult = false;
-        if (targets->content.empty()) {
-
-            containsErrorResult = true;
-        } else {
-
-            auto containsError = this->content_contains(
-                    c,
-                    targets,
-                    executionError->get_type(c, this),
-                    &containsErrorResult
-            );
-            if (containsError != nullptr) {
-
-                return containsError;
+        bool doesContains = targets->content.empty();
+        for (value *v : targets->content) {
+            if (!v->implements(c, this, this->force_any_from_master(c, RuntimeError))) {
+                return this->new_invalid_type_error(c, v->get_type(c, this), std::vector<std::string>{RuntimeError});
+            }
+            if (executionError->get_type(c, this)->implements(c, this, v)) {
+                doesContains = true;
+                break;
             }
         }
-
-        if (containsErrorResult) {
-
-            if (!exceptBlock.captureName.empty()) {
-
-                c->peek_symbol_table()->set(exceptBlock.captureName, executionError);
-            }
-            // Execute body
-            bytecode exceptBody{
-                    .instructions = exceptBlock.body,
+        if (!doesContains) {
+            continue;
+        }
+        c->peek_symbol_table()->set(exceptBlock.captureName, executionError);
+        success = false;
+        bytecode exceptBodyBytecode{
+                .instructions = exceptBlock.body,
+                .index= 0
+        };
+        auto exceptExecutionResult = this->execute(c, &exceptBodyBytecode, &success);
+        if (!success) {
+            return exceptExecutionResult;
+        }
+        c->protect_value(exceptExecutionResult);
+        if (c->lastState == Return) {
+            c->lastObject = exceptExecutionResult;
+        } else {
+            success = false;
+            bytecode finally{
+                    .instructions  = tryBlockInformation.finally,
                     .index = 0
             };
-            success = false;
-            auto exceptExecutionError = this->execute(c, &exceptBody, &success);
+            auto finallyExecutionResult = this->execute(c, &finally, &success);
             if (!success) {
-                return exceptExecutionError;
+                return finallyExecutionResult;
             }
-            c->protect_value(exceptExecutionError);
-
-            if (exceptExecutionError->typeId != NoneType) {
-
-                c->push_value(exceptExecutionError);
-                return nullptr;
-            }
-
-            // Execute finally
-
-            if (finallyCode.instructions.empty()) {
-                return nullptr;
-            }
-            success = false;
-            finallyExecutionError = this->execute(c, &finallyCode, &success);
-            c->protect_value(finallyExecutionError);
-
-            if (!success) {
-                return finallyExecutionError;
-            }
-            if (finallyExecutionError->typeId != NoneType) {
-                c->push_value(finallyExecutionError);
+            if (c->lastState == Return) {
+                c->lastObject = finallyExecutionResult;
             }
             return nullptr;
         }
+        return nullptr;
     }
-
+    if (!tryBlockInformation.elseBody.empty()) {
+        success = false;
+        bytecode elseBody{
+                .instructions = tryBlockInformation.elseBody,
+                .index= 0
+        };
+        auto exceptExecutionResult = this->execute(c, &elseBody, &success);
+        if (!success) {
+            return exceptExecutionResult;
+        }
+        c->protect_value(exceptExecutionResult);
+        if (c->lastState == Return) {
+            c->lastObject = exceptExecutionResult;
+        } else {
+            success = false;
+            bytecode finally{
+                    .instructions  = tryBlockInformation.finally,
+                    .index = 0
+            };
+            auto finallyExecutionResult = this->execute(c, &finally, &success);
+            if (!success) {
+                return finallyExecutionResult;
+            }
+            if (c->lastState == Return) {
+                c->lastObject = finallyExecutionResult;
+            }
+            return nullptr;
+        }
+        return nullptr;
+    }
     return executionError;
 }
 
@@ -1026,7 +1015,6 @@ plasma::vm::value *plasma::vm::virtual_machine::while_loop_op(context *c, loop_i
         bodyBytecode.index = 0;
         result = this->execute(c, &bodyBytecode, &success);
         if (!success) {
-            std::cout << "HERE\n";
             return result;
         }
         switch (c->lastState) {
@@ -1387,7 +1375,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 executionError = this->new_module_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
             case TryOP:
-                executionError = this->execute_try_block(c, bc, std::any_cast<try_block_information>(instruct.value));
+                executionError = this->execute_try_block(c, std::any_cast<try_information>(instruct.value));
                 break;
             default:
                 // FixMe: Do something when

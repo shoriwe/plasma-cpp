@@ -42,6 +42,7 @@ static void test_success_expression(int *number_of_tests, int *success) {
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
             auto end = std::chrono::steady_clock::now();
             if (!executionSuccess) {
+                std::cout << stdoutFile.str() << " - ";
                 FAIL(result->typeName + ": " + result->string);
                 continue;
             }
@@ -93,6 +94,7 @@ static void test_success_statements(int *number_of_tests, int *success) {
             plasma::vm::value *result = plasmaVM.execute(&c, &sourceCode, &executionSuccess);
             auto end = std::chrono::steady_clock::now();
             if (!executionSuccess) {
+                std::cout << stdoutFile.str() << " - ";
                 FAIL(result->typeName + ": " + result->string);
                 continue;
             }
