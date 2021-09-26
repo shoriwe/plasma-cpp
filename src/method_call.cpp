@@ -36,6 +36,13 @@ plasma::vm::value *plasma::vm::virtual_machine::call_function(context *c, value 
         }
     }
 
+    if (callFunction->callable_.numberOfArguments != arguments.size()) {
+        (*success) = false;
+        return this->new_invalid_number_of_arguments_error(
+                c, callFunction->callable_.numberOfArguments, arguments.size()
+        );
+    }
+
     // Allocate a new symbol table
     // The parent of this symbol table it always will be the parent symbol table  of the function
     symbol_table *symbolTable = c->allocate_symbol_table(callFunction->symbols->parent);

@@ -29,7 +29,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::callable_initializ
                             object,
                             new_builtin_callable(
                                     0,
-                                    [=](value *self, const std::vector<value *>& arguments, bool *success) -> value * {
+                                    [=](value *self, const std::vector<value *> &arguments, bool *success) -> value * {
                                         return this->new_not_implemented_callable_error(
                                                 c,
                                                 Call

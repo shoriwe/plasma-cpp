@@ -220,7 +220,7 @@ plasma::vm::constructor_callback plasma::vm::virtual_machine::hash_table_initial
                             isBuiltIn,
                             object,
                             new_builtin_callable(
-                                    1,
+                                    2,
                                     [this, c](value *self, const std::vector<value *> &arguments,
                                               bool *success) -> value * {
                                         return this->hashtable_assign(c, self, arguments[0], arguments[1], success);
