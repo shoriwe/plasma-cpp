@@ -889,6 +889,105 @@ plasma::vm::virtual_machine::execute_try_block(context *c, bytecode *bc,
     return executionError;
 }
 
+plasma::vm::value *plasma::vm::virtual_machine::for_loop_op(context *c, loop_information loopInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    bool interpretationSuccess = false;
+    auto source = this->interpret_as_iterator(c, c->pop_value(), &interpretationSuccess);
+    if (!interpretationSuccess) {
+        return source;
+    }
+    c->protect_value(source);
+    bool getSuccess = false;
+    auto next = source->get(c, this, Next, &getSuccess);
+    if (!getSuccess) {
+        return next;
+    }
+    c->protect_value(next);
+    getSuccess = false;
+    auto hasNext = source->get(c, this, HasNext, &getSuccess);
+    if (!getSuccess) {
+        return hasNext;
+    }
+    c->protect_value(hasNext);
+
+    auto bodyBytecode = bytecode{
+            .instructions = loopInformation.body,
+            .index = 0
+    };
+    value *doesHasNext;
+    value *nextValue;
+    value *result;
+
+    bool success = false;
+    while (true) {
+        continueState:
+        auto state2 = c->protected_values_state();
+        defer _2(nullptr, [c, state2](...) { c->restore_protected_state(state2); });
+
+        doesHasNext = this->call_function(c, hasNext, std::vector<value *>(), &success);
+        if (!success) {
+            return doesHasNext;
+        }
+        c->protect_value(doesHasNext);
+        bool asBool = false;
+        auto interpretationError = this->interpret_as_boolean(c, doesHasNext, &asBool);
+        if (interpretationError != nullptr) {
+            return interpretationError;
+        }
+        if (!asBool) {
+            break;
+        }
+        nextValue = this->call_function(c, next, std::vector<value *>(), &success);
+        if (!success) {
+            return nextValue;
+        }
+        c->protect_value(nextValue);
+        redoState:
+        std::vector<value *> unpackedValues;
+        if (loopInformation.receivers.size() == 1) {
+            unpackedValues.push_back(nextValue);
+        } else {
+            auto unpackError = this->unpack_values(c, nextValue, loopInformation.receivers.size(), &unpackedValues);
+            if (unpackError != nullptr) {
+                return unpackError;
+            }
+        }
+        if (unpackedValues.size() != loopInformation.receivers.size()) {
+            return this->new_invalid_number_of_arguments_error(c, loopInformation.receivers.size(),
+                                                               unpackedValues.size());
+        }
+        for (size_t index = 0; index < unpackedValues.size(); index++) {
+            c->protect_value(unpackedValues[index]);
+            c->peek_symbol_table()->set(loopInformation.receivers[index], unpackedValues[index]);
+        }
+        bodyBytecode.index = 0;
+        success = false;
+        result = this->execute(c, &bodyBytecode, &success);
+        if (!success) {
+            return result;
+        }
+        switch (c->lastState) {
+            case Return:
+                c->lastObject = result;
+                return nullptr;
+            case Continue:
+                goto continueState;
+                break;
+            case Redo:
+                goto redoState;
+                break;
+            case Break:
+                goto finish;
+                break;
+        }
+    }
+    finish:
+    c->lastState = NoState;
+    return nullptr;
+}
+
 plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc, bool *success) {
     value *executionError = nullptr;
     value *result = nullptr;
@@ -958,6 +1057,19 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case NewClassOP:
                 executionError = this->new_class_op(c, bc, std::any_cast<class_information>(instruct.value));
                 break;
+            case ForLoopOP:
+                executionError = this->for_loop_op(c, std::any_cast<loop_information>(instruct.value));
+                if (executionError != nullptr) {
+                    (*success) = false;
+                    return executionError;
+                }
+                if (c->lastState == Return) {
+                    result = c->lastObject;
+                    c->lastObject = nullptr;
+                    (*success) = true;
+                    return result;
+                }
+                break;
             case IfOP:
                 executionError = this->if_op(c, std::any_cast<condition_information>(instruct.value));
                 if (executionError != nullptr) {
@@ -973,6 +1085,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                         // Leave alone so it get propagated
                         result = c->lastObject;
                         c->lastObject = nullptr;
+                        (*success) = true;
                         return result;
                 }
                 break;
@@ -986,11 +1099,13 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                     case Continue:
                     case Break:
                     case Redo:
+                        (*success) = true;
                         return this->get_none(c);
                     case Return:
                         // Leave alone so it get propagated
                         result = c->lastObject;
                         c->lastObject = nullptr;
+                        (*success) = true;
                         return result;
                 }
                 break;
@@ -1029,6 +1144,18 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
             case ReturnOP:
                 (*success) = true;
                 return this->return_op(c, std::any_cast<size_t>(instruct.value));
+            case BreakOP:
+                c->lastState = Break;
+                (*success) = true;
+                return this->get_none(c);
+            case ContinueOP:
+                c->lastState = Continue;
+                (*success) = true;
+                return this->get_none(c);
+            case RedoOP:
+                c->lastState = Redo;
+                (*success) = true;
+                return this->get_none(c);
             case RaiseOP:
                 executionError = this->raise_op(c);
                 break;

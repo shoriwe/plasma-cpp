@@ -947,14 +947,29 @@ bool plasma::ast::InterfaceStatement::compile(std::vector<vm::instruction> *resu
 }
 
 bool plasma::ast::ForStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-    return false;
-}
-
-struct except_block {
-    std::string captureName;
-    std::vector<plasma::vm::instruction> targets;
+    if (!this->Source->compile_and_push(true, result, compilationError)) {
+        return false;
+    }
     std::vector<plasma::vm::instruction> body;
-};
+    if (!compile_body(this->Body, &body, compilationError)) {
+        return false;
+    }
+    std::vector<std::string> receivers;
+    receivers.reserve(this->Receivers.size());
+    for (Identifier *receiver : this->Receivers) {
+        receivers.push_back(receiver->Token.string);
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ForLoopOP,
+                    .value = plasma::vm::loop_information{
+                            .body= body,
+                            .receivers = receivers
+                    }
+            }
+    );
+    return true;
+}
 
 bool plasma::ast::TryStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
     return false;

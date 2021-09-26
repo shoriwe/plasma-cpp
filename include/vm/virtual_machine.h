@@ -288,11 +288,6 @@ namespace plasma::vm {
         size_t numberOfBases;
     };
 
-    struct for_loop_information {
-        std::vector<std::string> receivers;
-        size_t onFinishJump;
-    };
-
     struct except_block_information {
         std::string captureName;
         size_t bodySize;
@@ -309,6 +304,18 @@ namespace plasma::vm {
         uint8_t op_code;
         std::any value;
         size_t line;
+    };
+
+    struct loop_information {
+        std::vector<instruction> body;
+        std::vector<instruction> condition;
+        std::vector<std::string> receivers;
+    };
+
+    struct except_block {
+        std::string captureName;
+        std::vector<plasma::vm::instruction> targets;
+        std::vector<plasma::vm::instruction> body;
     };
 
     struct condition_information {
@@ -794,19 +801,7 @@ namespace plasma::vm {
 
         //// Loop setup and operation
 
-        value *for_loop_op(context *c);
-
-        value *while_loop_op(context *c,
-                             bytecode *bc,
-                             const for_loop_information &forLoopInformation);
-
-        value *do_while_loop_op(context *c,
-                                bytecode *bc,
-                                const for_loop_information &forLoopInformation);
-
-        value *until_loop_op(context *c,
-                             bytecode *bc,
-                             const for_loop_information &forLoopInformation);
+        value *for_loop_op(context *c, loop_information loopInformation);
 
         //// Try blocks
         value *execute_try_block(context *c, bytecode *bc, const try_block_information &tryBlockInformation);
@@ -814,13 +809,13 @@ namespace plasma::vm {
         value *raise_op(context *c);
 
         //// Conditions (if, unless and switch)
-        value *if_op(context *c, const condition_information& conditionInformation);
+        value *if_op(context *c, const condition_information &conditionInformation);
 
-        value *unless_op(context *c, const condition_information& conditionInformation);
+        value *unless_op(context *c, const condition_information &conditionInformation);
 
-        value *if_one_liner_op(context *c, const condition_information& conditionInformation);
+        value *if_one_liner_op(context *c, const condition_information &conditionInformation);
 
-        value *unless_one_liner_op(context *c, const condition_information& conditionInformation);
+        value *unless_one_liner_op(context *c, const condition_information &conditionInformation);
 
         value *unary_op(context *c, uint8_t instruction);
 
