@@ -3,9 +3,11 @@
 
 #include <string>
 
-void LOG(std::string message);
+std::string BLUE(const std::string &s);
 
-void TEST_FINISH(std::string message, int number_of_test, int success);
+void LOG(const std::string &message);
+
+void TEST_FINISH(const std::string &message, int number_of_test, int success);
 
 void SUCCESS(std::string message);
 

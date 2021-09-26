@@ -3,7 +3,7 @@
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 #include "reader.h"
-#include "error.h"
+#include "plasma_error.h"
 #include "print.h"
 #include "test_parser.h"
 
@@ -13,73 +13,69 @@ std::string replace(std::string string, const std::string &old, const std::strin
 /*
  * Reconstruct expressions
  */
-static std::string reconstruct_binary_expression(const plasma::ast::BinaryExpression &x);
+static std::string reconstruct_binary_expression(plasma::ast::BinaryExpression *x);
 
-static std::string reconstruct_lambda_expression(const plasma::ast::LambdaExpression &x);
+static std::string reconstruct_lambda_expression(plasma::ast::LambdaExpression *x);
 
-static std::string reconstruct_selector_expression(const plasma::ast::SelectorExpression &x);
+static std::string reconstruct_selector_expression(plasma::ast::SelectorExpression *x);
 
-static std::string reconstruct_method_invocation_expression(const plasma::ast::MethodInvocationExpression &x);
+static std::string reconstruct_method_invocation_expression(plasma::ast::MethodInvocationExpression *x);
 
-static std::string reconstruct_if_one_liner_expression(const plasma::ast::IfOneLinerExpression &x);
+static std::string reconstruct_if_one_liner_expression(plasma::ast::IfOneLinerExpression *x);
 
-static std::string reconstruct_unless_one_liner_expression(const plasma::ast::UnlessOneLinerExpression &x);
+static std::string reconstruct_unless_one_liner_expression(plasma::ast::UnlessOneLinerExpression *x);
 
-static std::string reconstruct_unary_expression(const plasma::ast::UnaryExpression &x);
+static std::string reconstruct_unary_expression(plasma::ast::UnaryExpression *x);
 
-static std::string reconstruct_index_expression(const plasma::ast::IndexExpression &x);
+static std::string reconstruct_index_expression(plasma::ast::IndexExpression *x);
 
-static std::string reconstruct_array_expression(const plasma::ast::ArrayExpression &x);
+static std::string reconstruct_array_expression(plasma::ast::ArrayExpression *x);
 
-static std::string reconstruct_tuple_expression(const plasma::ast::TupleExpression &x);
+static std::string reconstruct_tuple_expression(plasma::ast::TupleExpression *x);
 
-static std::string reconstruct_hash_expression(const plasma::ast::HashExpression &x);
+static std::string reconstruct_hash_expression(plasma::ast::HashExpression *x);
 
-static std::string reconstruct_parentheses_expression(const plasma::ast::ParenthesesExpression &x);
+static std::string reconstruct_parentheses_expression(plasma::ast::ParenthesesExpression *x);
 
-static std::string reconstruct_generator_expression(const plasma::ast::GeneratorExpression &x);
+static std::string reconstruct_generator_expression(plasma::ast::GeneratorExpression *x);
 
 /*
  * Reconstruct statements
  */
-static std::string reconstruct_assign_statement(const plasma::ast::AssignStatement &s);
+static std::string reconstruct_assign_statement(plasma::ast::AssignStatement &s);
 
-static std::string reconstruct_super_statement(const plasma::ast::SuperInvocationStatement &x);
+static std::string reconstruct_return_statement(plasma::ast::ReturnStatement *x);
 
-static std::string reconstruct_yield_statement(const plasma::ast::YieldStatement &x);
+static std::string reconstruct_while_statement(plasma::ast::WhileStatement *x);
 
-static std::string reconstruct_return_statement(const plasma::ast::ReturnStatement &x);
+static std::string reconstruct_do_while_statement(plasma::ast::DoWhileStatement *x);
 
-static std::string reconstruct_while_statement(const plasma::ast::WhileStatement &x);
+static std::string reconstruct_until_statement(plasma::ast::UntilStatement *x);
 
-static std::string reconstruct_do_while_statement(const plasma::ast::DoWhileStatement &x);
+static std::string reconstruct_for_statement(plasma::ast::ForStatement *x);
 
-static std::string reconstruct_until_statement(const plasma::ast::UntilStatement &x);
+static std::string reconstruct_switch_statement(plasma::ast::SwitchStatement *x);
 
-static std::string reconstruct_for_statement(const plasma::ast::ForStatement &x);
+static std::string reconstruct_try_statement(plasma::ast::TryStatement *x);
 
-static std::string reconstruct_switch_statement(const plasma::ast::SwitchStatement &x);
+static std::string reconstruct_function_statement(plasma::ast::FunctionDefinitionStatement *x);
 
-static std::string reconstruct_try_statement(const plasma::ast::TryStatement &x);
+static std::string reconstruct_raise_statement(plasma::ast::RaiseStatement *x);
 
-static std::string reconstruct_function_statement(const plasma::ast::FunctionDefinitionStatement &x);
+static std::string reconstruct_begin_statement(plasma::ast::BeginStatement *x);
 
-static std::string reconstruct_raise_statement(const plasma::ast::RaiseStatement &x);
+static std::string reconstruct_end_statement(plasma::ast::EndStatement *x);
 
-static std::string reconstruct_begin_statement(const plasma::ast::BeginStatement &x);
+static std::string reconstruct_class_statement(plasma::ast::ClassStatement *x);
 
-static std::string reconstruct_end_statement(const plasma::ast::EndStatement &x);
+static std::string reconstruct_interface_statement(plasma::ast::InterfaceStatement *x);
 
-static std::string reconstruct_class_statement(const plasma::ast::ClassStatement &x);
-
-static std::string reconstruct_interface_statement(const plasma::ast::InterfaceStatement &x);
-
-static std::string reconstruct_module_statement(const plasma::ast::ModuleStatement &x);
+static std::string reconstruct_module_statement(plasma::ast::ModuleStatement *x);
 
 /*
  * Reconstruct nodes
  */
-static std::string reconstruct_node(std::any node);
+static std::string reconstruct_node(plasma::ast::Node *node);
 
 //
 
@@ -118,9 +114,9 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("(1 if x < 4 else 2)");
     tests.emplace_back("True");
     tests.emplace_back("not True");
-    tests.emplace_back("1 if True");
+    tests.emplace_back("1 if True else None");
     tests.emplace_back("!True");
-    tests.emplace_back("1 unless False");
+    tests.emplace_back("1 unless False else None");
     tests.emplace_back("1 in (1, 2, 3)");
     tests.emplace_back("(1 for a in (3, 4))");
     tests.emplace_back("1\n2\n3\n[4, 5 + 6 != 11]");
@@ -131,8 +127,6 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("a xor b");
     tests.emplace_back("a or not b");
     tests.emplace_back("redo");
-    tests.emplace_back("yield 1");
-    tests.emplace_back("yield 1, 2 + 4, lambda x: x + 2, (1, 2, 3, 4)");
     tests.emplace_back("return 1");
     tests.emplace_back("return 1, 2 + 4, lambda x: x + 2, (1, 2, 3, 4)");
     tests.emplace_back("super(1)");
@@ -157,6 +151,31 @@ static std::vector<std::string> initialize_parser_tests() {
     tests.emplace_back("do\n\tprint(\"Hello\")\nwhile a > b");
     tests.emplace_back(
             "def fib(n)\n\tif n == 0\n\t\treturn 0\n\tend\n\tif n == 1\n\t\treturn 1\n\tend\n\treturn fib(n - 1) + fib(n - 2)\nend\nprintln(fib(35))");
+    tests.emplace_back(
+            "println((1 + 2 / 3) == 1.6666666666666665)\n"
+            "println(25 ** (1 / 2) == 5)\n"
+            "println(\"Hello \" * 5 == \"Hello Hello Hello Hello Hello \")\n"
+            "println((1, 2, 4 + 5 / 6 ** 2, 10, \"hello * 5 \" * 0) == (1, 2, 4 + 5 / 6 ** 2, 10, \"\"))\n"
+            "println(1 and (1, 2, 3, 4))\n"
+            "println(1 or (1, 2, 3, 4))\n"
+            "println(1 xor (1, 2, 3, 4) == False)\n"
+            "println(1 in (1, 2, 3, 4))\n"
+            "println(1 // 2 == 0)\n"
+            "println((1, 2, 3, \"Hello\") * 2 == (1, 2, 3, \"Hello\", 1, 2, 3, \"Hello\"))\n"
+            "println(1 in [1, 2, 3, 4, 5])\n"
+            "println(1 in (1, 2, 3, 4, 5))\n"
+            "println(1 in {1: 2, 2: 3, 3: 4, 4: 5, 5: 6})\n"
+            "println(((1 + 2) / 3) == 1)\n"
+            "class A\n"
+            "\tdef Equals(other)\n"
+            "\t\treturn self.Class() == other.Class()\n"
+            "\tend\n"
+            "end\n"
+            "println((A(), A(), A(), A()) * 2 == (A(), A(), A(), A(), A(), A(), A(), A()))\n"
+            "println(1 / 2 == 0.5)\n"
+            "println(1 / 2 ** 2 + 5 * 1 - 3 == 2.25)\n"
+            "println(1 / 2 == 0.5)"
+    );
     return tests;
 }
 
@@ -164,10 +183,10 @@ static std::vector<std::string> initialize_parser_tests() {
  * Reconstruct expressions
  */
 
-static std::string reconstruct_lambda_expression(const plasma::ast::LambdaExpression &x) {
+static std::string reconstruct_lambda_expression(plasma::ast::LambdaExpression *x) {
     std::string result = "lambda ";
     bool first = true;
-    for (const plasma::ast::Identifier &argument : x.Arguments) {
+    for (plasma::ast::Identifier *argument : x->Arguments) {
         if (first) {
             first = false;
         } else {
@@ -175,33 +194,43 @@ static std::string reconstruct_lambda_expression(const plasma::ast::LambdaExpres
         }
         result += reconstruct_node(argument);
     }
-    return result += ": " + reconstruct_node(x.Code);
-}
-
-static std::string reconstruct_if_one_liner_expression(const plasma::ast::IfOneLinerExpression &x) {
-    if (x.ElseResult.has_value()) {
-        return reconstruct_node(x.Result) + " if " + reconstruct_node(x.Condition) + " else " +
-               reconstruct_node(x.ElseResult);
+    result += ": ";
+    bool firstRes = true;
+    for (plasma::ast::Expression *res :  x->Output->Results) {
+        if (firstRes) {
+            firstRes = false;
+        } else {
+            result += ", ";
+        }
+        result += reconstruct_node(res);
     }
-    return reconstruct_node(x.Result) + " if " + reconstruct_node(x.Condition);
+    return result;
 }
 
-static std::string reconstruct_unless_one_liner_expression(const plasma::ast::UnlessOneLinerExpression &x) {
-    if (x.ElseResult.has_value()) {
-        return reconstruct_node(x.Result) + " unless " + reconstruct_node(x.Condition) + " else " +
-               reconstruct_node(x.ElseResult);
+static std::string reconstruct_if_one_liner_expression(plasma::ast::IfOneLinerExpression *x) {
+    if (x->ElseResult != nullptr) {
+        return reconstruct_node(x->Result) + " if " + reconstruct_node(x->Condition) + " else " +
+               reconstruct_node(x->ElseResult);
     }
-    return reconstruct_node(x.Result) + " unless " + reconstruct_node(x.Condition);
+    return reconstruct_node(x->Result) + " if " + reconstruct_node(x->Condition);
 }
 
-static std::string reconstruct_binary_expression(const plasma::ast::BinaryExpression &x) {
-    return reconstruct_node(x.LeftHandSide) + " " + x.Operator.string + " " + reconstruct_node(x.RightHandSide);
+static std::string reconstruct_unless_one_liner_expression(plasma::ast::UnlessOneLinerExpression *x) {
+    if (x->ElseResult != nullptr) {
+        return reconstruct_node(x->Result) + " unless " + reconstruct_node(x->Condition) + " else " +
+               reconstruct_node(x->ElseResult);
+    }
+    return reconstruct_node(x->Result) + " unless " + reconstruct_node(x->Condition);
 }
 
-static std::string reconstruct_method_invocation_expression(const plasma::ast::MethodInvocationExpression &x) {
-    std::string result = reconstruct_node(x.Function) + "(";
+static std::string reconstruct_binary_expression(plasma::ast::BinaryExpression *x) {
+    return reconstruct_node(x->LeftHandSide) + " " + x->Operator.string + " " + reconstruct_node(x->RightHandSide);
+}
+
+static std::string reconstruct_method_invocation_expression(plasma::ast::MethodInvocationExpression *x) {
+    std::string result = reconstruct_node(x->Function) + "(";
     bool first = true;
-    for (const std::any &node : x.Arguments) {
+    for (plasma::ast::Expression *node : x->Arguments) {
         if (first) {
             first = false;
         } else {
@@ -212,32 +241,32 @@ static std::string reconstruct_method_invocation_expression(const plasma::ast::M
     return result + ")";
 }
 
-static std::string reconstruct_selector_expression(const plasma::ast::SelectorExpression &x) {
+static std::string reconstruct_selector_expression(plasma::ast::SelectorExpression *x) {
     std::string result;
-    plasma::ast::SelectorExpression selectorExpression = x;
-    while (selectorExpression.X.type() == typeid(plasma::ast::SelectorExpression)) {
-        result = "." + reconstruct_node(selectorExpression.Identifier) + result;
-        selectorExpression = std::any_cast<plasma::ast::SelectorExpression>(x.X);
+    plasma::ast::SelectorExpression *selectorExpression = x;
+    while (selectorExpression->X->TypeID == plasma::ast::SelectorID) {
+        result = "." + reconstruct_node(selectorExpression->Identifier) + result;
+        selectorExpression = dynamic_cast<plasma::ast::SelectorExpression *>(x->X);
     }
-    result = reconstruct_node(selectorExpression.X) + "." + reconstruct_node(selectorExpression.Identifier) + result;
+    result = reconstruct_node(selectorExpression->X) + "." + reconstruct_node(selectorExpression->Identifier) + result;
     return result;
 }
 
-static std::string reconstruct_unary_expression(const plasma::ast::UnaryExpression &x) {
-    if (x.Operator.directValue == plasma::lexer::Not) {
-        return x.Operator.string + " " + reconstruct_node(x.X);
+static std::string reconstruct_unary_expression(plasma::ast::UnaryExpression *x) {
+    if (x->Operator.directValue == plasma::lexer::Not) {
+        return x->Operator.string + " " + reconstruct_node(x->X);
     }
-    return x.Operator.string + reconstruct_node(x.X);
+    return x->Operator.string + reconstruct_node(x->X);
 }
 
-static std::string reconstruct_index_expression(const plasma::ast::IndexExpression &x) {
-    return reconstruct_node(x.Source) + "[" + reconstruct_node(x.Index) + "]";
+static std::string reconstruct_index_expression(plasma::ast::IndexExpression *x) {
+    return reconstruct_node(x->Source) + "[" + reconstruct_node(x->Index) + "]";
 }
 
-static std::string reconstruct_array_expression(const plasma::ast::ArrayExpression &x) {
+static std::string reconstruct_array_expression(plasma::ast::ArrayExpression *x) {
     std::string result = "[";
     bool first = true;
-    for (const std::any &node : x.Values) {
+    for (plasma::ast::Node *node : x->Values) {
         if (first) {
             first = false;
         } else {
@@ -248,10 +277,10 @@ static std::string reconstruct_array_expression(const plasma::ast::ArrayExpressi
     return result + "]";
 }
 
-static std::string reconstruct_tuple_expression(const plasma::ast::TupleExpression &x) {
+static std::string reconstruct_tuple_expression(plasma::ast::TupleExpression *x) {
     std::string result = "(";
     bool first = true;
-    for (const std::any &node : x.Values) {
+    for (plasma::ast::Node *node : x->Values) {
         if (first) {
             first = false;
         } else {
@@ -262,28 +291,28 @@ static std::string reconstruct_tuple_expression(const plasma::ast::TupleExpressi
     return result + ")";
 }
 
-static std::string reconstruct_hash_expression(const plasma::ast::HashExpression &x) {
+static std::string reconstruct_hash_expression(plasma::ast::HashExpression *x) {
     std::string result = "{";
     bool first = true;
-    for (const plasma::ast::KeyValue &keyValue : x.Values) {
+    for (plasma::ast::KeyValue *keyValue : x->KeyValues) {
         if (first) {
             first = false;
         } else {
             result += ", ";
         }
-        result += reconstruct_node(keyValue.Key) + ": " + reconstruct_node(keyValue.Value);
+        result += reconstruct_node(keyValue->Key) + ": " + reconstruct_node(keyValue->Value);
     }
     return result + "}";
 }
 
-static std::string reconstruct_parentheses_expression(const plasma::ast::ParenthesesExpression &x) {
-    return "(" + reconstruct_node(x.X) + ")";
+static std::string reconstruct_parentheses_expression(plasma::ast::ParenthesesExpression *x) {
+    return "(" + reconstruct_node(x->X) + ")";
 }
 
-static std::string reconstruct_generator_expression(const plasma::ast::GeneratorExpression &x) {
+static std::string reconstruct_generator_expression(plasma::ast::GeneratorExpression *x) {
     std::string receivers;
     bool first = true;
-    for (const plasma::ast::Identifier &receiver : x.Receivers) {
+    for (plasma::ast::Identifier *receiver : x->Receivers) {
         if (first) {
             first = false;
         } else {
@@ -291,49 +320,21 @@ static std::string reconstruct_generator_expression(const plasma::ast::Generator
         }
         receivers += reconstruct_node(receiver);
     }
-    return "(" + reconstruct_node(x.Operation) + " for " + receivers + " in " + reconstruct_node(x.Source) + ")";
+    return "(" + reconstruct_node(x->Operation) + " for " + receivers + " in " + reconstruct_node(x->Source) + ")";
 }
 
 /*
  * Reconstruct statements
  */
-static std::string reconstruct_assign_statement(const plasma::ast::AssignStatement &s) {
-    return reconstruct_node(s.LeftHandSide) + " " + s.AssignOperator.string + " " + reconstruct_node(s.RightHandSide);
+static std::string reconstruct_assign_statement(plasma::ast::AssignStatement *s) {
+    return reconstruct_node(s->LeftHandSide) + " " + s->AssignOperator.string + " " +
+           reconstruct_node(s->RightHandSide);
 }
 
-static std::string reconstruct_super_statement(const plasma::ast::SuperInvocationStatement &x) {
-    std::string result = "super(";
-    bool first = true;
-    for (const std::any &node : x.Arguments) {
-        if (first) {
-            first = false;
-        } else {
-            result += ", ";
-        }
-        result += reconstruct_node(node);
-    }
-    return result + ")";
-}
-
-static std::string reconstruct_yield_statement(const plasma::ast::YieldStatement &x) {
-    std::string result = "yield";
-    bool first = true;
-    for (const std::any &node : x.Results) {
-        if (first) {
-            first = false;
-            result += " ";
-        } else {
-            result += ", ";
-        }
-        result += reconstruct_node(node);
-    }
-    return result;
-}
-
-static std::string reconstruct_return_statement(const plasma::ast::ReturnStatement &x) {
+static std::string reconstruct_return_statement(plasma::ast::ReturnStatement *x) {
     std::string result = "return";
     bool first = true;
-    for (const std::any &node : x.Results) {
+    for (plasma::ast::Expression *node : x->Results) {
         if (first) {
             first = false;
             result += " ";
@@ -345,76 +346,80 @@ static std::string reconstruct_return_statement(const plasma::ast::ReturnStateme
     return result;
 }
 
-static std::string reconstruct_if_statement(const plasma::ast::IfStatement &x) {
-    std::string result = "if " + reconstruct_node(x.Condition);
-    for (const std::any &node : x.Body) {
+static std::string reconstruct_if_statement(plasma::ast::IfStatement *x) {
+    std::string result = "if " + reconstruct_node(x->Condition);
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
-    for (const plasma::ast::ElifBlock &elif : x.ElifBlocks) {
-        result += "\nelif " + replace(reconstruct_node(elif.Condition), "\n", "\n\t");
-        for (const std::any &node : elif.Body) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
-        }
-    }
-    if (!x.Else.empty()) {
-        result += "\nelse";
-        for (const std::any &node : x.Else) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    if (!x->Else.empty()) {
+        if (x->Else.size() == 1 && x->Else[0]->TypeID == plasma::ast::IfID) {
+            auto elif = dynamic_cast<plasma::ast::IfStatement *>(x->Else[0]);
+            result += "\nelif " + replace(reconstruct_node(elif->Condition), "\n", "\n\t");
+            for (plasma::ast::Node *node : elif->Body) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
+        } else {
+            result += "\nelse";
+            for (plasma::ast::Node *node : x->Else) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
         }
     }
     result += "\nend";
     return result;
 }
 
-static std::string reconstruct_unless_statement(const plasma::ast::UnlessStatement &x) {
-    std::string result = "unless " + reconstruct_node(x.Condition);
-    for (const std::any &node : x.Body) {
+static std::string reconstruct_unless_statement(plasma::ast::UnlessStatement *x) {
+    std::string result = "unless " + reconstruct_node(x->Condition);
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
-    for (const plasma::ast::ElifBlock &elif : x.ElifBlocks) {
-        result += "\nelif " + reconstruct_node(elif.Condition);
-        for (const std::any &node : elif.Body) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
-        }
-    }
-    if (!x.Else.empty()) {
-        result += "\nelse";
-        for (const std::any &node : x.Else) {
-            result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+    if (!x->Else.empty()) {
+        if (x->Else.size() == 1 && x->Else[0]->TypeID == plasma::ast::UnlessID) {
+            auto elif = dynamic_cast<plasma::ast::UnlessStatement *>(x->Else[0]);
+            result += "\nelif " + replace(reconstruct_node(elif->Condition), "\n", "\n\t");
+            for (plasma::ast::Node *node : elif->Body) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
+        } else {
+            result += "\nelse";
+            for (plasma::ast::Node *node : x->Else) {
+                result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
+            }
         }
     }
     result += "\nend";
     return result;
 }
 
-static std::string reconstruct_while_statement(const plasma::ast::WhileStatement &x) {
-    std::string result = "while " + reconstruct_node(x.Condition);
-    for (const std::any &node : x.Body) {
+static std::string reconstruct_while_statement(plasma::ast::WhileStatement *x) {
+    std::string result = "while " + reconstruct_node(x->Condition);
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_do_while_statement(const plasma::ast::DoWhileStatement &x) {
+static std::string reconstruct_do_while_statement(plasma::ast::DoWhileStatement *x) {
     std::string result = "do";
-    for (const std::any &node : x.Body) {
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
-    return result + "\nwhile " + reconstruct_node(x.Condition);
+    return result + "\nwhile " + reconstruct_node(x->Condition);
 }
 
-static std::string reconstruct_until_statement(const plasma::ast::UntilStatement &x) {
-    std::string result = "until " + reconstruct_node(x.Condition);
-    for (const std::any &node : x.Body) {
+static std::string reconstruct_until_statement(plasma::ast::UntilStatement *x) {
+    std::string result = "until " + reconstruct_node(x->Condition);
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_for_statement(const plasma::ast::ForStatement &x) {
+static std::string reconstruct_for_statement(plasma::ast::ForStatement *x) {
     std::string result = "for ";
     bool first = true;
-    for (const plasma::ast::Identifier &receiver : x.Receivers) {
+    for (plasma::ast::Identifier *receiver : x->Receivers) {
         if (first) {
             first = false;
         } else {
@@ -422,19 +427,19 @@ static std::string reconstruct_for_statement(const plasma::ast::ForStatement &x)
         }
         result += reconstruct_node(receiver);
     }
-    result += " in " + reconstruct_node(x.Source);
-    for (const std::any &node : x.Body) {
+    result += " in " + reconstruct_node(x->Source);
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_switch_statement(const plasma::ast::SwitchStatement &x) {
-    std::string result = "switch " + reconstruct_node(x.Target);
-    for (const plasma::ast::CaseBlock &node : x.CaseBlocks) {
+static std::string reconstruct_switch_statement(plasma::ast::SwitchStatement *x) {
+    std::string result = "switch " + reconstruct_node(x->Target);
+    for (plasma::ast::CaseBlock *node : x->CaseBlocks) {
         result += "\ncase";
         bool first = true;
-        for (const std::any &node2 : node.Cases) {
+        for (plasma::ast::Node *node2 : node->Cases) {
             if (first) {
                 first = false;
                 result += " ";
@@ -443,28 +448,28 @@ static std::string reconstruct_switch_statement(const plasma::ast::SwitchStateme
             }
             result += reconstruct_node(node2);
         }
-        for (const std::any &node2 : node.Body) {
+        for (plasma::ast::Node *node2 : node->Body) {
             result += "\n\t" + replace(reconstruct_node(node2), "\n", "\n\t");
         }
     }
-    if (!x.Default.empty()) {
+    if (!x->Default.empty()) {
         result += "\ndefault";
-        for (const std::any &node : x.Default) {
+        for (plasma::ast::Node *node : x->Default) {
             result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
         }
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_try_statement(const plasma::ast::TryStatement &x) {
+static std::string reconstruct_try_statement(plasma::ast::TryStatement *x) {
     std::string result = "try";
-    for (const std::any &node : x.Body) {
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
-    for (const plasma::ast::ExceptBlock &node : x.ExceptBlocks) {
+    for (plasma::ast::ExceptBlock *node : x->ExceptBlocks) {
         result += "\nexcept";
         bool first = true;
-        for (const std::any &node2 : node.Targets) {
+        for (plasma::ast::Node *node2 : node->Targets->Values) {
             if (first) {
                 first = false;
                 result += " ";
@@ -473,32 +478,32 @@ static std::string reconstruct_try_statement(const plasma::ast::TryStatement &x)
             }
             result += reconstruct_node(node2);
         }
-        if (!node.CaptureName.Token.string.empty()) {
-            result += " as " + reconstruct_node(node.CaptureName);
+        if (!node->CaptureName->Token.string.empty()) {
+            result += " as " + reconstruct_node(node->CaptureName);
         }
-        for (const std::any &node2 : node.Body) {
+        for (plasma::ast::Node *node2 : node->Body) {
             result += "\n\t" + replace(reconstruct_node(node2), "\n", "\n\t");
         }
     }
-    if (!x.Else.empty()) {
+    if (!x->Else.empty()) {
         result += "\nelse";
-        for (const std::any &node : x.Else) {
+        for (plasma::ast::Node *node : x->Else) {
             result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
         }
     }
-    if (!x.Finally.empty()) {
+    if (!x->Finally.empty()) {
         result += "\nfinally";
-        for (const std::any &node : x.Finally) {
+        for (plasma::ast::Node *node : x->Finally) {
             result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
         }
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_function_statement(const plasma::ast::FunctionDefinitionStatement &x) {
-    std::string result = "def " + reconstruct_node(x.Name) + "(";
+static std::string reconstruct_function_statement(plasma::ast::FunctionDefinitionStatement *x) {
+    std::string result = "def " + reconstruct_node(x->Name) + "(";
     bool first = true;
-    for (const plasma::ast::Identifier &argument : x.Arguments) {
+    for (plasma::ast::Identifier *argument : x->Arguments) {
         if (first) {
             first = false;
         } else {
@@ -507,42 +512,42 @@ static std::string reconstruct_function_statement(const plasma::ast::FunctionDef
         result += reconstruct_node(argument);
     }
     result += ")";
-    for (const std::any &node : x.Body) {
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_raise_statement(const plasma::ast::RaiseStatement &x) {
+static std::string reconstruct_raise_statement(plasma::ast::RaiseStatement *x) {
     std::string result = "raise";
-    if (x.X.has_value()) {
-        result += " " + reconstruct_node(x.X);
+    if (x->X != nullptr) {
+        result += " " + reconstruct_node(x->X);
     }
     return result;
 }
 
-static std::string reconstruct_begin_statement(const plasma::ast::BeginStatement &x) {
+static std::string reconstruct_begin_statement(plasma::ast::BeginStatement *x) {
     std::string result = "BEGIN";
-    for (const std::any &node : x.Body) {
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_end_statement(const plasma::ast::EndStatement &x) {
+static std::string reconstruct_end_statement(plasma::ast::EndStatement *x) {
     std::string result = "END";
-    for (const std::any &node : x.Body) {
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_class_statement(const plasma::ast::ClassStatement &x) {
-    std::string result = "class " + reconstruct_node(x.Name);
-    if (!x.Bases.empty()) {
+static std::string reconstruct_class_statement(plasma::ast::ClassStatement *x) {
+    std::string result = "class " + reconstruct_node(x->Name);
+    if (!x->Bases.empty()) {
         result += "(";
         bool first = true;
-        for (const std::any &base : x.Bases) {
+        for (plasma::ast::Node *base : x->Bases) {
             if (first) {
                 first = false;
             } else {
@@ -552,18 +557,18 @@ static std::string reconstruct_class_statement(const plasma::ast::ClassStatement
         }
         result += ")";
     }
-    for (const std::any &node : x.Body) {
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
-static std::string reconstruct_interface_statement(const plasma::ast::InterfaceStatement &x) {
-    std::string result = "interface " + reconstruct_node(x.Name);
-    if (!x.Bases.empty()) {
+static std::string reconstruct_interface_statement(plasma::ast::InterfaceStatement *x) {
+    std::string result = "interface " + reconstruct_node(x->Name);
+    if (!x->Bases.empty()) {
         result += "(";
         bool first = true;
-        for (const std::any &base : x.Bases) {
+        for (plasma::ast::Node *base : x->Bases) {
             if (first) {
                 first = false;
             } else {
@@ -573,16 +578,16 @@ static std::string reconstruct_interface_statement(const plasma::ast::InterfaceS
         }
         result += ")";
     }
-    for (const plasma::ast::FunctionDefinitionStatement &node : x.MethodDefinitions) {
+    for (plasma::ast::FunctionDefinitionStatement *node : x->MethodDefinitions) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
 }
 
 
-static std::string reconstruct_module_statement(const plasma::ast::ModuleStatement &x) {
-    std::string result = "module " + reconstruct_node(x.Name);
-    for (const std::any &node : x.Body) {
+static std::string reconstruct_module_statement(plasma::ast::ModuleStatement *x) {
+    std::string result = "module " + reconstruct_node(x->Name);
+    for (plasma::ast::Node *node : x->Body) {
         result += "\n\t" + replace(reconstruct_node(node), "\n", "\n\t");
     }
     return result + "\nend";
@@ -591,92 +596,92 @@ static std::string reconstruct_module_statement(const plasma::ast::ModuleStateme
 /*
  * Reconstruct nodes
  */
-static std::string reconstruct_node(std::any node) {
-    if (node.type() == typeid(plasma::ast::BinaryExpression)) {
-        return reconstruct_binary_expression(std::any_cast<plasma::ast::BinaryExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::SelectorExpression)) {
-        return reconstruct_selector_expression(std::any_cast<plasma::ast::SelectorExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::UnaryExpression)) {
-        return reconstruct_unary_expression(std::any_cast<plasma::ast::UnaryExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::BasicLiteralExpression)) {
-        return std::any_cast<plasma::ast::BasicLiteralExpression>(node).Token.string;
-    } else if (node.type() == typeid(plasma::ast::Identifier)) {
-        return std::any_cast<plasma::ast::Identifier>(node).Token.string;
-    } else if (node.type() == typeid(plasma::ast::ArrayExpression)) {
-        return reconstruct_array_expression(std::any_cast<plasma::ast::ArrayExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::TupleExpression)) {
-        return reconstruct_tuple_expression(std::any_cast<plasma::ast::TupleExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::HashExpression)) {
-        return reconstruct_hash_expression(std::any_cast<plasma::ast::HashExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::MethodInvocationExpression)) {
-        return reconstruct_method_invocation_expression(std::any_cast<plasma::ast::MethodInvocationExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::IfOneLinerExpression)) {
-        return reconstruct_if_one_liner_expression(std::any_cast<plasma::ast::IfOneLinerExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::UnlessOneLinerExpression)) {
-        return reconstruct_unless_one_liner_expression(std::any_cast<plasma::ast::UnlessOneLinerExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::AssignStatement)) {
-        return reconstruct_assign_statement(std::any_cast<plasma::ast::AssignStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::IndexExpression)) {
-        return reconstruct_index_expression(std::any_cast<plasma::ast::IndexExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::LambdaExpression)) {
-        return reconstruct_lambda_expression(std::any_cast<plasma::ast::LambdaExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::SuperInvocationStatement)) {
-        return reconstruct_super_statement(std::any_cast<plasma::ast::SuperInvocationStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::BreakStatement)) {
-        return "break";
-    } else if (node.type() == typeid(plasma::ast::RedoStatement)) {
-        return "redo";
-    } else if (node.type() == typeid(plasma::ast::ContinueStatement)) {
-        return "continue";
-    } else if (node.type() == typeid(plasma::ast::RaiseStatement)) {
-        return reconstruct_raise_statement(std::any_cast<plasma::ast::RaiseStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::ParenthesesExpression)) {
-        return reconstruct_parentheses_expression(std::any_cast<plasma::ast::ParenthesesExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::GeneratorExpression)) {
-        return reconstruct_generator_expression(std::any_cast<plasma::ast::GeneratorExpression>(node));
-    } else if (node.type() == typeid(plasma::ast::YieldStatement)) {
-        return reconstruct_yield_statement(std::any_cast<plasma::ast::YieldStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::ReturnStatement)) {
-        return reconstruct_return_statement(std::any_cast<plasma::ast::ReturnStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::IfStatement)) {
-        return reconstruct_if_statement(std::any_cast<plasma::ast::IfStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::UnlessStatement)) {
-        return reconstruct_unless_statement(std::any_cast<plasma::ast::UnlessStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::WhileStatement)) {
-        return reconstruct_while_statement(std::any_cast<plasma::ast::WhileStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::DoWhileStatement)) {
-        return reconstruct_do_while_statement(std::any_cast<plasma::ast::DoWhileStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::UntilStatement)) {
-        return reconstruct_until_statement(std::any_cast<plasma::ast::UntilStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::ForStatement)) {
-        return reconstruct_for_statement(std::any_cast<plasma::ast::ForStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::SwitchStatement)) {
-        return reconstruct_switch_statement(std::any_cast<plasma::ast::SwitchStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::TryStatement)) {
-        return reconstruct_try_statement(std::any_cast<plasma::ast::TryStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::FunctionDefinitionStatement)) {
-        return reconstruct_function_statement(std::any_cast<plasma::ast::FunctionDefinitionStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::BeginStatement)) {
-        return reconstruct_begin_statement(std::any_cast<plasma::ast::BeginStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::EndStatement)) {
-        return reconstruct_end_statement(std::any_cast<plasma::ast::EndStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::ClassStatement)) {
-        return reconstruct_class_statement(std::any_cast<plasma::ast::ClassStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::InterfaceStatement)) {
-        return reconstruct_interface_statement(std::any_cast<plasma::ast::InterfaceStatement>(node));
-    } else if (node.type() == typeid(plasma::ast::ModuleStatement)) {
-        return reconstruct_module_statement(std::any_cast<plasma::ast::ModuleStatement>(node));
+static std::string reconstruct_node(plasma::ast::Node *node) {
+    switch (node->TypeID) {
+        case plasma::ast::BinaryID:
+            return reconstruct_binary_expression(dynamic_cast<plasma::ast::BinaryExpression *>(node));
+        case plasma::ast::SelectorID:
+            return reconstruct_selector_expression(dynamic_cast<plasma::ast::SelectorExpression *>(node));
+        case plasma::ast::UnaryID:
+            return reconstruct_unary_expression(dynamic_cast<plasma::ast::UnaryExpression *>(node));
+        case plasma::ast::BasicLiteralID:
+            return dynamic_cast<plasma::ast::BasicLiteralExpression *>(node)->Token.string;
+        case plasma::ast::IdentifierID:
+            return dynamic_cast<plasma::ast::Identifier *>(node)->Token.string;
+        case plasma::ast::ArrayID:
+            return reconstruct_array_expression(dynamic_cast<plasma::ast::ArrayExpression *>(node));
+        case plasma::ast::TupleID:
+            return reconstruct_tuple_expression(dynamic_cast<plasma::ast::TupleExpression *>(node));
+        case plasma::ast::HashID:
+            return reconstruct_hash_expression(dynamic_cast<plasma::ast::HashExpression *>(node));
+        case plasma::ast::MethodInvocationID:
+            return reconstruct_method_invocation_expression(
+                    dynamic_cast<plasma::ast::MethodInvocationExpression *>(node));
+        case plasma::ast::IfOneLinerID:
+            return reconstruct_if_one_liner_expression(dynamic_cast<plasma::ast::IfOneLinerExpression *>(node));
+        case plasma::ast::UnlessOneLinerID:
+            return reconstruct_unless_one_liner_expression(dynamic_cast<plasma::ast::UnlessOneLinerExpression *>(node));
+        case plasma::ast::AssignID:
+            return reconstruct_assign_statement(dynamic_cast<plasma::ast::AssignStatement *>(node));
+        case plasma::ast::IndexID:
+            return reconstruct_index_expression(dynamic_cast<plasma::ast::IndexExpression *>(node));
+        case plasma::ast::LambdaID:
+            return reconstruct_lambda_expression(dynamic_cast<plasma::ast::LambdaExpression *>(node));
+        case plasma::ast::BreakID:
+            return "break";
+        case plasma::ast::RedoID:
+            return "redo";
+        case plasma::ast::ContinueID:
+            return "continue";
+        case plasma::ast::RaiseID:
+            return reconstruct_raise_statement(dynamic_cast<plasma::ast::RaiseStatement *>(node));
+        case plasma::ast::ParenthesesID:
+            return reconstruct_parentheses_expression(dynamic_cast<plasma::ast::ParenthesesExpression *>(node));
+        case plasma::ast::GeneratorID:
+            return reconstruct_generator_expression(dynamic_cast<plasma::ast::GeneratorExpression *>(node));
+        case plasma::ast::ReturnID:
+            return reconstruct_return_statement(dynamic_cast<plasma::ast::ReturnStatement *>(node));
+        case plasma::ast::IfID:
+            return reconstruct_if_statement(dynamic_cast<plasma::ast::IfStatement *>(node));
+        case plasma::ast::UnlessID:
+            return reconstruct_unless_statement(dynamic_cast<plasma::ast::UnlessStatement *>(node));
+        case plasma::ast::WhileID:
+            return reconstruct_while_statement(dynamic_cast<plasma::ast::WhileStatement *>(node));
+        case plasma::ast::DoWhileID:
+            return reconstruct_do_while_statement(dynamic_cast<plasma::ast::DoWhileStatement *>(node));
+        case plasma::ast::UntilID:
+            return reconstruct_until_statement(dynamic_cast<plasma::ast::UntilStatement *>(node));
+        case plasma::ast::ForID:
+            return reconstruct_for_statement(dynamic_cast<plasma::ast::ForStatement *>(node));
+        case plasma::ast::SwitchID:
+            return reconstruct_switch_statement(dynamic_cast<plasma::ast::SwitchStatement *>(node));
+        case plasma::ast::TryID:
+            return reconstruct_try_statement(dynamic_cast<plasma::ast::TryStatement *>(node));
+        case plasma::ast::FunctionDefinitionID:
+            return reconstruct_function_statement(dynamic_cast<plasma::ast::FunctionDefinitionStatement *>(node));
+        case plasma::ast::BeginID:
+            return reconstruct_begin_statement(dynamic_cast<plasma::ast::BeginStatement *>(node));
+        case plasma::ast::EndID:
+            return reconstruct_end_statement(dynamic_cast<plasma::ast::EndStatement *>(node));
+        case plasma::ast::ClassID:
+            return reconstruct_class_statement(dynamic_cast<plasma::ast::ClassStatement *>(node));
+        case plasma::ast::InterfaceID:
+            return reconstruct_interface_statement(dynamic_cast<plasma::ast::InterfaceStatement *>(node));
+        case plasma::ast::ModuleID:
+            return reconstruct_module_statement(dynamic_cast<plasma::ast::ModuleStatement *>(node));
     }
-    return node.type().name();
+    throw std::exception("error");
 }
 
 static std::string reconstruct_code(plasma::ast::Program *program) {
     std::string result;
-    if (!program->Begin.Body.empty()) {
-        result += reconstruct_node(program->Begin);
+    if (program->Begin != nullptr) {
+        if (!program->Begin->Body.empty()) {
+            result += reconstruct_node(program->Begin);
+        }
     }
     bool first = true;
-    for (const std::any &node : program->Body) {
+    for (plasma::ast::Node *node : program->Body) {
         if (first) {
             first = false;
         } else {
@@ -684,8 +689,10 @@ static std::string reconstruct_code(plasma::ast::Program *program) {
         }
         result += reconstruct_node(node);
     }
-    if (!program->End.Body.empty()) {
-        result += reconstruct_node(program->End);
+    if (program->End != nullptr) {
+        if (!program->End->Body.empty()) {
+            result += reconstruct_node(program->End);
+        }
     }
     return result;
 }
@@ -704,7 +711,7 @@ void test_parser(int *number_of_tests, int *success) {
     std::vector<std::string> parsing_tests = initialize_parser_tests();
     int number_of_parsing_tests = parsing_tests.size();
     int number_of_success_parsing_tests = 0;
-    for (const std::string &test : parsing_tests) {
+    for (std::string &test : parsing_tests) {
         // Setup lexer
         plasma::reader::string_reader test_reader;
         plasma::reader::string_reader_new(&test_reader, test);
@@ -712,13 +719,9 @@ void test_parser(int *number_of_tests, int *success) {
         // Setup parser
         plasma::parser::parser test_parser(&test_lexer);
         // Parse
-        plasma::ast::Program result;
-        plasma::error::error result_error;
-        if (test_parser.parse(&result, &result_error)) {
-            number_of_success_parsing_tests += check_parser_result(&result, test);
-        } else {
-            FAIL(result_error.string() + " -> " + test);
-        }
+        plasma::ast::Program *result = test_parser.parse();
+        number_of_success_parsing_tests += check_parser_result(result, test);
+        delete result;
     }
 
     TEST_FINISH("Parse samples", number_of_parsing_tests, number_of_success_parsing_tests);

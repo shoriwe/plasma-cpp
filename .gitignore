@@ -1,3 +1,5 @@
 
 .idea/*
-cmake-build-debug/*
+cmake-build-*/*
+test.exe.stackdump
+venv/*

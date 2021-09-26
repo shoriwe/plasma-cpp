@@ -4,7 +4,7 @@
 #include <string>
 #include <any>
 
-#include "error.h"
+#include "plasma_error.h"
 #include "compiler/ast.h"
 #include "compiler/lexer.h"
 
@@ -52,19 +52,19 @@ namespace plasma::parser {
     /*
      * Quick error creation
      */
-    void newSyntaxError(int line, const std::string &nodeType, error::error *result_error);
+    error::error newSyntaxError(int line, const std::string &nodeType);
 
-    void newNonExpressionReceivedError(int line, const std::string &nodeType, error::error *result_error);
+    error::error newNonExpressionReceivedError(int line, const std::string &nodeType);
 
-    void newNonIdentifierReceivedError(int line, const std::string &nodeType, error::error *result_error);
+    error::error newNonIdentifierReceivedError(int line, const std::string &nodeType);
 
-    void newStatementNeverEndedError(int line, const std::string &nodeType, error::error *result_error);
+    error::error newStatementNeverEndedError(int line, const std::string &nodeType);
 
-    void newInvalidKindOfTokenError(int line, error::error *result_error);
+    error::error newInvalidKindOfTokenError(int line);
 
-    void newExpressionNeverClosed(int line, const std::string &nodeType, error::error *result_error);
+    error::error newExpressionNeverClosed(int line, const std::string &nodeType);
 
-    void newNonFunctionDefinitionReceived(int line, const std::string &nodeType, error::error *result_error);
+    error::error newNonFunctionDefinitionReceived(int line, const std::string &nodeType);
 
     /*
      * parser object
@@ -79,100 +79,96 @@ namespace plasma::parser {
 
         bool hasNext() const;
 
-        bool next(error::error *result_error);
+        void next();
 
         bool directValueMatch(uint8_t directValue) const;
 
         bool kindMatch(uint8_t kind) const;
 
-        bool removeNewLines(error::error *result_error);
+        void removeNewLines();
 
         /*
          * Statements
          */
-        bool parseAssignStatement(std::any leftHandSide, std::any *result, error::error *result_error);
+        ast::AssignStatement *parseAssignStatement(ast::Expression *leftHandSide);
 
-        bool parseForStatement(std::any *result, error::error *result_error);
+        ast::ForStatement *parseForStatement();
 
-        bool parseUntilStatement(std::any *result, error::error *result_error);
+        ast::UntilStatement *parseUntilStatement();
 
-        bool parseModuleStatement(std::any *result, error::error *result_error);
+        ast::ModuleStatement *parseModuleStatement();
 
-        bool parseFunctionDefinitionStatement(std::any *result, error::error *result_error);
+        ast::FunctionDefinitionStatement *parseFunctionDefinitionStatement();
 
-        bool parseClassStatement(std::any *result, error::error *result_error);
+        ast::ClassStatement *parseClassStatement();
 
-        bool parseRaiseStatement(std::any *result, error::error *result_error);
+        ast::RaiseStatement *parseRaiseStatement();
 
-        bool parseTryStatement(std::any *result, error::error *result_error);
+        ast::TryStatement *parseTryStatement();
 
-        bool parseBeginStatement(std::any *result, error::error *result_error);
+        ast::EndStatement *parseEndStatement();
 
-        bool parseEndStatement(std::any *result, error::error *result_error);
+        ast::BeginStatement *parseBeginStatement();
 
-        bool parseInterfaceStatement(std::any *result, error::error *result_error);
+        ast::InterfaceStatement *parseInterfaceStatement();
 
-        bool parseWhileStatement(std::any *result, error::error *result_error);
+        ast::WhileStatement *parseWhileStatement();
 
-        bool parseDoWhileStatement(std::any *result, error::error *result_error);
+        ast::DoWhileStatement *parseDoWhileStatement();
 
-        bool parseIfStatement(std::any *result, error::error *result_error);
+        ast::IfStatement *parseIfStatement();
 
-        bool parseUnlessStatement(std::any *result, error::error *result_error);
+        ast::UnlessStatement *parseUnlessStatement();
 
-        bool parseSwitchStatement(std::any *result, error::error *result_error);
+        ast::SwitchStatement *parseSwitchStatement();
 
-        bool parseReturnStatement(std::any *result, error::error *result_error);
+        ast::ReturnStatement *parseReturnStatement();
 
-        bool parseYieldStatement(std::any *result, error::error *result_error);
+        ast::ContinueStatement *parseContinueStatement();
 
-        bool parseSuperStatement(std::any *result, error::error *result_error);
+        ast::BreakStatement *parseBreakStatement();
 
-        bool parseContinueStatement(std::any *result, error::error *result_error);
+        ast::RedoStatement *parseRedoStatement();
 
-        bool parseBreakStatement(std::any *result, error::error *result_error);
-
-        bool parseRedoStatement(std::any *result, error::error *result_error);
-
-        bool parsePassStatement(std::any *result, error::error *result_error);
+        ast::PassStatement *parsePassStatement();
 
         /*
          * Expressions
          */
-        bool parseBinaryExpression(uint8_t precedence, std::any *result, error::error *result_error);
+        ast::Node *parseBinaryExpression(uint8_t precedence);
 
-        bool parseUnaryExpression(std::any *result, error::error *result_error);
+        ast::Node *parseUnaryExpression();
 
-        bool parsePrimaryExpression(std::any *result, error::error *result_error);
+        ast::Node *parsePrimaryExpression();
 
-        bool parseLiteral(std::any *result, error::error *result_error);
+        ast::BasicLiteralExpression *parseLiteral();
 
-        bool parseOperand(std::any *result, error::error *result_error);
+        ast::Node *parseOperand();
 
-        bool parseLambdaExpression(std::any *result, error::error *result_error);
+        ast::LambdaExpression *parseLambdaExpression();
 
-        bool parseParenthesesExpression(std::any *result, error::error *result_error);
+        ast::Node *parseParenthesesExpression();
 
-        bool parseArrayExpression(std::any *result, error::error *result_error);
+        ast::ArrayExpression *parseArrayExpression();
 
-        bool parseHashExpression(std::any *result, error::error *result_error);
+        ast::HashExpression *parseHashExpression();
 
-        bool parseSelectorExpression(std::any expression, std::any *result, error::error *result_error);
+        ast::SelectorExpression *parseSelectorExpression(ast::Expression *source);
 
-        bool parseMethodInvocationExpression(std::any expression, std::any *result, error::error *result_error);
+        ast::MethodInvocationExpression *parseMethodInvocationExpression(ast::Expression *method);
 
-        bool parseIndexExpression(std::any expression, std::any *result, error::error *result_error);
+        ast::IndexExpression *parseIndexExpression(ast::Expression *source);
 
-        bool parseIfOneLinerExpression(std::any expression, std::any *result, error::error *result_error);
+        ast::IfOneLinerExpression *parseIfOneLinerExpression(ast::Expression *onTrueResult);
 
-        bool parseUnlessOneLinerExpression(std::any expression, std::any *result, error::error *result_error);
+        ast::UnlessOneLinerExpression *parseUnlessOneLinerExpression(ast::Expression *onFalseResult);
 
-        bool parseGeneratorExpression(std::any expression, std::any *result, error::error *result_error);
+        ast::GeneratorExpression *parseGeneratorExpression(ast::Expression *expression);
 
         /*
          * Parse to a Program Object
          */
-        bool parse(ast::Program *result, error::error *result_error);
+        ast::Program *parse();
     };
 }
 #endif //PLASMA_PARSER_H

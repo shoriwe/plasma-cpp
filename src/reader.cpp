@@ -25,7 +25,9 @@ void plasma::reader::string_reader_new(string_reader *s_reader, std::string stri
     s_reader->currentIndex = 0;
 }
 
-bool plasma::reader::string_reader_new_from_file(string_reader *s_reader, std::ifstream file) {
+bool plasma::reader::string_reader_new_from_file(string_reader *s_reader, const std::string &filePath) {
+    std::ifstream file;
+    file.open(filePath);
     s_reader->content = std::string(
             (std::istreambuf_iterator<char>(file)),
             std::istreambuf_iterator<char>()

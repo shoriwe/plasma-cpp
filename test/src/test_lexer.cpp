@@ -1,7 +1,7 @@
 #include <string>
 
 #include "reader.h"
-#include "error.h"
+#include "plasma_error.h"
 #include "compiler/lexer.h"
 
 #include "test_lexer.h"

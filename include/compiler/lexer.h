@@ -5,7 +5,7 @@
 #include <regex>
 
 #include "reader.h"
-#include "error.h"
+#include "plasma_error.h"
 
 namespace plasma::lexer {
     const std::regex identifierCheck("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
@@ -24,7 +24,7 @@ namespace plasma::lexer {
     const char DotChar = '.';
     const char BitwiseOrChar = '|';
     const char BitwiseXorChar = '^';
-    const char BitWiseAndChar = '&';
+    const char BitwiseAndChar = '&';
     const char AddChar = '+';
     const char SubChar = '-';
     const char StarChar = '*';
@@ -40,7 +40,6 @@ namespace plasma::lexer {
     const char CommentChar = '#';
     const char BackSlashChar = '\\';
     const char PassString[] = "pass";
-    const char SuperString[] = "super";
     const char EndString[] = "end";
     const char IfString[] = "if";
     const char UnlessString[] = "unless";
@@ -53,7 +52,6 @@ namespace plasma::lexer {
     const char SwitchString[] = "switch";
     const char CaseString[] = "case";
     const char DefaultString[] = "default";
-    const char YieldString[] = "yield";
     const char ReturnString[] = "return";
     const char ContinueString[] = "continue";
     const char BreakString[] = "break";
@@ -82,7 +80,7 @@ namespace plasma::lexer {
     const char RaiseString[] = "raise";
     const char AsString[] = "as";
     enum {
-        NotSet,
+        NotSet, // 0
         Unknown,
         PendingEscape,
         Comment,
@@ -92,9 +90,8 @@ namespace plasma::lexer {
         IdentifierKind,
         JunkKind,
         Separator,
-        Punctuation,
+        Punctuation, // 10
         Assignment,
-        Comparator,
         Operator,
         SingleQuoteString,
         DoubleQuoteString,
@@ -102,7 +99,7 @@ namespace plasma::lexer {
         HexadecimalInteger,
         BinaryInteger,
         OctalInteger,
-        Float,
+        Float, // 20
         AwaitKeyboard,
         ScientificFloat,
         CommandOutput,
@@ -116,7 +113,6 @@ namespace plasma::lexer {
         SemiColon,
         NewLine,
         Pass,
-        Super,
         End,
         If,
         Unless,
@@ -131,7 +127,6 @@ namespace plasma::lexer {
         Switch,
         Case,
         Default,
-        Yield,
         Return,
         Continue,
         Break,
@@ -153,7 +148,7 @@ namespace plasma::lexer {
         NegateBitsAssign,
         BitwiseOrAssign,
         BitwiseXorAssign,
-        BitWiseAndAssign,
+        BitwiseAndAssign,
         BitwiseLeftAssign,
         BitwiseRightAssign,
         AddAssign,
@@ -178,7 +173,7 @@ namespace plasma::lexer {
         LessOrEqualThan,
         BitwiseOr,
         BitwiseXor,
-        BitWiseAnd,
+        BitwiseAnd,
         BitwiseLeft,
         BitwiseRight,
         Add,
