@@ -31,7 +31,7 @@ namespace plasma::vm {
 
     // OP Codes
     enum {
-        NewStringOP, // 0
+        NewStringOP,
         NewBytesOP,
         NewIntegerOP,
         NewFloatOP,
@@ -39,26 +39,17 @@ namespace plasma::vm {
         GetFalseOP,
         NewLambdaFunctionOP,
         GetNoneOP,
-
-        // Composite creation
         NewTupleOP,
         NewArrayOP,
-        NewHashOP, // 10
+        NewHashOP,
         NewGeneratorOP,
-
-        // If conditions
-        // FixMe:
         IfOP,
         UnlessOP,
         IfOneLinerOP,
         UnlessOneLinerOP,
-
-        // Unary Expressions
         NegateBitsOP,
         BoolNegateOP,
         NegativeOP,
-
-        // Binary Expressions
         AddOP,
         SubOP,
         MulOP,
@@ -66,7 +57,7 @@ namespace plasma::vm {
         FloorDivOP,
         ModOP,
         PowOP,
-        BitXorOP, // 20
+        BitXorOP,
         BitAndOP,
         BitOrOP,
         BitLeftOP,
@@ -76,50 +67,37 @@ namespace plasma::vm {
         XorOP,
         EqualsOP,
         NotEqualsOP,
-        GreaterThanOP, // 30
+        GreaterThanOP,
         LessThanOP,
         GreaterThanOrEqualOP,
         LessThanOrEqualOP,
         ContainsOP,
         UnaryOP,
         BinaryOP,
-        // Other expressions
         GetIdentifierOP,
         IndexOP,
         SelectNameFromObjectOP,
-        MethodInvocationOP, // 40
-
-        // Assign Statement
+        MethodInvocationOP,
         AssignIdentifierOP,
         AssignSelectorOP,
         AssignIndexOP,
-
-        // Loops
-        // FixMe:
         ForLoopOP,
         WhileLoopOP,
         DoWhileLoopOP,
         UntilLoopOP,
-
-        BreakOP, // 50
+        BreakOP,
         RedoOP,
         ContinueOP,
-
         ReturnOP,
-
-        // Special Instructions
         LoadFunctionArgumentsOP,
         NewFunctionOP,
         PushOP,
         NOP,
-
         TryOP,
-
         NewModuleOP,
-        NewClassOP, // 60
+        NewClassOP,
         NewInterfaceOP,
         NewClassFunctionOP,
-
         RaiseOP,
     };
     typedef std::function<struct value *()> on_demand_loader;
@@ -802,6 +780,13 @@ namespace plasma::vm {
         //// Loop setup and operation
 
         value *for_loop_op(context *c, loop_information loopInformation);
+
+        value *while_loop_op(context *c, loop_information loopInformation);
+
+        value *do_while_loop_op(context *c, loop_information loopInformation);
+
+        value *until_loop_op(context *c, loop_information loopInformation);
+
 
         //// Try blocks
         value *execute_try_block(context *c, bytecode *bc, const try_block_information &tryBlockInformation);

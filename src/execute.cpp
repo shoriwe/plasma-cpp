@@ -923,8 +923,6 @@ plasma::vm::value *plasma::vm::virtual_machine::for_loop_op(context *c, loop_inf
     bool success = false;
     while (true) {
         continueState:
-        auto state2 = c->protected_values_state();
-        defer _2(nullptr, [c, state2](...) { c->restore_protected_state(state2); });
 
         doesHasNext = this->call_function(c, hasNext, std::vector<value *>(), &success);
         if (!success) {
@@ -981,6 +979,192 @@ plasma::vm::value *plasma::vm::virtual_machine::for_loop_op(context *c, loop_inf
             case Break:
                 goto finish;
                 break;
+        }
+    }
+    finish:
+    c->lastState = NoState;
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::while_loop_op(context *c, loop_information loopInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto conditionBytecode = bytecode{
+            .instructions = loopInformation.condition,
+            .index = 0
+    };
+    auto bodyBytecode = bytecode{
+            .instructions = loopInformation.body,
+            .index = 0
+    };
+    value *conditionResult;
+    value *result;
+    bool success = false;
+
+    while (true) {
+        continueState:
+
+        success = false;
+        conditionBytecode.index = 0;
+        conditionResult = this->execute(c, &conditionBytecode, &success);
+        if (!success) {
+            return conditionResult;
+        }
+        c->protect_value(conditionResult);
+        bool asBool = false;
+        auto interpretationError = this->interpret_as_boolean(c, conditionResult, &asBool);
+        if (interpretationError != nullptr) {
+            return interpretationError;
+        }
+        if (!asBool) {
+            break;
+        }
+
+        redoState:
+        success = false;
+        bodyBytecode.index = 0;
+        result = this->execute(c, &bodyBytecode, &success);
+        if (!success) {
+            std::cout << "HERE\n";
+            return result;
+        }
+        switch (c->lastState) {
+            case Return:
+                c->lastObject = result;
+                return nullptr;
+            case Continue:
+                goto continueState;
+                break;
+            case Redo:
+                goto redoState;
+                break;
+            case Break:
+                goto finish;
+                break;
+        }
+    }
+    finish:
+    c->lastState = NoState;
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::until_loop_op(context *c, loop_information loopInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto conditionBytecode = bytecode{
+            .instructions = loopInformation.condition,
+            .index = 0
+    };
+    auto bodyBytecode = bytecode{
+            .instructions = loopInformation.body,
+            .index = 0
+    };
+    value *conditionResult;
+    value *result;
+    bool success = false;
+
+    while (true) {
+        continueState:
+
+        success = false;
+        conditionBytecode.index = 0;
+        conditionResult = this->execute(c, &conditionBytecode, &success);
+        if (!success) {
+            return conditionResult;
+        }
+        c->protect_value(conditionResult);
+        bool asBool = false;
+        auto interpretationError = this->interpret_as_boolean(c, conditionResult, &asBool);
+        if (interpretationError != nullptr) {
+            return interpretationError;
+        }
+        if (asBool) {
+            break;
+        }
+
+        redoState:
+        success = false;
+        bodyBytecode.index = 0;
+        result = this->execute(c, &bodyBytecode, &success);
+        if (!success) {
+            return result;
+        }
+        switch (c->lastState) {
+            case Return:
+                c->lastObject = result;
+                return nullptr;
+            case Continue:
+                goto continueState;
+                break;
+            case Redo:
+                goto redoState;
+                break;
+            case Break:
+                goto finish;
+                break;
+        }
+    }
+    finish:
+    c->lastState = NoState;
+    return nullptr;
+}
+
+plasma::vm::value *plasma::vm::virtual_machine::do_while_loop_op(context *c, loop_information loopInformation) {
+    auto state = c->protected_values_state();
+    defer _(nullptr, [c, state](...) { c->restore_protected_state(state); });
+
+    auto conditionBytecode = bytecode{
+            .instructions = loopInformation.condition,
+            .index = 0
+    };
+    auto bodyBytecode = bytecode{
+            .instructions = loopInformation.body,
+            .index = 0
+    };
+    value *conditionResult;
+    value *result;
+    bool success = false;
+
+    while (true) {
+        redoState:
+        success = false;
+        bodyBytecode.index = 0;
+        result = this->execute(c, &bodyBytecode, &success);
+        if (!success) {
+            return result;
+        }
+        switch (c->lastState) {
+            case Return:
+                c->lastObject = result;
+                return nullptr;
+            case Continue:
+                goto continueState;
+                break;
+            case Redo:
+                goto redoState;
+                break;
+            case Break:
+                goto finish;
+                break;
+        }
+
+        continueState:
+        success = false;
+        conditionBytecode.index = 0;
+        conditionResult = this->execute(c, &conditionBytecode, &success);
+        if (!success) {
+            return conditionResult;
+        }
+        c->protect_value(conditionResult);
+        bool asBool = false;
+        auto interpretationError = this->interpret_as_boolean(c, conditionResult, &asBool);
+        if (interpretationError != nullptr) {
+            return interpretationError;
+        }
+        if (!asBool) {
+            break;
         }
     }
     finish:
@@ -1070,6 +1254,45 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                     return result;
                 }
                 break;
+            case WhileLoopOP:
+                executionError = this->while_loop_op(c, std::any_cast<loop_information>(instruct.value));
+                if (executionError != nullptr) {
+                    (*success) = false;
+                    return executionError;
+                }
+                if (c->lastState == Return) {
+                    result = c->lastObject;
+                    c->lastObject = nullptr;
+                    (*success) = true;
+                    return result;
+                }
+                break;
+            case UntilLoopOP:
+                executionError = this->until_loop_op(c, std::any_cast<loop_information>(instruct.value));
+                if (executionError != nullptr) {
+                    (*success) = false;
+                    return executionError;
+                }
+                if (c->lastState == Return) {
+                    result = c->lastObject;
+                    c->lastObject = nullptr;
+                    (*success) = true;
+                    return result;
+                }
+                break;
+            case DoWhileLoopOP:
+                executionError = this->do_while_loop_op(c, std::any_cast<loop_information>(instruct.value));
+                if (executionError != nullptr) {
+                    (*success) = false;
+                    return executionError;
+                }
+                if (c->lastState == Return) {
+                    result = c->lastObject;
+                    c->lastObject = nullptr;
+                    (*success) = true;
+                    return result;
+                }
+                break;
             case IfOP:
                 executionError = this->if_op(c, std::any_cast<condition_information>(instruct.value));
                 if (executionError != nullptr) {
@@ -1080,6 +1303,7 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                     case Continue:
                     case Break:
                     case Redo:
+                        (*success) = true;
                         return this->get_none(c);
                     case Return:
                         // Leave alone so it get propagated
@@ -1171,8 +1395,6 @@ plasma::vm::value *plasma::vm::virtual_machine::execute(context *c, bytecode *bc
                 break;
         }
         if (executionError != nullptr) {
-            // Handle the error
-            // Return the error
             (*success) = false;
             return executionError;
         }

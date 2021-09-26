@@ -829,23 +829,143 @@ bool plasma::ast::UnlessStatement::compile(std::vector<vm::instruction> *result,
 
 bool plasma::ast::SwitchStatement::compile(std::vector<vm::instruction> *result,
                                            plasma::error::error *compilationError) {
-    return false;
+    IfStatement *root = nullptr;
+    IfStatement *lastIfStatement;
+    for (CaseBlock *caseBlock : this->CaseBlocks) {
+        std::vector<Expression *> copiedCases;
+        copiedCases.reserve(caseBlock->Cases.size());
+        for (Expression *caseTarget : caseBlock->Cases) {
+            copiedCases.push_back(caseTarget);
+        }
+        std::vector<Node *> copiedBody;
+        copiedBody.reserve(caseBlock->Body.size());
+        for (Node *node : caseBlock->Body) {
+            copiedBody.push_back(node);
+        }
+        if (root == nullptr) {
+            root = new IfStatement(
+                    new BinaryExpression(
+                            dynamic_cast<Expression *>(this->Target->copy()),
+                            lexer::token{
+                                    .string = "in",
+                                    .directValue = lexer::In,
+                                    .kind = lexer::Operator
+                            },
+                            new TupleExpression(copiedCases)
+                    ),
+                    copiedBody,
+                    std::vector<Node *>()
+            );
+            lastIfStatement = root;
+        } else {
+            auto newLastIfStatement = new IfStatement(
+                    new BinaryExpression(
+                            dynamic_cast<Expression *>(this->Target->copy()),
+                            lexer::token{
+                                    .string = "in",
+                                    .directValue = lexer::In,
+                                    .kind = lexer::Operator
+                            },
+                            new TupleExpression(copiedCases)
+                    ),
+                    copiedBody,
+                    std::vector<Node *>()
+            );
+            lastIfStatement->Else.push_back(newLastIfStatement);
+            lastIfStatement = newLastIfStatement;
+        }
+    }
+    if (root == nullptr) {
+        return false;
+    }
+    bool success = root->compile(result, compilationError);
+    delete root;
+    return success;
 }
 
 bool plasma::ast::WhileStatement::compile(std::vector<vm::instruction> *result,
                                           plasma::error::error *compilationError) {
-    return false;
+    std::vector<plasma::vm::instruction> condition;
+    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
+        return false;
+    }
+    condition.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1)
+            }
+    );
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(this->Body, &body, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::WhileLoopOP,
+                    .value = plasma::vm::loop_information{
+                            .body = body,
+                            .condition = condition
+                    }
+            }
+    );
+    return true;
 }
 
 bool plasma::ast::UntilStatement::compile(std::vector<vm::instruction> *result,
                                           plasma::error::error *compilationError) {
-    return false;
+    std::vector<plasma::vm::instruction> condition;
+    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
+        return false;
+    }
+    condition.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1)
+            }
+    );
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(this->Body, &body, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::UntilLoopOP,
+                    .value = plasma::vm::loop_information{
+                            .body = body,
+                            .condition = condition
+                    }
+            }
+    );
+    return true;
 
 }
 
 bool plasma::ast::DoWhileStatement::compile(std::vector<vm::instruction> *result,
                                             plasma::error::error *compilationError) {
-    return false;
+    std::vector<plasma::vm::instruction> condition;
+    if (!this->Condition->compile_and_push(true, &condition, compilationError)) {
+        return false;
+    }
+    condition.push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::ReturnOP,
+                    .value = static_cast<size_t>(1)
+            }
+    );
+    std::vector<plasma::vm::instruction> body;
+    if (!compile_body(this->Body, &body, compilationError)) {
+        return false;
+    }
+    result->push_back(
+            plasma::vm::instruction{
+                    .op_code = plasma::vm::DoWhileLoopOP,
+                    .value = plasma::vm::loop_information{
+                            .body = body,
+                            .condition = condition
+                    }
+            }
+    );
+    return true;
 }
 
 bool plasma::ast::RedoStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
@@ -977,12 +1097,12 @@ bool plasma::ast::TryStatement::compile(std::vector<vm::instruction> *result, pl
 
 bool
 plasma::ast::BeginStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-    return false;
+    return compile_body(this->Body, result, compilationError);
 }
 
 bool
 plasma::ast::EndStatement::compile(std::vector<vm::instruction> *result, plasma::error::error *compilationError) {
-    return false;
+    return compile_body(this->Body, result, compilationError);
 }
 
 bool
